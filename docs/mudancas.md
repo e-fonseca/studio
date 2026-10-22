@@ -7,6 +7,26 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.40.2 — 22/10/2026
+
+Ele colou o token na tela Backup e a tela ficou parada em "Enviando…": *"coloquei o token
+no campo indicado e travou nessa tela, mitigar e corrigir"*.
+
+- **A causa.** O primeiro envio é o sistema inteiro, perto de 500 arquivos, e cada arquivo
+  virava um pedido próprio ao GitHub, um atrás do outro, dentro do clique de gravar. Isso
+  leva minutos, e o GitHub limita as escritas a 80 por minuto e 500 por hora: o primeiro
+  envio esbarrava no limite antes de terminar. O token ficou gravado; o que não terminou
+  foi a cópia.
+- **O texto agora vai dentro da árvore, em lotes**, e só o que é binário (logo, ícones)
+  pede envio próprio. O sistema inteiro sobe em menos de 15 pedidos e num commit só. O
+  conteúdo vai com os mesmos bytes, então a atualização seguinte continua mandando só o
+  que mudou.
+- **Limite do GitHub não é mais confundido com token errado.** Antes a tela dizia para
+  conferir a permissão do token; agora diz que o GitHub pediu para esperar, que o token
+  está certo e que o sistema tenta de novo sozinho.
+- A tela Backup recomenda escolher **No expiration** no token: sem vencimento, o passo
+  dele acontece uma vez só.
+
 ## 1.40.1 — 22/10/2026
 
 Duas respostas dele à 1.40.0: escolheu **"Quatro no menu"** no cartão sobre o menu de

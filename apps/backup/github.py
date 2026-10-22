@@ -36,6 +36,12 @@ API = "https://api.github.com"
 TEMPO_LIMITE = 30
 # Modo de arquivo comum no git. O sistema não guarda link nem executável.
 MODO_ARQUIVO = "100644"
+# Quanto vai em cada pedido de árvore. O primeiro envio é o sistema inteiro (~500
+# arquivos, ~3 MB de texto): um pedido por arquivo esbarrava no limite do GitHub de
+# escritas por minuto e por hora, e prendia a tela em "Enviando…" por minutos (22/10/2026).
+# Texto vai DENTRO da árvore, em lotes; só o binário (logo, ícones) pede blob próprio.
+LOTE_DE_BYTES = 700_000
+LOTE_DE_ARQUIVOS = 150
 
 
 class NaoDeuCerto(Exception):
@@ -170,10 +176,15 @@ class GitHub:
                 continue
             if arquivo.caminho not in existentes:
                 novos.append(arquivo.caminho)
-            entradas.append({
-                "path": arquivo.caminho, "mode": MODO_ARQUIVO, "type": "blob",
-                "sha": self.criar_blob(arquivo.dados),
-            })
+            entrada = {"path": arquivo.caminho, "mode": MODO_ARQUIVO, "type": "blob"}
+            texto = _como_texto(arquivo.dados)
+            if texto is None:
+                entrada["sha"] = self.criar_blob(arquivo.dados)
+            else:
+                # O GitHub grava o texto em UTF-8, os mesmos bytes daqui: o resumo do
+                # próximo envio bate e o arquivo não sobe de novo.
+                entrada["content"] = texto
+            entradas.append(entrada)
             enviados += 1
 
         apagados = 0
@@ -188,7 +199,10 @@ class GitHub:
             return Resultado(enviou=False, commit=commit_atual or "", ao_todo=len(arquivos),
                              mensagem="Nada mudou desde o último envio.")
 
-        arvore = self.criar_arvore(entradas, base=arvore_atual or None)
+        arvore = arvore_atual or None
+        for lote in _em_lotes(entradas):
+            # Cada lote parte da árvore do anterior: o resultado é um commit só.
+            arvore = self.criar_arvore(lote, base=arvore)
         commit = self.criar_commit(mensagem, arvore, [commit_atual] if commit_atual else [])
         self.mover_ramo(ramo, commit, criar=not commit_atual)
         return Resultado(
@@ -199,6 +213,30 @@ class GitHub:
                       + (f" e {apagados} apagado{'s' if apagados != 1 else ''}" if apagados else "")
                       + f", commit {commit[:7]}."),
         )
+
+
+def _como_texto(dados):
+    """O conteúdo como texto, ou None quando é binário (precisa ir como blob)."""
+    if b"\x00" in dados:
+        return None
+    try:
+        return dados.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
+def _em_lotes(entradas):
+    """Reparte as entradas da árvore em pedidos de tamanho que o GitHub aceita bem."""
+    lote, tamanho = [], 0
+    for entrada in entradas:
+        peso = len((entrada.get("content") or "").encode("utf-8"))
+        if lote and (tamanho + peso > LOTE_DE_BYTES or len(lote) >= LOTE_DE_ARQUIVOS):
+            yield lote
+            lote, tamanho = [], 0
+        lote.append(entrada)
+        tamanho += peso
+    if lote:
+        yield lote
 
 
 def validade_do_token(dono, repositorio, token, abrir=None):
@@ -303,6 +341,9 @@ def _esta_vazio(erro):
 def _explicar(erro):
     """A resposta do GitHub em português, e não "HTTP Error 401"."""
     detalhe = _detalhe(erro)
+    if erro.code in (403, 429) and "rate limit" in detalhe.lower():
+        return ("O GitHub pediu para esperar: foram muitos envios em pouco tempo. O token "
+                "está certo e nada se perdeu; o sistema tenta de novo sozinho.")
     if erro.code == 401:
         return ("O GitHub recusou o token (401). Gere um token novo e cole de novo na tela.")
     if erro.code == 403:

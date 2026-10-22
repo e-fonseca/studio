@@ -4,6 +4,7 @@ Nenhum teste fala com a internet: o cliente do GitHub recebe a função que abre
 pedido, e aqui ela é um dublê que responde do dicionário.
 """
 
+import base64
 import io
 import json
 from pathlib import Path
@@ -175,10 +176,48 @@ class EnviarTest(TestCase):
         falso = GitHubDeMentira(ramo="commit-velho", arvore="arvore-velha", arquivos=iguais)
         resultado = falso.cliente().enviar(self.arquivos(), "main", "versão nova")
         self.assertEqual(resultado.enviados, 1)
-        self.assertEqual(len(falso.blobs), 1)
         self.assertEqual(falso.arvores[0]["tree"][0]["path"], "VERSAO")
+        self.assertEqual(falso.arvores[0]["tree"][0]["content"], "1.31.0")
         self.assertEqual(falso.arvores[0]["base_tree"], "arvore-velha")
         self.assertEqual(falso.refs[0][0], "PATCH")
+
+    def test_texto_vai_dentro_da_arvore_e_binario_vai_como_blob(self):
+        """Um pedido por arquivo esbarrava no limite do GitHub (22/10/2026)."""
+        falso = GitHubDeMentira()
+        logo = b"\x89PNG\r\n\x1a\n\x00\x00"
+        falso.cliente().enviar(self.arquivos() + [github.Arquivo("static/logo.png", logo)],
+                               "main", "primeira")
+        self.assertEqual(len(falso.blobs), 1)
+        self.assertEqual(base64.b64decode(falso.blobs[0]["content"]), logo)
+        por_caminho = {e["path"]: e for e in falso.arvores[0]["tree"]}
+        self.assertEqual(por_caminho["manage.py"]["content"], "print(1)")
+        self.assertNotIn("sha", por_caminho["manage.py"])
+        self.assertEqual(por_caminho["static/logo.png"]["sha"], "blob1")
+
+    def test_o_sistema_inteiro_sobe_em_poucos_pedidos_e_num_commit_so(self):
+        """Quinhentos arquivos não podem virar quinhentas escritas."""
+        arquivos = [github.Arquivo(f"apps/a{i}.py", (f"# {i}\n" + "x" * 6000).encode())
+                    for i in range(500)]
+        falso = GitHubDeMentira(ramo="c1", arvore="a1")
+        resultado = falso.cliente().enviar(arquivos, "main", "primeira")
+        self.assertEqual(resultado.enviados, 500)
+        escritas = [p for p in falso.pedidos if p[0] != "GET"]
+        self.assertLess(len(escritas), 15)
+        self.assertGreater(len(falso.arvores), 1)
+        self.assertEqual(falso.arvores[0]["base_tree"], "a1")
+        for arvore in falso.arvores[1:]:
+            self.assertEqual(arvore["base_tree"], "arvore-nova")
+        self.assertEqual(len(falso.commits), 1)
+        self.assertEqual(sum(len(a["tree"]) for a in falso.arvores), 500)
+
+    def test_o_texto_enviado_e_o_mesmo_que_o_resumo_confere_depois(self):
+        """Acento e fim de linha do Windows: se mudassem no caminho, o arquivo subiria
+        de novo em toda atualização."""
+        dados = "ação\r\nlinha".encode()
+        falso = GitHubDeMentira()
+        falso.cliente().enviar([github.Arquivo("LEIA-ME.txt", dados)], "main", "x")
+        enviado = falso.arvores[0]["tree"][0]["content"].encode("utf-8")
+        self.assertEqual(github.resumo_de_blob(enviado), github.resumo_de_blob(dados))
 
     def test_nada_mudou_nao_faz_commit_vazio(self):
         iguais = {arquivo.caminho: arquivo.resumo for arquivo in self.arquivos()}
@@ -266,6 +305,13 @@ class ORepositorioVazioTest(TestCase):
         with self.abrindo(self.resposta(409, "Reference cannot be updated")):
             with self.assertRaises(github.NaoDeuCerto):
                 github._abrir(self.pedido())  # noqa: SLF001
+
+    def test_limite_de_envios_do_github_nao_e_culpa_do_token(self):
+        erro = self.resposta(403, "You have exceeded a secondary rate limit.")
+        with self.abrindo(erro), self.assertRaises(github.NaoDeuCerto) as recusa:
+            github._abrir(self.pedido("POST"))  # noqa: SLF001
+        self.assertIn("pediu para esperar", str(recusa.exception))
+        self.assertNotIn("permissão", str(recusa.exception))
 
     def test_o_motivo_sobrevive_a_ser_lido_duas_vezes(self):
         """O corpo do erro é um fluxo: quem lê primeiro leva tudo.
