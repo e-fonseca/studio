@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Certificado de segurança</h1>
+  <p>Instalar o certificado da loja neste aparelho faz o aviso do navegador parar de
+     aparecer e libera a câmera do celular no sistema.</p>
+</div>
+
+<section class="cartao estado-dados estado-{{ diagnostico.nivel }}">
+  <h2>{{ diagnostico.titulo }}</h2>
+  <p>{{ diagnostico.detalhe }}</p>
+  {% if diagnostico.funcionando %}
+  <p>O endereço com cadeado é <a href="{{ endereco_para_abrir }}">{{ endereco_para_abrir }}</a>.
+     O endereço do balcão, sem o cadeado, continua funcionando igual para tudo menos a
+     câmera do celular.</p>
+  {% endif %}
+  <p class="ajuda">Este teste é feito agora, no próprio servidor: o sistema abre uma conexão
+     na porta segura e conta o que aconteceu. Atualize a página para testar de novo.</p>
+</section>
+
+{% if falha_do_tunel and not diagnostico.funcionando %}
+<section class="cartao estado-dados estado-ruim">
+  <h2>O que o servidor registrou na última tentativa</h2>
+  <p>Quando o sistema subiu, em <strong>{{ falha_do_tunel.0 }}</strong>, a porta segura
+     tentou abrir e não conseguiu. O motivo foi:</p>
+  <p><code>{{ falha_do_tunel.1 }}</code></p>
+  <p>Depois de resolver, reinicie o sistema pela tarefa agendada
+     <code>Cabana\CabanaSistema</code> e atualize esta tela: a mensagem desaparece
+     sozinha quando a porta sobe.</p>
+</section>
+{% endif %}
+
+{% if erro_ao_gerar %}
+<section class="cartao estado-dados estado-ruim">
+  <h2>O certificado da loja não foi criado neste servidor</h2>
+  <p>Sem ele o download abaixo não funciona e a porta segura não sobe. O sistema tentou
+     criar agora e não conseguiu. O motivo exato foi:</p>
+  <p><code>{{ erro_ao_gerar }}</code></p>
+  <p>A pasta onde ele deveria ficar é <code>{{ pasta }}</code>. Quase sempre é permissão:
+     a conta que roda o sistema precisa poder gravar nessa pasta. Reiniciar o servidor
+     depois de ajustar resolve; se continuar, mande esta mensagem que eu vejo daqui.</p>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>Por que aparece aquele aviso</h2>
+  <p>O sistema roda dentro da loja, num endereço da rede ({% for e in enderecos %}<code>{{ e }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}),
+     e não num site da internet. Endereço assim não tem como ter certificado comprado de
+     fora, então o próprio servidor emite o dele. O navegador não conhece quem emitiu e
+     avisa — é esse o aviso, e não um problema de segurança da loja.</p>
+  <p>A partir da versão 1.18.0 o servidor tem uma <strong>autoridade própria</strong>: um
+     arquivo que você instala uma vez em cada aparelho. Instalado, o aparelho passa a
+     confiar no sistema para sempre, inclusive quando o certificado é renovado, e o aviso
+     não volta.</p>
+  <p class="ajuda">A instalação é por aparelho: cada celular, tablet ou computador que
+     for usar o sistema precisa fazer isso uma vez.</p>
+</section>
+
+<section class="cartao cartao-destaque">
+  <h2>1. Baixe o arquivo neste aparelho</h2>
+  <p><a class="botao" href="{% url 'core:certificado_autoridade' %}" download>Baixar o certificado da loja</a></p>
+  <p class="ajuda">Baixe pelo próprio aparelho em que vai instalar, abrindo o sistema nele.
+     Mandar o arquivo por mensagem também funciona.</p>
+</section>
+
+<section class="cartao">
+  <h2>2. Instale no aparelho</h2>
+  <h3>Android</h3>
+  <ol class="passos">
+    <li>Abra <strong>Configurações</strong> e procure por <em>certificado</em>.</li>
+    <li>Entre em <strong>Segurança</strong>, depois <strong>Mais configurações</strong> ou
+      <strong>Criptografia e credenciais</strong>.</li>
+    <li>Toque em <strong>Instalar um certificado</strong> e escolha
+      <strong>Certificado CA</strong>. O aparelho avisa que isso é para uso avançado;
+      confirme em <strong>Instalar mesmo assim</strong>.</li>
+    <li>Escolha o arquivo <code>{{ arquivo }}</code> que você baixou.</li>
+  </ol>
+  <h3>iPhone e iPad</h3>
+  <ol class="passos">
+    <li>Baixe o arquivo pelo Safari e aceite quando ele disser que um
+      <strong>perfil</strong> foi baixado.</li>
+    <li>Abra <strong>Ajustes</strong>. Logo no topo aparece
+      <strong>Perfil baixado</strong>; toque nele e em <strong>Instalar</strong>, no canto
+      de cima. Pede a senha do aparelho.</li>
+    <li>Agora o passo que quase todo mundo esquece: vá em <strong>Ajustes</strong> &rsaquo;
+      <strong>Geral</strong> &rsaquo; <strong>Sobre</strong> &rsaquo;
+      <strong>Configurações de Confiança de Certificado</strong> e <strong>ligue</strong> a
+      chave do <em>{{ ficha.autoridade.arquivo|default:"certificado da Cabana" }}</em>.
+      Sem ligar aqui, o iPhone instala e continua não confiando.</li>
+  </ol>
+  <h3>Windows</h3>
+  <ol class="passos">
+    <li>Clique duas vezes no arquivo baixado e escolha <strong>Instalar Certificado</strong>.</li>
+    <li>Escolha <strong>Máquina Local</strong> (pede permissão de administrador) ou
+      <strong>Usuário Atual</strong>.</li>
+    <li>Marque <strong>Colocar todos os certificados no repositório a seguir</strong>,
+      clique em <strong>Procurar</strong> e escolha
+      <strong>Autoridades de Certificação Raiz Confiáveis</strong>. Conclua e confirme o aviso.</li>
+    <li>Feche e abra o navegador.</li>
+  </ol>
+</section>
+
+<section class="cartao">
+  <h2>3. Confira</h2>
+  <p>Abra <code>https://{{ enderecos.0 }}:{{ diagnostico.porta }}/sistema/</code> no aparelho.
+     Se o cadeado aparecer sem aviso, está pronto. Se ainda avisar, confirme três coisas:
+     que o endereço começa com <strong>https</strong>, que a porta é
+     <strong>{{ diagnostico.porta }}</strong> e não a do balcão, e que é o endereço exato
+     acima — o certificado vale para esse endereço, e não para outro nome da mesma máquina.</p>
+  <p class="ajuda">Na primeira vez depois de atualizar para a 1.18.0, o aviso aparece uma
+     última vez em cada aparelho, porque o certificado do servidor foi trocado por um
+     assinado pela autoridade. Depois de instalar a autoridade, não volta mais.</p>
+</section>
+
+<section class="cartao">
+  <h2>O que está instalado no servidor</h2>
+  {% if ficha.autoridade %}
+  <table class="tabela-ficha">
+    <tbody>
+      <tr><th scope="row">Autoridade da loja</th>
+        <td>{{ ficha.autoridade.arquivo }}, vence em {{ ficha.autoridade.vence_em|date:"d/m/Y" }}
+          ({{ ficha.autoridade.dias }} dias)</td></tr>
+      <tr><th scope="row">Impressão digital da autoridade</th>
+        <td><code class="impressao">{{ ficha.autoridade.impressao }}</code></td></tr>
+      {% if ficha.servidor %}
+      <tr><th scope="row">Certificado do servidor</th>
+        <td>{{ ficha.servidor.arquivo }}, vence em {{ ficha.servidor.vence_em|date:"d/m/Y" }}
+          ({{ ficha.servidor.dias }} dias). Renova sozinho quando faltarem 30 dias, sem
+          precisar reinstalar nada no aparelho.</td></tr>
+      {% endif %}
+      <tr><th scope="row">Pasta no servidor</th><td><code>{{ ficha.pasta }}</code></td></tr>
+    </tbody>
+  </table>
+  <p class="ajuda">A impressão digital serve para conferir, na hora de instalar, que o
+     arquivo é mesmo este: o aparelho mostra esses mesmos pares de letras e números.
+     A chave da autoridade fica só no servidor e nunca é entregue por esta tela.</p>
+  {% else %}
+  <p class="destaque">Os certificados ainda não foram gerados neste servidor. Eles nascem
+     na primeira vez que o sistema sobe com o HTTPS ligado.</p>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>E se a loja quiser zero instalação</h2>
+  <p>O único jeito de nenhum aparelho precisar instalar nada é ter um nome de domínio de
+     verdade apontando para a loja e um certificado gratuito do Let's Encrypt emitido por
+     validação de DNS. Dá trabalho de configurar e precisa renovar a cada três meses, mas
+     funciona em qualquer celular que entre na loja, sem passo nenhum. Enquanto o sistema é
+     usado só pela equipe, instalar a autoridade uma vez por aparelho resolve e não depende
+     de nada de fora.</p>
+</section>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Certificado de segurança",
+    "texto": "Esta tela resolve o aviso do navegador: baixe o certificado da loja e instale no aparelho, uma vez por aparelho."
+  },
+  {
+    "seletor": ".cartao-destaque",
+    "titulo": "Baixar",
+    "texto": "Baixe o arquivo pelo próprio aparelho em que vai instalar. É só o certificado público da loja; a chave fica no servidor."
+  }
+]
+</script>
+{% endblock %}

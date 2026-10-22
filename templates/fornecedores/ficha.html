@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>{{ nome }}</h1>
+  <a href="{% url 'fornecedores:lista' %}">Voltar aos fornecedores</a>
+</div>
+
+{% if resumo %}
+<div class="cartoes-numero">
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Comprado em 12 meses</span>
+    <strong class="cartao-valor">{{ resumo.valor_comprado_12m|reais }}</strong>
+    <span class="cartao-rodape">{{ resumo.produtos }} produto{{ resumo.produtos|pluralize }} da loja vieram deste fornecedor.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Prazo de entrega</span>
+    <strong class="cartao-valor">{% if resumo.prazo_em_uso %}{{ resumo.prazo_em_uso }}{% else %}—{% endif %}</strong>
+    <span class="cartao-rodape">{% if resumo.prazo_informado %}Dias informados pela gerência.{% elif resumo.prazo_medido %}Dias medidos nas notas, que o SET costuma registrar errado.{% else %}Ainda não informado.{% endif %}</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Documento que emite</span>
+    <strong class="cartao-valor cartao-texto">{% if cadastro.documento_fiscal %}{{ cadastro.get_documento_fiscal_display }}{% else %}—{% endif %}</strong>
+    <span class="cartao-rodape">Decide o que a loja consegue creditar na compra.</span>
+  </div>
+</div>
+{% endif %}
+
+<div class="grade-visao grade-topo">
+  <section class="cartao">
+    <h2>Cadastro no SET</h2>
+    {% if ficha %}
+    <p class="ajuda">Vem da última importação. Para corrigir qualquer coisa daqui, o lugar é o
+       próprio SET: na importação seguinte o sistema pega o valor novo.</p>
+    <dl class="ficha">
+      <div><dt>Razão social</dt><dd>{{ ficha.razao|default:"—" }}</dd></div>
+      {% if ficha.fantasia %}<div><dt>Nome fantasia</dt><dd>{{ ficha.fantasia }}</dd></div>{% endif %}
+      <div><dt>{{ ficha.documento_rotulo }}</dt><dd>{{ ficha.cnpj_cpf|default:"—" }}</dd></div>
+      {% if ficha.inscricao_estadual %}<div><dt>Inscrição estadual</dt><dd>{{ ficha.inscricao_estadual }}</dd></div>{% endif %}
+      <div><dt>Telefone</dt><dd>{{ ficha.telefone|default:"—" }}{% if ficha.telefone_2 %} · {{ ficha.telefone_2 }}{% endif %}</dd></div>
+      {% if ficha.email %}<div><dt>E-mail</dt><dd>{{ ficha.email }}</dd></div>{% endif %}
+      {% if ficha.site %}<div><dt>Site</dt><dd>{{ ficha.site }}</dd></div>{% endif %}
+      {% if ficha.contato %}<div><dt>Contato</dt><dd>{{ ficha.contato }}{% if ficha.contato_telefone %} · {{ ficha.contato_telefone }}{% endif %}</dd></div>{% endif %}
+      <div><dt>Endereço</dt><dd>{{ ficha.endereco_completo|default:"—" }}</dd></div>
+      <div><dt>Situação</dt><dd>{{ ficha.situacao|default:"—" }}</dd></div>
+      <div><dt>Código no SET</dt><dd>{{ ficha.codigo|default:"—" }}</dd></div>
+    </dl>
+    {% if ficha.observacoes %}<p class="destaque">Observação do SET: {{ ficha.observacoes }}</p>{% endif %}
+    {% else %}
+    <p>O SET não tem cadastro com este nome. Acontece com fornecedor que só aparece em compra
+       antiga, ou quando o nome na nota está escrito diferente do cadastro.</p>
+    {% endif %}
+  </section>
+
+  <section class="cartao">
+    <h2>O que a gerência informa</h2>
+    <p class="ajuda">Nada disto vem do SET: é o que quem negocia e quem recebe a mercadoria
+       sabem. Fica registrado na auditoria com quem anotou.</p>
+
+    {% if perms.fornecedores.change_fornecedor %}
+    <form method="post" action="{% url 'fornecedores:documento' %}" class="formulario-ficha">
+      {% csrf_token %}
+      <input type="hidden" name="nome" value="{{ nome }}">
+      <label for="documento_fiscal">Que documento este fornecedor emite</label>
+      <select id="documento_fiscal" name="documento_fiscal">
+        {% for valor, rotulo in documentos %}
+        <option value="{{ valor }}" {% if cadastro.documento_fiscal == valor %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="botao">Salvar</button>
+    </form>
+
+    <form method="post" action="{% url 'fornecedores:salvar' %}" class="formulario-ficha">
+      {% csrf_token %}
+      <input type="hidden" name="nome" value="{{ nome }}">
+      <label for="prazo">Prazo de entrega, em dias</label>
+      <input type="number" id="prazo" name="prazo_dias" min="0" max="{{ prazo_maximo }}"
+             value="{{ cadastro.prazo_dias|default_if_none:'' }}" placeholder="dias">
+      <button type="submit" class="botao">Salvar</button>
+    </form>
+
+    <form method="post" action="{% url 'fornecedores:avaliar' %}" class="formulario-ficha">
+      {% csrf_token %}
+      <input type="hidden" name="nome" value="{{ nome }}">
+      <fieldset class="estrelas-escolha">
+        <legend>Reputação</legend>
+        {% for nota in estrelas_possiveis %}
+        <input type="radio" id="ficha-nota-{{ nota }}" name="reputacao" value="{{ nota }}"
+               {% if cadastro.reputacao == nota %}checked{% endif %}>
+        <label for="ficha-nota-{{ nota }}" title="{{ nota }} de 5">★<span class="oculto-visualmente">{{ nota }} de 5</span></label>
+        {% endfor %}
+      </fieldset>
+      <label for="relacao">Relação com a loja</label>
+      <select id="relacao" name="relacao">
+        {% for valor, rotulo in relacoes %}
+        <option value="{{ valor }}" {% if cadastro.relacao == valor %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="botao">Avaliar</button>
+    </form>
+    {% else %}
+    <dl class="ficha">
+      <div><dt>Documento</dt><dd>{% if cadastro.documento_fiscal %}{{ cadastro.get_documento_fiscal_display }}{% else %}—{% endif %}</dd></div>
+      <div><dt>Prazo informado</dt><dd>{% if cadastro.prazo_dias %}{{ cadastro.prazo_dias }} dia{{ cadastro.prazo_dias|pluralize }}{% else %}—{% endif %}</dd></div>
+      <div><dt>Relação</dt><dd>{% if cadastro.relacao %}{{ cadastro.get_relacao_display }}{% else %}—{% endif %}</dd></div>
+    </dl>
+    {% endif %}
+  </section>
+
+  <section class="cartao bloco-largo">
+    <h2>O que a loja compra deste fornecedor</h2>
+    <p class="ajuda">Os que mais custaram em 12 meses. Para ver a variedade inteira dele,
+       com os tipos de produto e o que não gira, abra
+       <a href="{% url 'fornecedores:produtos' %}?nome={{ nome|urlencode }}">os produtos deste fornecedor</a>.</p>
+    {% if produtos %}
+    <div class="tabela-rolavel">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Produto</th>
+            <th scope="col" class="numerico">Comprado em 12m</th>
+            <th scope="col" class="numerico">Na prateleira</th>
+            <th scope="col" class="numerico">Vendeu em 12m</th>
+            <th scope="col">Última compra</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for produto in produtos %}
+          <tr>
+            <td>{{ produto.descricao }}<br><span class="ajuda">código {{ produto.codigo }}</span></td>
+            <td class="numerico">{{ produto.valor_compras_12m|reais }}</td>
+            <td class="numerico">{{ produto.estoque|floatformat:"-2" }}</td>
+            <td class="numerico">{{ produto.vendas_12m|floatformat:"-2" }}</td>
+            <td>{% if produto.ultima_compra %}{{ produto.ultima_compra|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p>Nenhum produto da última importação está ligado a este fornecedor.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Ficha do fornecedor",
+    "texto": "Tudo o que o sistema sabe deste fornecedor numa tela só, separado entre o que vem do SET e o que a gerência informa aqui."
+  },
+  {
+    "seletor": ".ficha",
+    "titulo": "Cadastro no SET",
+    "texto": "CNPJ, endereço e telefone vêm da última importação. Para corrigir, o lugar é o próprio SET: na importação seguinte o sistema pega o valor novo."
+  },
+  {
+    "seletor": ".formulario-ficha",
+    "titulo": "Documento que emite",
+    "texto": "Nota fiscal completa, nota parcial ou só recibo e romaneio. Muda o que a loja consegue creditar na compra, então entra na decisão tanto quanto o preço."
+  }
+]
+</script>
+{% endblock %}

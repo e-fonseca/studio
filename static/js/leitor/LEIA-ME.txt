@@ -1,0 +1,14 @@
+Biblioteca de leitura de código de barras e QR, usada pela contagem de inventário
+no celular.
+
+zxing.min.js  -  @zxing/library 0.21.3 (build UMD, arquivo umd/index.min.js)
+                 https://github.com/zxing-js/library
+                 Porte do ZXing para JavaScript. Licença no LICENSE-zxing.txt
+                 (Apache 2.0; o pacote npm também se declara MIT).
+
+Está aqui dentro, e não vem de CDN, porque o sistema tem que abrir igual mesmo se a
+loja ficar sem internet, e porque o navegador do celular carrega tudo do servidor da
+loja. Atualizar é trocar este arquivo por uma versão nova do mesmo build UMD.
+
+Por que uma biblioteca em vez do leitor do próprio navegador: o Chrome do Android tem
+o BarcodeDetector, mas o Safari do iPhone não. Com ela, iPhone e Android leem igual.

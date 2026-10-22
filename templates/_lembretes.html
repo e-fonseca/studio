@@ -1,0 +1,19 @@
+{# Lembretes do dia. Abre uma vez por dia, no primeiro acesso, e some pelo botão. #}
+{% if lembretes_do_dia %}
+<div class="lembretes" id="lembretes-do-dia" role="dialog" aria-labelledby="lembretes-titulo" hidden>
+  <div class="lembretes-caixa">
+    <h2 id="lembretes-titulo">Lembretes de hoje</h2>
+    <ul>
+      {% for lembrete in lembretes_do_dia %}
+      <li class="lembrete lembrete-{{ lembrete.nivel }}">
+        <strong>{{ lembrete.titulo }}</strong>
+        <span>{{ lembrete.detalhe }}</span>
+        {% if lembrete.endereco %}<a href="{{ lembrete.endereco }}">Abrir</a>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="ajuda">Estes avisos saem dos números da última importação. Eles aparecem uma vez por dia.</p>
+    <button type="button" class="botao" data-fechar-lembretes>Entendi</button>
+  </div>
+</div>
+{% endif %}

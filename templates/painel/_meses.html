@@ -1,0 +1,29 @@
+{% load cabana %}
+{# Compra x venda mês a mês. Usado no painel resumido e no completo. #}
+{% if painel.meses %}
+<h2 class="secao-titulo">Compra e venda mês a mês</h2>
+<p class="ajuda">Quando a barra da compra passa a da venda, o dinheiro saiu do caixa e ficou na prateleira.</p>
+<section class="cartao grafico-meses">
+  <p class="legenda">
+    <span><i class="cor-venda"></i> Vendeu</span>
+    <span><i class="cor-compra"></i> Comprou</span>
+  </p>
+  <ul class="meses">
+    {% for m in painel.meses %}
+    <li class="mes {% if m.comprou_mais %}mes-alerta{% endif %}">
+      <span class="mes-rotulo">{{ m.rotulo }}{% if m.comprou_mais %} <span class="etiqueta etiqueta-atencao">comprou mais</span>{% endif %}</span>
+      <span class="mes-barras">
+        <span class="barra barra-venda">
+          <span class="barra-trilho"><span class="barra-preenchida" style="width: {{ m.largura_venda }}%"></span></span>
+          <span class="barra-valor">{{ m.venda|reais }}</span>
+        </span>
+        <span class="barra barra-compra">
+          <span class="barra-trilho"><span class="barra-preenchida" style="width: {{ m.largura_compra }}%"></span></span>
+          <span class="barra-valor">{{ m.compra|reais }}</span>
+        </span>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

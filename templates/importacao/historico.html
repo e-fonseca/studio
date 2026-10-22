@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block cabeca %}{% if em_andamento %}<meta http-equiv="refresh" content="5">{% endif %}{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Importações</h1>
+  <p><a href="{% url 'painel:painel' %}">Voltar ao painel</a></p>
+</div>
+
+{% include "importacao/_andamento.html" %}
+
+<section class="cartao estado-dados estado-{{ estado.nivel }}">
+  <h2>{{ estado.titulo }}</h2>
+  <p>{{ estado.detalhe }}</p>
+</section>
+
+{% comment %}
+Conferência do backup: o que o sistema vê no arquivo ANTES de ler. Pedido do Edson em
+10/10/2026 — conferir o tamanho, para avaliar a integridade, e a data, para ter certeza
+de que é mesmo o backup mais recente. Os dois botões ficam aqui, junto da conferência,
+para a decisão ser tomada olhando para ela.
+{% endcomment %}
+<section class="cartao estado-dados estado-{{ conferencia.nivel }} conferencia-backup">
+  <h2>{{ conferencia.titulo }}</h2>
+  {% if conferencia.achou %}
+  <dl class="ficha-backup">
+    <div><dt>Arquivo</dt><dd>{{ conferencia.nome }}</dd></div>
+    <div><dt>Tamanho</dt><dd>{{ conferencia.tamanho }}</dd></div>
+    <div><dt>Gravado em</dt><dd>{{ conferencia.modificado_em|date:"d/m/Y H:i" }}</dd></div>
+    {% if conferencia.anterior.arquivo_bytes %}
+    <div><dt>Na importação anterior</dt><dd>{{ conferencia.tamanho_anterior }}</dd></div>
+    {% endif %}
+  </dl>
+  {% else %}
+  <p>Em <code>{{ conferencia.pasta|default:"pasta não configurada" }}</code>.</p>
+  {% endif %}
+  {% if conferencia.motivos %}
+  <ul class="motivos-backup">
+    {% for motivo in conferencia.impedimentos %}
+    <li class="motivo-impede">{{ motivo.texto|capfirst }}</li>
+    {% endfor %}
+    {% for motivo in conferencia.avisos %}
+    <li class="motivo-avisa">{{ motivo.texto|capfirst }}</li>
+    {% endfor %}
+    {% for motivo in conferencia.notas %}
+    <li>{{ motivo.texto|capfirst }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Tamanho e data conferidos, nada a estranhar no arquivo.</p>
+  {% endif %}
+  {% if em_andamento %}
+  <p class="ajuda">Uma importação está rodando agora; o andamento aparece no quadro acima.</p>
+  {% elif perms.importacao.executar_importacao %}
+  <div class="acoes-backup">
+    <form method="post" action="{% url 'importacao:importar' %}">{% csrf_token %}
+      <input type="hidden" name="voltar" value="importacoes">
+      <button type="submit" class="botao">Importar agora</button>
+    </form>
+    {% if not conferencia.quebrado %}
+    <form method="post" action="{% url 'importacao:importar' %}">{% csrf_token %}
+      <input type="hidden" name="voltar" value="importacoes">
+      <input type="hidden" name="forcar" value="1">
+      <button type="submit" class="botao secundario">Forçar atualização com o último backup</button>
+    </form>
+    {% endif %}
+  </div>
+  <p class="ajuda"><strong>Importar agora</strong> lê o backup mais recente; se for o mesmo da
+    importação anterior, nada muda na tela.
+    {% if conferencia.quebrado %}
+    Não dá para forçar com este arquivo: forçar manda ler de novo, e ler arquivo quebrado trocaria
+    número bom por número pela metade.
+    {% else %}
+    <strong>Forçar atualização com o último backup</strong> lê esse mesmo arquivo de novo e refaz os
+    números a partir dele. Forçar não soma: a importação grava uma foto nova e as telas passam a ler
+    só ela, então os números têm que dar iguais aos da tabela abaixo.
+    {% endif %}</p>
+  {% endif %}
+</section>
+
+<section class="cartao sincronizacao">
+  <h2>Sincronização automática</h2>
+  <p>O sistema procura sozinho o backup mais novo
+    {% if pasta_backup %}em <code>{{ pasta_backup }}</code>{% else %}na pasta configurada{% endif %}
+    {% if horarios_automaticos %}{% spaceless %}
+    {% for hora in horarios_automaticos %}{% if forloop.first %}às <strong>{{ hora }}</strong>{% elif forloop.last %}<span> e </span><strong>{{ hora }}</strong>{% else %}<span>, </span><strong>{{ hora }}</strong>{% endif %}{% endfor %}
+    {% endspaceless %}{% endif %}, confere o tamanho e a data do arquivo e lê uma cópia dele.</p>
+  <p>Quando o backup é o mesmo que já foi lido, a importação termina como
+    <strong>Sem backup novo</strong> e nada muda na tela — é assim que sincronizar várias vezes
+    por dia não soma nada. O botão <strong>Importar agora</strong> continua valendo a qualquer hora.</p>
+  {% if backup_so_de_madrugada %}
+  <p class="ajuda"><strong>Importante:</strong> o sistema só enxerga o que estiver no arquivo de
+    backup. Se o SET gerar o backup uma vez por noite, as três sincronizações do dia vão achar o
+    mesmo arquivo e os números continuarão sendo os da noite anterior. Para a tela acompanhar o
+    dia, o backup do SET precisa rodar mais de uma vez.</p>
+  {% endif %}
+  <p class="ajuda">O SET não é acessado em nenhum momento: o sistema só lê uma cópia do arquivo de backup.</p>
+</section>
+
+<section class="cartao comparacao">
+  <h2>O que mudou desde a importação anterior</h2>
+  <p>Cada importação guarda a sua própria foto dos dados do SET e as telas leem só a foto mais
+    nova. Sincronizar <strong>substitui</strong> os números, nunca soma: ler o mesmo backup duas
+    vezes tem que dar exatamente os mesmos valores. A tabela abaixo é a conferência disso.</p>
+  {% if comparacao.tem_com_que_comparar %}
+  {% if comparacao.alguma_dobrou %}
+  <p class="destaque valor-ruim">Atenção: algum número dobrou de uma importação para a outra.
+    Isso não deveria acontecer — avise para a gente conferir.</p>
+  {% elif comparacao.mesmo_backup and not comparacao.mudaram %}
+  <p class="destaque valor-bom">As duas importações leram o mesmo arquivo de backup e todos os
+    números deram iguais. Confirma que a sincronização substitui, e não soma.</p>
+  {% elif not comparacao.mudaram %}
+  <p class="destaque">Todos os números deram iguais nas duas importações.</p>
+  {% else %}
+  <p class="destaque">{{ comparacao.mudaram|length }} número{{ comparacao.mudaram|length|pluralize:"s" }}
+    mudou de uma importação para a outra, porque o backup do SET é mais novo. A diferença é o
+    movimento da loja no período, não acúmulo.</p>
+  {% endif %}
+  <div class="tabela-rolavel">
+    <table>
+      <caption>As duas últimas importações concluídas, lado a lado.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Número</th>
+          <th scope="col" class="numerico">Importação de {{ comparacao.anterior.iniciada_em|date:"d/m H:i" }}</th>
+          <th scope="col" class="numerico">Importação de {{ comparacao.atual.iniciada_em|date:"d/m H:i" }}</th>
+          <th scope="col" class="numerico">Diferença</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in comparacao.linhas %}
+        <tr>
+          <th scope="row">{{ linha.rotulo }}</th>
+          <td class="numerico">{% include "importacao/_numero_da_comparacao.html" with valor=linha.anterior %}</td>
+          <td class="numerico">{% include "importacao/_numero_da_comparacao.html" with valor=linha.atual %}</td>
+          <td class="numerico {% if linha.dobrou %}valor-ruim{% elif not linha.mudou %}valor-neutro{% endif %}">
+            {% if linha.mudou %}{% include "importacao/_numero_da_comparacao.html" with valor=linha.diferenca %}{% else %}igual{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="ajuda">O sistema guarda as fotos das {{ comparacao.fotos_guardadas }} últimas
+    importações concluídas e apaga as mais antigas; nenhuma delas entra na conta das telas.</p>
+  {% elif comparacao.atual %}
+  <p class="destaque">Só existe uma importação concluída até agora. Depois da próxima, a
+    comparação aparece aqui.</p>
+  {% else %}
+  <p class="destaque">Nenhuma importação concluída ainda.</p>
+  {% endif %}
+</section>
+
+<div class="tabela-rolavel">
+  <table>
+    <caption>Últimas 60 execuções, da mais recente para a mais antiga.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Quando</th><th scope="col">Resultado</th><th scope="col">Dados até</th>
+        <th scope="col" class="numerico">Produtos</th><th scope="col">Origem</th><th scope="col">Quem</th>
+        <th scope="col" class="numerico">Duração</th><th scope="col">Versão</th><th scope="col">Observação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in importacoes %}
+      <tr class="{% if i.situacao == 'falhou' %}linha-erro{% endif %}">
+        <td>{{ i.iniciada_em|date:"d/m/Y H:i" }}</td>
+        <td>{{ i.get_situacao_display }}{% if i.situacao == 'em_andamento' %} ({{ i.progresso }}%){% endif %}{% if i.forcada %}<br><span class="ajuda">forçada</span>{% endif %}</td>
+        <td>{{ i.data_corte|date:"d/m/Y"|default:"—" }}</td>
+        <td class="numerico">{{ i.produtos }}</td>
+        <td>{{ i.get_origem_display }}</td>
+        <td>{% if i.automatica %}tarefa automática{% else %}{{ i.acionada_por|nome_pessoa:"—" }}{% endif %}</td>
+        <td class="numerico">{% if i.duracao_segundos %}{{ i.duracao_segundos }}s{% else %}—{% endif %}</td>
+        <td>{{ i.versao_sistema|default:"—" }}</td>
+        <td>{{ i.mensagem|default:"—" }}
+          {% if i.log %}
+          <details class="log-importacao">
+            <summary>Ver o log ({{ i.linhas_do_log|length }} linha{{ i.linhas_do_log|length|pluralize:"s" }})</summary>
+            <pre>{% for linha in i.linhas_do_log %}{{ linha }}
+{% endfor %}</pre>
+            <p><a href="{% url 'importacao:log' i.pk %}">Baixar este log em texto</a></p>
+          </details>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9" class="vazio">Nenhuma importação registrada ainda.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Importações",
+    "texto": "Aqui fica o histórico de toda vez que o sistema leu os dados do SET, para você conferir se a informação do painel está em dia."
+  },
+  {
+    "seletor": ".andamento, .resultado",
+    "titulo": "A importação de agora",
+    "texto": "Enquanto roda, a barra mostra em que etapa está. Quando termina, aparece aqui se deu certo e, se deu erro, o que fazer para resolver."
+  },
+  {
+    "seletor": ".comparacao",
+    "titulo": "Conferir se soma",
+    "texto": "Aqui ficam os números das duas últimas importações lado a lado. Sincronizar substitui os dados; se o mesmo backup for lido duas vezes, tudo tem que dar igual."
+  },
+  {
+    "seletor": ".comparacao + .tabela-rolavel table, table",
+    "titulo": "O histórico",
+    "texto": "Concluída quer dizer que trouxe dados novos. Sem backup novo quer dizer que o backup do SET era o mesmo da noite anterior. Falhou mostra o motivo na última coluna."
+  },
+  {
+    "seletor": ".log-importacao",
+    "titulo": "O log de cada importação",
+    "texto": "Abrindo o log você vê passo a passo o que o sistema fez: qual arquivo de backup pegou, de que hora ele era, quanto tempo cada etapa levou e, se deu erro, em que ponto parou. Dá para baixar o log em texto para mandar para quem for ajudar."
+  },
+  {
+    "seletor": ".conferencia-backup",
+    "titulo": "A conferência do backup",
+    "texto": "Antes de ler, o sistema olha o arquivo de backup: o tamanho, para ver se a gravação terminou, e a data, para ter certeza de que é o backup mais recente. O que ele estranhar aparece aqui. Importar agora é a importação normal; Forçar atualização com o último backup manda ler o mesmo arquivo de novo e refazer os números, e nunca soma - cada importação guarda a sua própria foto e as telas leem só a mais nova."
+  },
+  {
+    "seletor": ".sincronizacao",
+    "titulo": "Quando rodar",
+    "texto": "A importação roda sozinha todo dia no horário indicado aqui, sempre pegando o backup mais recente da pasta e conferindo o tamanho e a data dele antes de ler. Os botões do quadro acima servem para quando você quiser os números na hora."
+  },
+  {
+    "seletor": ".rodape .versao",
+    "titulo": "A versão do sistema",
+    "texto": "O número da versão aparece no pé de todas as telas e também em cada linha do histórico. Quando precisar relatar algo, informe esse número: ele diz exatamente qual pacote está instalado no servidor."
+  }
+]
+</script>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% comment %}
+Corpo do e-mail. Estilo em atributo `style=`, e não em folha: cliente de e-mail
+(o Gmail à frente) descarta <style> e classe, e a mensagem chegaria crua. Tabela
+no lugar de grade pelo mesmo motivo. As cores são as do sistema, escritas à mão
+aqui porque o token do :root não viaja para dentro da caixa de entrada.
+{% endcomment %}<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ r.assunto }}</title></head>
+<body style="margin:0; padding:0; background:#f5f1ec; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; color:#2b2522;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f1ec; padding:16px 0;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; background:#fffdfa; border:1px solid #e3d9cd; border-radius:10px;">
+
+  <tr><td style="background:#2b2018; padding:18px 22px; border-radius:9px 9px 0 0;">
+    <div style="color:#f2e6d6; font-size:18px; font-weight:700;">{{ r.assunto }}</div>
+    <div style="color:#c4ab8d; font-size:13px; margin-top:3px;">
+      Cabana do Jacarandá{% if r.data_corte %} · dados do SET de {{ r.data_corte|date:"d/m/Y" }}{% endif %}
+    </div>
+  </td></tr>
+
+  <tr><td style="padding:20px 22px 4px;">
+    <p style="margin:0; font-size:16px; line-height:1.45;"><strong>{{ r.manchete }}</strong></p>
+    {% if r.aviso %}
+    <p style="margin:14px 0 0; padding:10px 12px; background:#fdf1e3; border-left:4px solid #c0761f; font-size:13px; line-height:1.45;">
+      {{ r.aviso }}
+    </p>
+    {% endif %}
+  </td></tr>
+
+  {% for bloco in r.blocos %}
+  <tr><td style="padding:18px 22px 0;">
+    <div style="border-top:1px solid #e3d9cd; padding-top:16px;">
+      <div style="font-size:15px; font-weight:700; margin-bottom:4px;">{{ bloco.titulo }}</div>
+      {% if bloco.frase %}<div style="font-size:13px; color:#6b5d50; line-height:1.45;">{{ bloco.frase }}</div>{% endif %}
+
+      {% if bloco.linhas %}
+      {% comment %}Duas colunas: o que é, e quanto custa. Mais do que isso não cabe num
+      celular, e e-mail que rola de lado não é lido. word-break impede que um código
+      comprido sem espaço estique a tabela inteira.{% endcomment %}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px; border-collapse:collapse; font-size:13px;">
+        <tr>
+          <th align="left" style="padding:6px 8px; background:#f5f1ec; color:#6b5d50; font-size:11px; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid #d9cbbb;">{{ bloco.colunas.0 }}</th>
+          <th align="right" style="padding:6px 8px; background:#f5f1ec; color:#6b5d50; font-size:11px; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid #d9cbbb;">{{ bloco.colunas.1 }}</th>
+        </tr>
+        {% for linha in bloco.linhas %}
+        <tr>
+          <td style="padding:7px 8px; border-bottom:1px solid #efe7dd; word-break:break-word;">
+            {{ linha.quem }}
+            <div style="color:#6b5d50; font-size:12px;">
+              {% if linha.quando %}{{ linha.quando }}{% endif %}{% if linha.o_que %}{% if linha.quando %} · {% endif %}{{ linha.o_que }}{% endif %}{% if linha.detalhe %}{% if linha.quando or linha.o_que %} · {% endif %}{{ linha.detalhe }}{% endif %}
+            </div>
+          </td>
+          <td align="right" valign="top" style="padding:7px 8px; border-bottom:1px solid #efe7dd; white-space:nowrap; font-weight:700;">{{ linha.valor }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% endif %}
+
+      {% if bloco.escondidas %}
+      <div style="font-size:12px; color:#6b5d50; margin-top:8px;">
+        E mais {{ bloco.escondidas }} linha(s). A lista inteira está no sistema.
+      </div>
+      {% endif %}
+    </div>
+  </td></tr>
+  {% endfor %}
+
+  <tr><td style="padding:20px 22px 24px;">
+    <div style="border-top:1px solid #e3d9cd; padding-top:14px; font-size:12px; color:#6b5d50; line-height:1.6;">
+      Enviado pelo sistema auxiliar da Cabana do Jacarandá em {{ quando|date:"d/m/Y \à\s H:i" }}.<br>
+      Este e-mail é só leitura: para agir, abra o sistema na rede da loja.<br>
+      Para parar de receber, desligue o envio na tela <strong>Alertas</strong> do sistema.
+    </div>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>

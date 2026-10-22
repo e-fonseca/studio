@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<section class="abertura abertura-{{ estado.nivel }}">
+  <div>
+    <h1>Sugestões</h1>
+    <p class="abertura-sub">O que comprar, o que parar de comprar e o que empurrar na venda</p>
+  </div>
+  <div class="abertura-dados">
+    <strong>{{ estado.titulo }}</strong>
+    <span>{{ estado.detalhe }}</span>
+  </div>
+</section>
+
+<section class="cartao">
+  <h2>De onde saem estas listas</h2>
+  <p>Dos números da própria loja: venda, compra, estoque, custo e preço que já estão no SET.
+     Cada lista tem a regra escrita por cima dela, em uma linha, para dar para conferir produto
+     por produto. Nada aqui vem da internet nem é palpite: o servidor da loja nem acessa a
+     internet.</p>
+  <p class="ajuda">São as dez primeiras de cada lista, que são as que mais pesam. Vendo as dez
+     já dá para fechar o próximo pedido.</p>
+</section>
+
+{% for bloco in dados.blocos %}
+<section class="cartao bloco-sugestao bloco-{{ bloco.chave }}">
+  <h2>{{ bloco.titulo }}</h2>
+  <p class="pergunta-sugestao">{{ bloco.pergunta }}</p>
+  <p class="ajuda"><strong>Regra:</strong> {{ bloco.regra }}</p>
+
+  {% if bloco.linhas %}
+  {% if bloco.frase_antes %}
+  <p class="destaque">{{ bloco.quantos }} {{ bloco.frase_antes }}
+     <strong>{{ bloco.total|reais }}</strong>{{ bloco.frase_depois }}</p>
+  {% endif %}
+
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-sugestoes">
+      <caption class="oculto-visualmente">{{ bloco.titulo }}: {{ bloco.regra }}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{% if bloco.chave == 'renegociar' %}Fornecedor{% else %}Produto{% endif %}</th>
+          <th scope="col">Por quê</th>
+          <th scope="col" class="numerico">{{ bloco.coluna }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in bloco.linhas %}
+        <tr>
+          <td>
+            {% if bloco.chave == 'renegociar' %}
+              <a href="{% url 'fornecedores:ficha' %}?nome={{ linha.descricao|urlencode }}">{{ linha.descricao }}</a>
+            {% else %}
+              {{ linha.descricao }}
+              <br><span class="ajuda">código {{ linha.codigo }}{% if linha.grupo %} · {{ linha.grupo }}{% endif %}</span>
+            {% endif %}
+          </td>
+          <td>{{ linha.detalhe }}
+            {% if linha.prazo %}<br><span class="ajuda">entrega em {{ linha.prazo }} dia{{ linha.prazo|pluralize }}</span>{% endif %}
+          </td>
+          <td class="numerico">{{ linha.valor|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="ajuda"><strong>O que fazer:</strong> {{ bloco.acao }}</p>
+  {% else %}
+  <p>Nada nesta situação na última importação.</p>
+  {% endif %}
+</section>
+{% empty %}
+<section class="cartao">
+  <h2>Ainda sem dados</h2>
+  <p>Nenhuma importação concluída até agora, então não há de onde tirar sugestão.</p>
+</section>
+{% endfor %}
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Sugestões",
+    "texto": "Cinco listas curtas tiradas dos números da loja: o que repor, o que parar de comprar, o que está parado, o que vale empurrar na venda e com que fornecedor conversar."
+  },
+  {
+    "seletor": ".bloco-repor",
+    "titulo": "Repor agora",
+    "texto": "Produto zerado que continua vendendo é venda perdida todo dia. Estes são os que mais custam ficar faltando."
+  },
+  {
+    "seletor": ".bloco-destravar",
+    "titulo": "Pôr para girar",
+    "texto": "Mercadoria parada é dinheiro preso na prateleira. A coluna mostra a partir de que preço dá para vender sem perder dinheiro."
+  }
+]
+</script>
+{% endblock %}

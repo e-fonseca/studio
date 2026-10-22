@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load static cabana %}
+{% comment %}Contagem pelo celular, com a câmera lendo a etiqueta. A tela é enxuta de
+propósito: quem está na prateleira segura o aparelho com uma mão. Tudo o que não é
+"ler, digitar quantas e registrar" ficou na tela do computador.{% endcomment %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Contar pela câmera</h1>
+  <a href="{% url 'inventario:contagem' contagem.pk %}">Ver a contagem inteira</a>
+</div>
+<p class="ajuda">{{ contagem.nome }} · {{ resumo.contados }} produto{{ resumo.contados|pluralize }} já contado{{ resumo.contados|pluralize }}.</p>
+
+{% if not contagem.aberta %}
+<section class="cartao cartao-atencao">
+  <h2>Esta contagem está fechada</h2>
+  <p>Ela não aceita mais leitura. Abra uma contagem nova no inventário para continuar.</p>
+</section>
+{% else %}
+
+{% comment %}Os dois avisos nascem escondidos e o JavaScript mostra só o que vale para
+este aparelho. Sem JavaScript nenhum dos dois aparece, e a digitação à mão continua ali
+embaixo funcionando, que é o caminho que nunca falha.{% endcomment %}
+<section class="cartao cartao-atencao" id="aviso-sem-https" hidden>
+  <h2>A câmera precisa do endereço seguro</h2>
+  <p>O navegador só liga a câmera em endereço seguro (https). Você abriu o sistema pelo
+     endereço comum, então a câmera fica bloqueada. Para usar a câmera:</p>
+  <ol>
+    <li>Abra <a href="{{ endereco_seguro }}">{{ endereco_seguro }}</a> neste aparelho.</li>
+    <li>Na primeira vez o navegador avisa que a conexão não é privada. Toque em
+        <strong>Avançado</strong> e depois em <strong>Continuar</strong>. O certificado é do
+        próprio servidor da loja, por isso o aviso; é uma vez só em cada aparelho.</li>
+    <li>Entre com seu usuário e volte a esta tela.</li>
+  </ol>
+  <p>Enquanto isso, dá para contar digitando o código aqui embaixo.</p>
+</section>
+
+<section class="cartao cartao-atencao" id="aviso-sem-leitor" hidden>
+  <h2>Este navegador não abre a câmera</h2>
+  <p>O leitor não carregou neste navegador. Use a digitação do código aqui embaixo, ou o
+     leitor de mão no computador da loja.</p>
+</section>
+
+<section class="cartao" id="area-camera" hidden>
+  <h2>Mire a etiqueta</h2>
+  <div class="camera-moldura">
+    <video id="camera-video" playsinline muted autoplay></video>
+    <div class="camera-alvo" aria-hidden="true"></div>
+  </div>
+  <p class="camera-recado" id="camera-recado" role="status">Procurando o código…</p>
+  {% comment %}A distância é o que mais faz a leitura falhar, e ninguém adivinha: numa
+  etiqueta de prateleira as barras têm meio milímetro. "Encoste quase" é a instrução que
+  resolve antes de qualquer ajuste no leitor (Edson, 21/10/2026).{% endcomment %}
+  <p class="ajuda">Encoste a câmera quase na etiqueta, até as barras preencherem a faixa
+     branca de ponta a ponta. Lê código de barras e QR code. Se a etiqueta estiver rasgada,
+     digite o código ou o nome do produto aqui embaixo.</p>
+  <p class="camera-acoes">
+    {% comment %}Lanterna e aproximar nascem escondidos e o JavaScript só os mostra quando o
+    aparelho tem o recurso. O da foto só aparece com a câmera ligada: oferecer foto sem
+    câmera seria um botão que não faz nada.{% endcomment %}
+    <button type="button" class="botao secundario" id="camera-lanterna" aria-pressed="false" hidden>Acender a lanterna</button>
+    <button type="button" class="botao secundario" id="camera-aproximar" aria-pressed="false" hidden>Aproximar</button>
+    <button type="button" class="botao secundario" id="camera-foto" hidden>Tirar foto da prateleira</button>
+    {% comment %}Marcar a peça é outra coisa além de contá-la: a quantidade pode estar
+    certa e a peça estar sem etiqueta ou quebrada. Os dois botões só aparecem depois de
+    registrar, porque é na peça registrada que a marca se prende. Conserto ou descarte
+    NÃO se decide aqui: na prateleira, com a peça numa mão e o celular na outra, sairia o
+    que for mais rápido. Quem decide é a gerência, na tela Organizar.{% endcomment %}
+    <button type="button" class="botao secundario" id="camera-sem-etiqueta" hidden>Sem etiqueta</button>
+    <button type="button" class="botao secundario" id="camera-danificada" hidden>Danificada</button>
+    <button type="button" class="botao secundario" id="camera-parar">Desligar a câmera</button>
+  </p>
+  {% comment %}Qual dos dois leitores está em uso. Uma linha discreta, e está aqui por um
+  motivo prático: quando ele diz "não leu", é a primeira coisa que preciso saber e não
+  tenho como ver o aparelho dele.{% endcomment %}
+  <p class="ajuda camera-qual-leitor" id="camera-qual-leitor"></p>
+</section>
+
+<section class="cartao cartao-destaque">
+  <h2>Registrar o que foi contado</h2>
+  <form method="post" action="{% url 'inventario:contar' contagem.pk %}" class="formulario-contagem"
+        id="formulario-camera" data-destino="{% url 'inventario:contar_pela_camera' contagem.pk %}">{% csrf_token %}
+    <div class="formulario-campo campo-produto">
+      <label for="produto">Código de barras</label>
+      <input type="text" id="produto" name="produto" required autocomplete="off"
+             inputmode="numeric" placeholder="A câmera preenche, ou digite">
+    </div>
+    <div class="formulario-campo campo-quantidade">
+      <label for="quantidade">Quantas unidades</label>
+      <input type="text" id="quantidade" name="quantidade" required inputmode="decimal"
+             autocomplete="off" value="1">
+    </div>
+    <button type="submit" class="botao">Registrar</button>
+  </form>
+  <p class="ajuda">A quantidade já vem com 1, que é o caso mais comum. Contar o mesmo
+     produto outra vez soma: é o certo quando ele está em dois lugares da loja. Depois de
+     registrar, a foto fica guardada junto do produto, para quando a prateleira mostra
+     algo que o número não explica.</p>
+</section>
+
+<section class="cartao">
+  <h2>Últimas leituras</h2>
+  <ul class="lista-leituras" id="lista-leituras">
+    {% for item in ultimos %}
+    <li class="{% if item.bate %}leitura-bate{% else %}leitura-difere{% endif %}">
+      <strong>{{ item.descricao }}</strong>
+      <span>{{ item.quantidade|quantidade }} contado, {{ item.saldo_set|quantidade }} no SET</span>
+      {% if not item.perfeito %}<span class="leitura-estado">{{ item.get_estado_display|lower }}</span>{% endif %}
+      {% if item.foto %}<img class="leitura-foto" src="{% url 'inventario:foto' contagem.pk item.pk %}"
+           alt="Foto da prateleira de {{ item.descricao }}">{% endif %}
+    </li>
+    {% empty %}
+    <li class="leitura-vazia" id="leitura-vazia">Nada lido ainda nesta contagem.</li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Contando pelo celular",
+    "texto": "Mire a câmera na etiqueta do produto, código de barras ou QR. Quando o código é lido, ele cai na caixa de baixo: confira as unidades e toque em Registrar."
+  },
+  {
+    "seletor": "#formulario-camera",
+    "titulo": "Sem câmera também vai",
+    "texto": "Dá para digitar o código à mão e registrar. O resultado é o mesmo."
+  }
+]
+</script>
+{% endblock %}
+
+{% block cabeca %}
+{% comment %}O leitor vem antes do nosso script, e os dois com defer: assim o navegador
+baixa os dois em paralelo e executa na ordem, com a página já montada.{% endcomment %}
+<script src="{% static 'js/leitor/zxing.min.js' %}" defer></script>
+<script src="{% static 'js/camera-codigo.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Caixa</h1>
+  <p>Os turnos de caixa do SET: quem abriu, a que horas fechou e com quanto.</p>
+</div>
+
+{% if not t.tem_dados %}
+<section class="cartao cartao-atencao">
+  <h2>Ainda não há caixa importado</h2>
+  <p>Os turnos vêm do backup do SET. Assim que uma importação concluir, eles aparecem aqui.</p>
+</section>
+{% else %}
+
+{% if t.esquecidos %}
+<section class="cartao cartao-atencao">
+  <h2>{{ t.esquecidos|length }} caixa{{ t.esquecidos|pluralize:"s" }} ficou aberto</h2>
+  <p>Caixa que ficou aberto de um dia para o outro. Enquanto ele não é fechado no SET,
+     a venda do dia seguinte entra no turno errado e o fechamento não confere.</p>
+  <ul class="lista-caixas-esquecidos">
+    {% for caixa in t.esquecidos %}
+    <li>
+      <a href="{% url 'caixa:turno' caixa.id_set %}">Caixa {{ caixa.id_set }}</a>
+      aberto em {{ caixa.aberto_em|date:"d/m/Y" }} às {{ caixa.aberto_em|date:"H:i" }}
+      por <strong>{{ caixa.operador|default:"operador não informado" }}</strong>.
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<form method="get" class="filtros" role="search">
+  <label>Período
+    <select name="periodo">
+      {% for valor, rotulo, dias in periodos %}
+      <option value="{{ valor }}" {% if valor == t.periodo %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Operador
+    <select name="operador">
+      <option value="">Todos</option>
+      {% for nome in t.operadores %}
+      <option value="{{ nome }}" {% if nome == t.filtro_operador %}selected{% endif %}>{{ nome }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Situação
+    <select name="situacao">
+      <option value="">Abertos e fechados</option>
+      {% for valor, rotulo in situacoes %}
+      <option value="{{ valor }}" {% if valor == t.filtro_situacao %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select></label>
+  <button type="submit" class="botao secundario">Filtrar</button>
+  {% if t.filtrou %}<a href="{% url 'caixa:lista' %}">Limpar filtros</a>{% endif %}
+</form>
+
+<div class="cartoes-numero">
+  <div class="cartao-numero nivel-bom">
+    <span class="cartao-titulo">Entrou pelo caixa</span>
+    <strong class="cartao-valor">{{ t.resumo.recebido|reais }}</strong>
+    <span class="cartao-rodape">{{ t.rotulo_periodo }}, até {{ t.ate|date:"d/m/Y" }}.
+      Média de {{ t.resumo.media_por_dia|reais }} por dia com caixa aberto.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Turnos no período</span>
+    <strong class="cartao-valor">{{ t.resumo.caixas|contagem }}</strong>
+    <span class="cartao-rodape">Em {{ t.resumo.dias|contagem }} dia{{ t.resumo.dias|pluralize:"s" }}
+      de movimento. {{ t.resumo.abertos|contagem }} ainda aberto{{ t.resumo.abertos|pluralize:"s" }}.</span>
+  </div>
+  <div class="cartao-numero {% if t.resumo.sangrias %}nivel-atencao{% endif %}">
+    <span class="cartao-titulo">Saiu do caixa</span>
+    <strong class="cartao-valor">{{ t.resumo.sangrias|reais }}</strong>
+    <span class="cartao-rodape">Retiradas do caixa. Mais {{ t.resumo.pagamentos|reais }}
+      em contas pagas direto por ele.</span>
+  </div>
+  <div class="cartao-numero {% if t.resumo.nao_fecham %}nivel-ruim{% else %}nivel-bom{% endif %}">
+    <span class="cartao-titulo">Não fecham pela conta</span>
+    <strong class="cartao-valor">{{ t.resumo.nao_fecham|contagem }}</strong>
+    <span class="cartao-rodape">Turnos em que o saldo final do SET não é o saldo inicial
+      mais o que entrou menos o que saiu.</span>
+  </div>
+</div>
+
+<section class="cartao" id="dinheiro">
+  <h2>Dinheiro na gaveta</h2>
+  <p>Os números acima somam tudo o que passou pelo caixa, inclusive PIX e cartão. Estes aqui
+     são só o <strong>papel</strong>: o que entrou, o que saiu e a gaveta do turno mais
+     recente, que é o único saldo em dinheiro que existe agora.</p>
+  <div class="cartoes-numero">
+    <div class="cartao-numero">
+      <span class="cartao-titulo">Na gaveta no último turno</span>
+      <strong class="cartao-valor">{{ t.gaveta.ultima.saldo|reais }}</strong>
+      <span class="cartao-rodape">
+        {% if t.gaveta.ultimo_turno %}Caixa {{ t.gaveta.ultimo_turno.id_set }},
+        de {{ t.gaveta.ultimo_turno.dia|date:"d/m/Y" }}{% if t.gaveta.ultimo_turno.esta_aberto %},
+        ainda aberto{% endif %}. Abriu com {{ t.gaveta.ultima.inicio|reais }}.{% else %}Sem
+        turno no período.{% endif %}</span>
+    </div>
+    <div class="cartao-numero nivel-bom">
+      <span class="cartao-titulo">Entrou em dinheiro</span>
+      <strong class="cartao-valor">{{ t.gaveta.entrou|reais }}</strong>
+      <span class="cartao-rodape">{{ t.gaveta.recebido|reais }} de venda paga em dinheiro
+        e {{ t.gaveta.entradas|reais }} colocados no caixa.
+        {% if t.gaveta.fatia_em_dinheiro %}São {{ t.gaveta.fatia_em_dinheiro|quantidade }}%
+        de tudo o que o caixa recebeu: o resto veio por PIX e cartão.{% endif %}</span>
+    </div>
+    <div class="cartao-numero {% if t.gaveta.saiu %}nivel-atencao{% endif %}">
+      <span class="cartao-titulo">Saiu da gaveta</span>
+      <strong class="cartao-valor">{{ t.gaveta.saiu|reais }}</strong>
+      <span class="cartao-rodape">{{ t.gaveta.sangrias|reais }} de sangria
+        e {{ t.gaveta.pagamentos|reais }} de contas pagas pelo próprio caixa.</span>
+    </div>
+    <div class="cartao-numero">
+      <span class="cartao-titulo">Entrou menos o que saiu</span>
+      <strong class="cartao-valor">{{ t.gaveta.sobrou|reais }}</strong>
+      <span class="cartao-rodape">
+        {% if t.gaveta.saiu_mais_do_que_entrou %}Saiu mais papel do que entrou, e isso não é
+        erro de conta: cada turno abre com um valor digitado no SET, dinheiro que já estava
+        na gaveta antes deste período.{% else %}Perto de zero é o normal de quem faz sangria:
+        o dinheiro vai para o cofre ou para o banco. Muito positivo quer dizer dinheiro
+        parado na gaveta.{% endif %}</span>
+    </div>
+  </div>
+  {% if t.gaveta.tem_duvida %}
+  <p class="ajuda"><strong>Atenção:</strong> {{ t.gaveta.nao_classificado|reais }} entraram por
+    forma{{ t.gaveta.formas_desconhecidas|length|pluralize:"s" }} que o sistema não conhece
+    ({% for nome in t.gaveta.formas_desconhecidas %}{{ nome }}{% if not forloop.last %}, {% endif %}{% endfor %}).
+    Esse valor ficou <strong>fora</strong> da conta da gaveta, porque chutar que é dinheiro faria
+    a gaveta faltar sem explicação. Avise a gerência para a forma entrar na lista.</p>
+  {% endif %}
+  <p class="ajuda">PIX e cartão não entram na gaveta: eles caem na conta do banco, e é com
+     eles que a conciliação bancária trabalha.</p>
+</section>
+
+<section class="cartao">
+  <h2>Turnos do período</h2>
+  <p class="ajuda">Clique no número do caixa para ver as retiradas, os pagamentos e o que
+     entrou por forma de pagamento naquele turno.</p>
+  {% if t.caixas %}
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-caixas">
+      <caption class="oculto-visualmente">Turnos de caixa com abertura, fechamento, operador e valores.</caption>
+      <thead><tr>
+        <th scope="col">Caixa</th>
+        <th scope="col">Dia</th>
+        <th scope="col">Abertura</th>
+        <th scope="col">Fechamento</th>
+        <th scope="col">Operador</th>
+        <th scope="col" class="numerico">Saldo inicial</th>
+        <th scope="col" class="numerico">Entrou</th>
+        <th scope="col" class="numerico">Saiu</th>
+        <th scope="col" class="numerico">Saldo final</th>
+        <th scope="col">Confere</th>
+      </tr></thead>
+      <tbody>
+        {% for caixa in t.caixas %}
+        <tr>
+          <td><a href="{% url 'caixa:turno' caixa.id_set %}">{{ caixa.id_set }}</a></td>
+          <td>{{ caixa.dia|date:"d/m/Y" }}</td>
+          <td>{{ caixa.aberto_em|date:"H:i" }}</td>
+          <td>{% if caixa.fechado_em %}{{ caixa.fechado_em|date:"H:i" }}
+              <small>({{ caixa.tempo_aberto }})</small>{% else %}&mdash;{% endif %}</td>
+          <td>{{ caixa.operador|default:"—" }}</td>
+          <td class="numerico">{{ caixa.saldo_inicial|reais }}</td>
+          <td class="numerico">{{ caixa.recebido|reais }}</td>
+          <td class="numerico">{{ caixa.sangrias|reais }}</td>
+          <td class="numerico">{% if caixa.saldo_final is None %}&mdash;{% else %}<strong>{{ caixa.saldo_final|reais }}</strong>{% endif %}</td>
+          <td>
+            {% if caixa.esta_aberto %}
+            <span class="selo selo-caixa-aberto">Aberto</span>
+            {% elif caixa.confere %}
+            <span class="selo selo-caixa-confere">Fecha</span>
+            {% else %}
+            <span class="selo selo-caixa-difere" title="Diferença de {{ caixa.diferenca|reais }}">{{ caixa.diferenca|reais }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nenhum turno de caixa neste recorte. Tente um período maior ou limpe os filtros.</p>
+  {% endif %}
+</section>
+
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "O caixa da loja",
+    "texto": "Cada linha é um turno de caixa como o SET registrou: quem abriu, a que horas abriu e fechou, quanto entrou e quanto saiu. O sistema só lê; abrir e fechar caixa continua sendo no SET."
+  },
+  {
+    "seletor": ".filtros",
+    "titulo": "Os filtros",
+    "texto": "Período, operador e situação. Eles valem para os números de cima e para a tabela ao mesmo tempo."
+  },
+  {
+    "seletor": ".tabela-caixas",
+    "titulo": "A coluna Confere",
+    "texto": "O sistema refaz a conta do turno: saldo inicial, mais o que entrou, menos o que saiu. Quando o resultado não é o saldo final gravado no SET, a coluna mostra a diferença em vermelho — é um turno para conferir."
+  }
+]
+</script>
+{% endblock %}

@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block classe_corpo %}pagina-visao{% endblock %}
+{% block cabeca %}{% if em_andamento %}<meta http-equiv="refresh" content="5">{% endif %}{% endblock %}
+{% block conteudo %}
+
+{% comment %}Faixa de abertura: o nome da tela e de quando são os números, lado a lado,
+porque a primeira pergunta de quem abre é sempre "isso é de hoje?".{% endcomment %}
+<section class="abertura abertura-{{ estado.nivel }}">
+  <div>
+    <h1>Visão geral</h1>
+    <p class="abertura-sub">Cabana do Jacarandá · os números da loja em uma tela</p>
+  </div>
+  <div class="abertura-dados">
+    <strong>{{ estado.titulo }}</strong>
+    <span>{{ estado.detalhe }}</span>
+  </div>
+</section>
+
+{% include "importacao/_andamento.html" %}
+
+{% comment %}O que fazer agora, antes dos números: o Edson pediu que o sistema dissesse o
+que ele tem que fazer, e não só mostrasse como a loja está. Cada tarefa traz o número que a
+justifica e o link que a resolve; quem não pode abrir a tela não vê a tarefa.{% endcomment %}
+{% if agenda.tem_tarefas %}
+<section class="cartao cartao-agenda">
+  <h2>O que fazer agora</h2>
+  <p class="ajuda">Sai dos números desta importação. Some sozinho quando o motivo deixa de existir.</p>
+  <ol class="agenda">
+    {% for tarefa in agenda.primeiras %}
+    <li class="tarefa tarefa-{{ tarefa.nivel }}">
+      <div>
+        <strong>{{ tarefa.titulo }}</strong>
+        <span>{{ tarefa.detalhe }}</span>
+      </div>
+      <a class="botao secundario" href="{{ tarefa.endereco }}">{{ tarefa.rotulo_do_link }}</a>
+    </li>
+    {% endfor %}
+  </ol>
+  {% if agenda.restantes %}
+  <p class="ajuda">Mais {{ agenda.restantes }} tarefa{{ agenda.restantes|pluralize }} de menor
+     urgência não cabem aqui; elas aparecem quando as de cima saírem.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if visao.importacao %}
+<div class="cartoes-numero cartoes-cinco">
+  {% for cartao in visao.cartoes %}
+  <div class="cartao-numero nivel-{{ cartao.nivel }}">
+    <span class="cartao-titulo">{{ cartao.titulo }}</span>
+    <strong class="cartao-valor">{{ cartao.valor|reais }}</strong>
+    <span class="cartao-rodape">{{ cartao.rodape }}</span>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grade-visao">
+  {% comment %}Primeiro do bloco porque é o único indicador desta tela que olha para
+  frente: o resto são doze meses que já passaram.{% endcomment %}
+  {% include "painel/_tempo.html" %}
+
+  <div class="bloco-largo">
+    {% comment %}Reaproveita o gráfico de barras do painel, que já é o mesmo dado e o mesmo
+    desenho. Repetir a marcação aqui só criaria uma segunda versão para manter.{% endcomment %}
+    {% include "painel/_meses.html" with painel=visao %}
+  </div>
+
+  <section class="cartao">
+    <h2>Ticket médio da venda</h2>
+    <p class="ajuda">Quanto cada cliente deixa, em média, por compra. Subir isso é vender mais
+       para quem já está na loja.</p>
+    {% if visao.ticket.tem_dados %}
+    <p class="ticket-na-abertura">{{ visao.ticket.total.ticket|reais }}</p>
+    <ul class="lista-simples">
+      {% if visao.melhor_dia %}
+      <li><strong>{{ visao.melhor_dia.rotulo }}</strong> é o dia que mais fatura
+          ({{ visao.melhor_dia.faturamento|reais }} em 12 meses), e o fim de semana responde por
+          {{ visao.fatia_do_fim_de_semana }}% de tudo.</li>
+      {% endif %}
+      {% if visao.melhor_forma %}
+      <li>Quem paga em <strong>{{ visao.melhor_forma.rotulo }}</strong> deixa
+          {{ visao.melhor_forma.ticket|reais }} por compra, o maior ticket entre as formas de
+          pagamento.</li>
+      {% endif %}
+      <li>Desconto médio de {{ visao.ticket.desconto_medio|reais }} por venda.</li>
+    </ul>
+    <p><a href="{% url 'painel:ticket_medio' %}">Abrir o ticket médio com filtros</a></p>
+    {% else %}
+    <p>Sem venda registrada no período desta importação.</p>
+    {% endif %}
+  </section>
+
+  <section class="cartao">
+    <h2>De onde vem o faturamento</h2>
+    <p class="ajuda">Participação de cada grupo de produto nas vendas de 12 meses.</p>
+    {% if visao.grupos %}
+    <div class="rosca-area">
+      {# Rosca desenhada em SVG, sem biblioteca: o servidor da loja não acessa a internet. #}
+      <svg class="rosca" viewBox="0 0 42 42" role="img" aria-label="Participação por grupo de produto">
+        <circle class="rosca-fundo" cx="21" cy="21" r="15.9155"></circle>
+        {% for grupo in visao.grupos %}
+        <circle class="rosca-fatia" cx="21" cy="21" r="15.9155"
+                style="stroke: var({{ grupo.cor }}); stroke-dasharray: {{ grupo.traco }}; stroke-dashoffset: {{ grupo.giro }}"></circle>
+        {% endfor %}
+      </svg>
+      <ul class="rosca-legenda">
+        {% for grupo in visao.grupos %}
+        <li>
+          <i style="background: var({{ grupo.cor }})"></i>
+          <span class="rosca-nome">{{ grupo.nome }}</span>
+          <span class="rosca-valor">{{ grupo.fatia }}%</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% else %}
+    <p>Sem venda registrada no período.</p>
+    {% endif %}
+  </section>
+
+  <section class="cartao">
+    <h2>Os 10 que mais vendem</h2>
+    <p class="ajuda">Por dinheiro vendido em 12 meses. São estes que não podem faltar.</p>
+    <ol class="ranking">
+      {% for produto in visao.mais_vendidos %}
+      <li>
+        <span class="ranking-nome">{{ produto.descricao }}</span>
+        <span class="ranking-barra"><i style="width: {{ produto.largura }}%"></i></span>
+        <span class="ranking-valor">{{ produto.valor|reais }}</span>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <section class="cartao">
+    <h2>Os 10 que menos vendem</h2>
+    <p class="ajuda">Venderam alguma coisa no ano, mas pouco. Comprar mais destes é dinheiro
+       que fica parado.</p>
+    <ol class="ranking ranking-fraco">
+      {% for produto in visao.menos_vendidos %}
+      <li>
+        <span class="ranking-nome">{{ produto.descricao }}</span>
+        <span class="ranking-barra"><i style="width: {{ produto.largura }}%"></i></span>
+        <span class="ranking-valor">{{ produto.valor|reais }}</span>
+      </li>
+      {% endfor %}
+    </ol>
+    {% if visao.sem_venda %}
+    <p class="destaque">Além destes, <strong>{{ visao.sem_venda }} produtos não venderam nenhuma
+       unidade</strong> no ano inteiro.</p>
+    {% endif %}
+  </section>
+
+  <section class="cartao bloco-largo">
+    <h2>Com quem a loja compra</h2>
+    <p class="ajuda">Os maiores fornecedores em 12 meses, com o prazo de entrega e a reputação
+       que a gerência deu. Prazo e estrelas são informados aqui no sistema; o resto vem do SET.</p>
+    <div class="tabela-rolavel">
+      <table class="tabela-fornecedores-visao">
+        <thead>
+          <tr>
+            <th scope="col">Fornecedor</th>
+            <th scope="col" class="numerico">Comprado em 12m</th>
+            <th scope="col" class="numerico">Prazo</th>
+            <th scope="col">Relação</th>
+            <th scope="col">Reputação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fornecedor in visao.fornecedores %}
+          <tr>
+            <td><a href="{% url 'fornecedores:ficha' %}?nome={{ fornecedor.nome|urlencode }}">{{ fornecedor.nome }}</a></td>
+            <td class="numerico">{{ fornecedor.valor_comprado_12m|reais }}</td>
+            <td class="numerico">{% if fornecedor.prazo_em_uso %}{{ fornecedor.prazo_em_uso }} dia{{ fornecedor.prazo_em_uso|pluralize }}{% else %}—{% endif %}</td>
+            <td>{% if fornecedor.relacao_rotulo %}<span class="etiqueta etiqueta-{{ fornecedor.relacao }}">{{ fornecedor.relacao_rotulo }}</span>{% else %}<span class="ajuda">a classificar</span>{% endif %}</td>
+            <td>
+              {% if fornecedor.reputacao %}
+              <span class="estrelas" title="{{ fornecedor.reputacao }} de 5">
+                {% for cheia in fornecedor.estrelas %}<span class="estrela {% if cheia %}cheia{% endif %}" aria-hidden="true">★</span>{% endfor %}
+                <span class="oculto-visualmente">{{ fornecedor.reputacao }} de 5 estrelas</span>
+              </span>
+              {% else %}<span class="ajuda">sem avaliação</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if visao.sem_reputacao %}
+    <p class="destaque">{{ visao.sem_reputacao }} fornecedor{{ visao.sem_reputacao|pluralize:"es" }}
+       ainda sem avaliação. <a href="{% url 'fornecedores:lista' %}">Avaliar agora</a></p>
+    {% endif %}
+  </section>
+</div>
+
+<p class="ajuda">Quer o detalhe de qualquer número daqui?
+  <a href="{% url 'painel:painel' %}">Abra o painel de compras</a> ou
+  <a href="{% url 'financeiro:contas_a_pagar' %}">o financeiro</a>.</p>
+{% else %}
+<section class="cartao">
+  <h2>Ainda não há números para mostrar</h2>
+  <p>A visão geral sai da primeira importação concluída do backup do SET.</p>
+</section>
+
+{% comment %}O tempo não depende de número nenhum do SET: a previsão dos próximos dias e
+o pedido da cidade valem desde o primeiro dia, antes da primeira importação.{% endcomment %}
+{% include "painel/_tempo.html" %}
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Visão geral",
+    "texto": "Esta é a tela de abrir e entender. Os quatro números de cima respondem como a loja está; embaixo, o que mais vende, o que menos vende e com quem a loja compra."
+  },
+  {
+    "seletor": ".cartoes-numero",
+    "titulo": "Os quatro números",
+    "texto": "Vendido, comprado, parado na prateleira e o que já está comprometido do caixa. Cada um traz embaixo a frase que explica de onde o número saiu."
+  },
+  {
+    "seletor": ".meses",
+    "titulo": "Compra e venda mês a mês",
+    "texto": "O mês em que a barra da compra passa a da venda está marcado. É ali que o dinheiro saiu do caixa e virou prateleira."
+  },
+  {
+    "seletor": ".cartao-tempo",
+    "titulo": "O tempo e a venda",
+    "texto": "O que está previsto para os próximos dias, com o fim de semana marcado, e quanto a chuva custa à loja num fim de semana. A previsão é guardada todo dia pelo servidor; para anotar como o dia foi de verdade, abra o tempo dia a dia."
+  },
+  {
+    "seletor": ".tabela-fornecedores-visao",
+    "titulo": "Fornecedores",
+    "texto": "O prazo de entrega e as estrelas são informados pela gerência na tela de Fornecedores. O quanto foi comprado vem do SET."
+  }
+]
+</script>
+{% endblock %}

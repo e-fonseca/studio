@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Pedidos ao fornecedor</h1>
+  <p><a href="{% url 'compras:lista' %}">Voltar à lista de compra</a></p>
+</div>
+
+<section class="cartao">
+  <h2>Para que esta tela serve</h2>
+  <p>Aqui se <strong>gera o pedido de cada fornecedor</strong>, com a quantidade que o
+     sistema calculou mais o que foi escrito à mão, e ficam guardados os pedidos já feitos,
+     com as quantidades do dia e a folha que foi mandada. Quando a mercadoria chegar, anexe o
+     <strong>romaneio</strong> e a <strong>nota fiscal</strong>: com o XML da nota, o sistema
+     confere item por item contra o que foi pedido.</p>
+  {% if em_aberto or sem_documento %}
+  <ul class="lista-simples">
+    {% if em_aberto %}<li>{{ em_aberto }} pedido{{ em_aberto|pluralize }} esperando mercadoria.</li>{% endif %}
+    {% if sem_documento %}<li class="destaque">{{ sem_documento }} pedido{{ sem_documento|pluralize }}
+      recebido{{ sem_documento|pluralize }} sem nota nem romaneio anexado.</li>{% endif %}
+  </ul>
+  {% endif %}
+</section>
+
+{% comment %}Pedido dele em 20/10/2026: "na tela pedidos, gerar automaticamente pedidos de
+compra mercadorias por fornecedor, com a quantidade sugerida pelo formula informada
+anteriormente aqui". O sistema monta tudo — fornecedor, linhas, quantidade e a folha — e o
+clique é de uma pessoa: a regra dele no mesmo prompt é "não aprovar nem emitir pedidos
+automaticamente". Fica ACIMA dos pedidos guardados porque é o que falta fazer.{% endcomment %}
+{% if previstos %}
+<section class="cartao">
+  <h2>Gerar os pedidos de hoje</h2>
+  <p class="ajuda">Montados pela lista de compra de
+     {{ lista_de_hoje.data_corte|date:"d/m/Y" }}, com a quantidade sugerida pelo sistema mais
+     o que foi escrito à mão. Cada botão grava o pedido daquele fornecedor e anexa a folha em
+     PDF; nada é mandado ao fornecedor pelo sistema.</p>
+  {% if cabem_no_mes and pode_gerar %}
+  <form method="post" action="{% url 'pedidos:gerar' %}" class="formulario-em-linha">{% csrf_token %}
+    <button type="submit" class="botao">Gerar os {{ cabem_no_mes|length }} que cabem no mês</button>
+  </form>
+  <p class="ajuda">Sobra do teto do mês: {{ lista_de_hoje.cabe_no_mes|reais }}. Fornecedor
+     que passa do teto continua podendo ser pedido, um a um.</p>
+  {% endif %}
+  <div class="tabela-rolavel tabela-de-pedidos tabela-em-cartao">
+    <table>
+      <caption class="oculto-visualmente">O que a lista de compra de hoje pediria, por fornecedor</caption>
+      <thead>
+        <tr>
+          <th scope="col">Fornecedor</th>
+          <th scope="col" class="numerico">Itens</th>
+          <th scope="col" class="numerico">Unidades</th>
+          <th scope="col" class="numerico">Valor</th>
+          <th scope="col">Pedido</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for previsto in previstos %}
+        <tr>
+          <th scope="row">
+            <strong>{{ previsto.nome }}</strong>
+            <span class="ajuda">prazo de {{ previsto.prazo_dias }} dia{{ previsto.prazo_dias|pluralize }}{% if previsto.prazo_assumido %}, assumido pelo sistema{% endif %}{% if previsto.ajustados %}
+              · {{ previsto.ajustados }} quantidade{{ previsto.ajustados|pluralize }} escrita{{ previsto.ajustados|pluralize }} à mão{% endif %}</span>
+          </th>
+          <td class="numerico" data-rotulo="Itens">{{ previsto.quantos }}</td>
+          <td class="numerico" data-rotulo="Unidades">{{ previsto.unidades|quantidade }}</td>
+          <td class="numerico" data-rotulo="Valor">{{ previsto.valor|reais }}</td>
+          <td data-rotulo="Pedido">
+            {% if previsto.ja_foi_pedido %}
+            <a href="{% url 'pedidos:detalhe' previsto.ja_pedido.numero %}">pedido
+              {{ previsto.ja_pedido.numero }}, feito hoje</a>
+            {% elif pode_gerar %}
+            <form method="post" action="{% url 'pedidos:gerar' %}" class="formulario-em-linha">{% csrf_token %}
+              <input type="hidden" name="fornecedor" value="{{ previsto.nome }}">
+              <button type="submit" class="botao secundario">Gerar o pedido</button>
+            </form>
+            {% else %}
+            <span class="ajuda">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if fora_do_teto %}
+  <p class="ajuda">Outros {{ fora_do_teto }} fornecedor{{ fora_do_teto|pluralize:"es" }} têm o
+     que comprar e passam do teto do mês. Eles estão na
+     <a href="{% url 'compras:lista' %}">lista de compra</a>, e de lá o pedido também sai.</p>
+  {% endif %}
+  <p class="ajuda">Para mudar uma quantidade antes de pedir, use a
+     <a href="{% url 'compras:lista' %}">lista de compra</a>: lá cada linha tem a sugestão do
+     sistema, o campo da quantidade à mão e a soma das duas.</p>
+</section>
+{% endif %}
+
+<nav class="filtros-ficha" aria-label="Filtrar os pedidos">
+  <a class="{% if not situacao %}atual{% endif %}" href="{% url 'pedidos:lista' %}">Todos</a>
+  {% for valor, rotulo in situacoes %}
+  <a class="{% if situacao == valor %}atual{% endif %}"
+     href="{% url 'pedidos:lista' %}?situacao={{ valor }}">{{ rotulo }}</a>
+  {% endfor %}
+</nav>
+
+{% if pedidos %}
+<div class="tabela-rolavel tabela-de-pedidos tabela-em-cartao">
+  <table>
+    <caption>{{ quantos }} pedido{{ quantos|pluralize }}{% if fornecedor %} de <strong>{{ fornecedor }}</strong>{% endif %}, do mais novo para o mais antigo.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Pedido</th>
+        <th scope="col">Fornecedor</th>
+        <th scope="col" class="numerico">Itens</th>
+        <th scope="col" class="numerico">Valor</th>
+        <th scope="col">Situação</th>
+        <th scope="col">Documentos</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in pedidos %}
+      <tr>
+        <td data-rotulo="Pedido">
+          <a href="{% url 'pedidos:detalhe' p.numero %}"><strong>{{ p.numero }}</strong></a>
+          <span class="ajuda">{{ p.criado_em|date:"d/m/Y" }}</span>
+        </td>
+        <td data-rotulo="Fornecedor">{{ p.fornecedor }}</td>
+        <td class="numerico" data-rotulo="Itens">{{ p.quantas_linhas }}</td>
+        <td class="numerico" data-rotulo="Valor">{{ p.valor_total|reais }}</td>
+        <td data-rotulo="Situação">
+          <span class="etiqueta etiqueta-{{ p.situacao }}">{{ p.get_situacao_display }}</span>
+        </td>
+        <td data-rotulo="Documentos">
+          {% if p.anexos.all %}
+            <span class="ajuda">{% for anexo in p.anexos.all %}{{ anexo.get_tipo_display }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+          {% else %}<span class="ajuda">nenhum</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<section class="cartao">
+  <h2>Nenhum pedido guardado ainda</h2>
+  <p>Os pedidos aparecem aqui quando você gera um pedido — no quadro de cima desta tela ou
+     na <a href="{% url 'compras:lista' %}">lista de compra</a>. Pedidos gerados antes da
+     versão 1.31.0 não estão aqui porque o sistema não os guardava.</p>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Pedidos ao fornecedor",
+    "texto": "Tudo o que foi pedido, com a folha que a loja mandou. É aqui que se anexa o romaneio e a nota fiscal quando a mercadoria chega."
+  },
+  {
+    "seletor": ".filtros-ficha",
+    "titulo": "Esperando ou recebido",
+    "texto": "Pedido nasce esperando mercadoria. Quem recebe marca como recebido e anexa o papel que veio com ela."
+  },
+  {
+    "seletor": ".tabela-de-pedidos",
+    "titulo": "Abrir um pedido",
+    "texto": "Clique no número para ver o que foi pedido, anexar documentos e ver a conferência da nota contra o pedido."
+  }
+]
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}{% load static %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Dados da empresa</h1>
+  <a class="botao secundario" href="{% url 'compras:lista' %}">Voltar à lista de compra</a>
+</div>
+
+{% comment %}O timbre é a PRIMEIRA coisa da tela porque é o que o fornecedor vai ler no alto
+da folha: desenhado aqui igual ao papel, dá para conferir sem gerar um pedido. O logotipo é
+o mesmo arquivo do topo do sistema, servido daqui e não da internet.{% endcomment %}
+<section class="cartao empresa-timbre">
+  <img class="empresa-logo" src="{% static 'img/logo.png' %}"
+       alt="Logotipo da Cabana do Jacarandá" width="224" height="224">
+  <div class="empresa-identificacao">
+    <p class="empresa-nome">{{ empresa.nome_fantasia }}</p>
+    {% if empresa.razao_social and empresa.razao_social != empresa.nome_fantasia %}
+    <p class="empresa-razao">{{ empresa.razao_social }}</p>{% endif %}
+    <dl class="empresa-dados">
+      {% if empresa.documento %}<div><dt>CNPJ</dt><dd>{{ empresa.documento }}</dd></div>{% endif %}
+      {% if empresa.inscricao_estadual %}<div><dt>Inscrição estadual</dt><dd>{{ empresa.inscricao_estadual }}</dd></div>{% endif %}
+      {% if empresa.linha_do_endereco %}<div><dt>Endereço da nota</dt><dd>{{ empresa.linha_do_endereco }}</dd></div>{% endif %}
+      {% if empresa.linha_da_entrega %}<div><dt>Entregar em</dt><dd>{{ empresa.linha_da_entrega }}</dd></div>{% endif %}
+      {% if empresa.linha_do_contato %}<div><dt>Contato</dt><dd>{{ empresa.linha_do_contato }}</dd></div>{% endif %}
+    </dl>
+    <p class="ajuda">É isto que sai no alto do pedido ao fornecedor. O pedido em si sai da
+       <a href="{% url 'compras:lista' %}">lista de compra</a>, pelo botão de cada
+       fornecedor, com as quantidades que estiverem na tela.</p>
+  </div>
+</section>
+
+{% if faltas %}
+<section class="cartao cartao-destaque">
+  <h2>O fornecedor vai sentir falta de {{ faltas|join:", " }}</h2>
+  <p>O pedido já sai assim, mas sem o CNPJ o fornecedor não emite a nota, e sem telefone
+     ou e-mail ele não tem para onde responder.</p>
+</section>
+{% endif %}
+
+<form method="post" class="formulario">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="mensagem error" role="alert">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+  {% for secao in form.secoes %}
+  <section class="cartao empresa-secao">
+    <h2>{{ secao.titulo }}</h2>
+    <p class="ajuda">{{ secao.ajuda }}</p>
+    <div class="campos-em-grade">
+      {% include "_campos.html" with campos=secao.campos largos=secao.largos %}
+    </div>
+  </section>
+  {% endfor %}
+  <div class="acoes"><button type="submit" class="botao">Salvar</button></div>
+</form>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Dados da empresa",
+    "texto": "O cabeçalho que vai impresso no pedido ao fornecedor. Preencher uma vez basta; só volta aqui quando algum dado mudar."
+  },
+  {
+    "seletor": ".empresa-timbre",
+    "titulo": "Como vai sair no papel",
+    "texto": "É exatamente o que o fornecedor vai ler no alto da folha, com o logotipo da loja. Campo em branco não é impresso."
+  },
+  {
+    "seletor": ".empresa-secao",
+    "titulo": "Dois endereços, de propósito",
+    "texto": "O da nota é o do CNPJ, onde o fornecedor fatura. O da entrega é onde a carga desce. Na Cabana eles não são o mesmo."
+  }
+]
+</script>
+{% endblock %}

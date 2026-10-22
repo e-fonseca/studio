@@ -1,0 +1,18 @@
+{% comment %}Os campos de um formulário, no mesmo desenho do _form.html. Existe separado
+porque há tela que precisa desenhar os campos em BLOCOS por assunto, e não todos de uma
+vez: quem passa a lista é o formulário (DadosDaEmpresaForm.secoes), nunca o template.
+`largos` é opcional: sem ela nenhum campo recebe a classe e o desenho fica igual ao de antes.{% endcomment %}
+{% for campo in campos %}
+  <div class="campo{% if campo.errors %} com-erro{% endif %}{% if campo.name in largos %} campo-largo{% endif %}">
+    {% if campo.widget_type == "checkbox" %}
+      <label>{{ campo }} {{ campo.label }}</label>
+    {% elif campo.widget_type == "radioselect" %}
+      <fieldset><legend>{{ campo.label }}</legend>{{ campo }}</fieldset>
+    {% else %}
+      {{ campo.label_tag }}
+      {{ campo }}
+    {% endif %}
+    {% if campo.help_text %}<p class="ajuda">{{ campo.help_text }}</p>{% endif %}
+    {% for e in campo.errors %}<p class="erro-campo" role="alert">{{ e }}</p>{% endfor %}
+  </div>
+{% endfor %}

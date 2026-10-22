@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Backup no GitHub</h1>
+  <p><a href="{% url 'painel:painel' %}">Voltar ao painel</a></p>
+</div>
+
+{% comment %}O estado vem PRIMEIRO, antes da explicação: quem abre esta tela quer saber
+se a cópia de fora do servidor existe hoje, não como ela funciona. Pedido do Edson em
+14/10/2026, de automatizar tudo — e automação que falha calada é pior que botão.{% endcomment %}
+<section class="cartao">
+  <h2>Como está o backup</h2>
+  <p class="resultado-da-conferencia {% if estado_do_backup.ok %}confere{% elif estado_do_backup.gravidade == 'erro' %}erro{% else %}divergente{% endif %}">
+    {{ estado_do_backup.titulo }}</p>
+  <p>{{ estado_do_backup.frase }}</p>
+  {% if configuracao.token_validade %}
+  <p class="ajuda">O token vale até {{ configuracao.token_validade|date:"d/m/Y" }}. O sistema
+     confere isso sozinho todo dia e avisa dez dias antes do vencimento, por e-mail e
+     Telegram, para a cópia não parar sem ninguém notar.</p>
+  {% endif %}
+  <p class="ajuda">O envio acontece no fim de cada atualização, sem ninguém clicar. E se a
+     última cópia passar de uma semana — atualização que falhou no meio, mês sem atualização
+     nenhuma —, o sistema tenta de novo por conta própria.</p>
+</section>
+
+<section class="cartao">
+  <h2>O que vai para o GitHub, e o que não vai</h2>
+  <p>Vai o <strong>código do sistema</strong>: {{ quantos_arquivos }} arquivos de programa,
+     tela e documentação. É um backup fora do servidor da loja, com histórico de cada versão.</p>
+  <p><strong>O banco de dados não vai</strong>, e isso é de propósito. Nele estão os nomes
+     dos clientes que vêm do SET, o extrato bancário e as notas fiscais anexadas aos pedidos.
+     GitHub é um serviço fora da loja; esse dado continua no servidor, no backup que roda
+     todo dia às 23:30 e guarda 14 dias em <code>C:\cabana-sistema\backups</code>.</p>
+  <p><strong>Senha nenhuma vai.</strong> O arquivo de configuração com a senha do e-mail e a
+     chave do sistema fica fora da pasta do programa, e o envio monta a lista pelo que pode ir.</p>
+</section>
+
+<section class="cartao">
+  <h2>Como preparar, uma vez só</h2>
+  {% comment %}O repositório já vem preenchido desde a 1.32.0, então o primeiro passo não é
+  mais criar um: é conferir. O token continua sendo dele, e é a única parte que o sistema
+  não tem como preencher sozinho.{% endcomment %}
+  <ol class="passos">
+    <li>Confira o repositório aqui embaixo: ele já vem preenchido. No GitHub, ele precisa
+      existir e ser <strong>privado</strong>.</li>
+    <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Abra
+      a página de gerar token</a> (este link já vai direto nela) e gere um com acesso
+      <strong>só a esse repositório</strong> e permissão <em>Contents: Read and write</em>.
+      No prazo, quanto mais longo melhor: o sistema avisa antes de vencer.</li>
+    <li>Cole o token aqui embaixo e grave. <strong>Acabou</strong>: gravar já liga o envio
+      automático e já manda a primeira cópia, e o resultado aparece aqui em cima. Não há
+      passo seguinte.</li>
+  </ol>
+  <p class="ajuda">O token é a única parte que não dá para automatizar: o GitHub exige que
+    uma pessoa dê a permissão, e é isso que impede um programa de escrever na conta de
+    alguém sozinho. Tudo o que vinha depois dela o sistema faz.</p>
+</section>
+
+{% if configuracao.ultimo_envio_em %}
+<section class="cartao">
+  <h2>Último envio</h2>
+  <p class="resultado-da-conferencia {% if configuracao.ultimo_deu_certo %}confere{% else %}divergente{% endif %}">
+    {{ configuracao.ultimo_resultado }}</p>
+  <p class="ajuda">{{ configuracao.ultimo_envio_em|date:"d/m/Y H:i" }}{% if configuracao.ultimos_arquivos %}
+     · {{ configuracao.ultimos_arquivos }} arquivos no repositório{% endif %}{% if configuracao.endereco %}
+     · <a href="{{ configuracao.endereco }}" target="_blank" rel="noopener">abrir o repositório no GitHub</a>{% endif %}</p>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>Configuração</h2>
+  {% if configuracao.falta_preencher %}
+  <p class="destaque">Falta preencher: {% for falta in configuracao.falta_preencher %}{{ falta }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+  {% endif %}
+  <form method="post" class="formulario-anexo">{% csrf_token %}
+    {{ formulario.as_p }}
+    <button type="submit" class="botao">Gravar</button>
+  </form>
+  {% if configuracao.tem_token %}
+  <p class="ajuda">O token está guardado e cifrado. A tela nunca o mostra de volta.</p>
+  {% endif %}
+</section>
+
+{% if configuracao.configurado %}
+<section class="cartao">
+  <h2>Enviar agora</h2>
+  <p>O primeiro envio sobe o sistema inteiro e pode levar alguns minutos. Os seguintes
+     mandam só o que mudou, porque o sistema compara cada arquivo com o que já está lá.</p>
+  <form method="post" action="{% url 'backup:enviar_agora' %}" class="formulario-em-linha">{% csrf_token %}
+    <button type="submit" class="botao">Enviar agora</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Backup no GitHub",
+    "texto": "Uma cópia do código do sistema fora do servidor da loja, com histórico. O banco de dados não vai para lá, de propósito: tem nome de cliente e extrato bancário dentro."
+  },
+  {
+    "seletor": ".passos",
+    "titulo": "Preparar uma vez",
+    "texto": "Crie um repositório privado no GitHub e um token com permissão de escrita só nele. Depois é só colar aqui."
+  },
+  {
+    "seletor": ".formulario-anexo",
+    "titulo": "Ligar o automático",
+    "texto": "Com \"mandar a cada atualização\" ligado, toda vez que o sistema for atualizado no servidor o código vai para o GitHub sozinho."
+  }
+]
+</script>
+{% endblock %}

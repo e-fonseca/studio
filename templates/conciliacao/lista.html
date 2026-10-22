@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Conciliação bancária</h1>
+  <p>O extrato do banco conferido contra as contas que o SET diz que foram pagas.</p>
+</div>
+
+<section class="cartao">
+  <h2>Trazer um extrato do banco</h2>
+  <p>No site ou no aplicativo do banco, procure <strong>baixar extrato</strong> e escolha
+     <strong>OFX</strong> — alguns bancos chamam de "arquivo para o gerenciador financeiro",
+     "Money" ou "extrato para conciliação". Se o seu banco não oferecer OFX, o
+     <strong>CSV</strong> (planilha) também serve.</p>
+  <form method="post" action="{% url 'conciliacao:importar' %}" enctype="multipart/form-data"
+        class="formulario-extrato">
+    {% csrf_token %}
+    <label for="extrato">Arquivo do extrato
+      <input type="file" id="extrato" name="extrato" accept=".ofx,.csv,.txt,text/csv" required></label>
+    <label for="banco">Banco <small>(opcional, se o arquivo não disser)</small>
+      <input type="text" id="banco" name="banco" maxlength="80" placeholder="Ex.: Banco do Brasil"></label>
+    <button type="submit" class="botao">Importar extrato</button>
+  </form>
+  <p class="ajuda">O arquivo é lido e guardado aqui dentro; nada é enviado para fora e nada
+     volta para o SET. O mesmo arquivo trazido duas vezes é recusado.</p>
+</section>
+
+{% if extratos %}
+<section class="cartao">
+  <h2>Extratos importados</h2>
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-extratos">
+      <caption class="oculto-visualmente">Extratos já importados, do mais novo para o mais velho.</caption>
+      <thead><tr>
+        <th scope="col">Período</th>
+        <th scope="col">Banco e conta</th>
+        <th scope="col">Arquivo</th>
+        <th scope="col" class="numerico">Movimentos</th>
+        <th scope="col">Falta conferir</th>
+        <th scope="col">Trazido por</th>
+      </tr></thead>
+      <tbody>
+        {% for extrato in extratos %}
+        <tr>
+          <td><a href="{% url 'conciliacao:extrato' extrato.pk %}">
+            {% if extrato.periodo_inicio %}{{ extrato.periodo_inicio|date:"d/m/Y" }}
+            a {{ extrato.periodo_fim|date:"d/m/Y" }}{% else %}sem data{% endif %}</a></td>
+          <td>{{ extrato.banco|default:"—" }}{% if extrato.conta %}<br>
+              <span class="ajuda">{{ extrato.conta }}</span>{% endif %}</td>
+          <td><span class="ajuda">{{ extrato.arquivo }}</span></td>
+          <td class="numerico">{{ extrato.total_de_linhas }}</td>
+          <td>{% if extrato.pendentes %}
+              <span class="selo selo-caixa-difere">{{ extrato.pendentes }} saída{{ extrato.pendentes|pluralize }}</span>
+              {% else %}<span class="selo selo-caixa-confere">tudo conferido</span>{% endif %}</td>
+          <td>{{ extrato.importado_por|default:"—" }}<br>
+              <span class="ajuda">{{ extrato.importado_em|date:"d/m/Y H:i" }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<section class="cartao">
+  <h2>Nenhum extrato importado ainda</h2>
+  <p>Traga o extrato de um mês pelo formulário acima. Depois o sistema mostra, linha a
+     linha, qual saída do banco corresponde a qual conta paga no SET — e, principalmente,
+     quais não correspondem a nenhuma.</p>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>Para que serve</h2>
+  <p>A loja paga pelo banco e lança no SET. Quando os dois não batem, é sempre uma de três
+     coisas: pagamento feito e não lançado, lançamento sem pagamento, ou valor diferente do
+     combinado. Qualquer uma delas custa dinheiro e só aparece conferindo.</p>
+  <p>O sistema <strong>não</strong> marca nada sozinho: ele mostra as candidatas e quem
+     confirma é você, com um clique. E ele <strong>não</strong> escreve no SET nem no banco.</p>
+  <p><a href="{% url 'financeiro:contas_a_pagar' %}">Ver as contas a pagar</a></p>
+</section>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Conciliação bancária",
+    "texto": "Aqui o extrato do banco encontra as contas do SET. O objetivo é descobrir o que saiu da conta e não está lançado, e o que está lançado e não saiu."
+  },
+  {
+    "seletor": ".formulario-extrato",
+    "titulo": "Trazer o extrato",
+    "texto": "Baixe do banco em OFX, que é o formato mais completo. CSV também funciona. O arquivo fica guardado aqui; nada vai para fora e nada volta para o SET."
+  },
+  {
+    "seletor": ".tabela-extratos",
+    "titulo": "O que falta conferir",
+    "texto": "A coluna da direita diz quantas saídas do banco ainda esperam alguém. Clique no período para abrir o extrato e conferir."
+  }
+]
+</script>
+{% endblock %}

@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Pedido {{ pedido.numero }} · {{ pedido.fornecedor }}</h1>
+  <p><a href="{% url 'pedidos:lista' %}">Voltar aos pedidos</a></p>
+</div>
+
+<section class="cartao">
+  <div class="cartoes-numero">
+    <div class="cartao-numero">
+      <span class="cartao-titulo">Itens</span>
+      <strong class="cartao-valor">{{ pedido.quantas_linhas }}</strong>
+      <span class="cartao-rodape">{{ pedido.unidades|quantidade }} unidades.</span>
+    </div>
+    <div class="cartao-numero">
+      <span class="cartao-titulo">Valor de referência</span>
+      <strong class="cartao-valor">{{ pedido.valor_total|reais }}</strong>
+      <span class="cartao-rodape">Custo da última compra, não preço acertado.</span>
+    </div>
+    <div class="cartao-numero">
+      <span class="cartao-titulo">Situação</span>
+      <strong class="cartao-valor etiqueta etiqueta-{{ pedido.situacao }}">{{ pedido.get_situacao_display }}</strong>
+      <span class="cartao-rodape">Feito em {{ pedido.criado_em|date:"d/m/Y H:i" }} por {{ pedido.quem_fez }}.</span>
+    </div>
+    {% if pedido.prazo_dias is not None %}
+    <div class="cartao-numero">
+      <span class="cartao-titulo">Prazo combinado</span>
+      <strong class="cartao-valor">{{ pedido.prazo_dias }} dias</strong>
+      {% if ficha and ficha.reputacao %}<span class="cartao-rodape">{{ ficha.reputacao }} de 5 estrelas.</span>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% if pedido.foi_cancelado %}
+  <p class="aviso-cancelado"><strong>Pedido cancelado</strong>
+     em {{ pedido.cancelado_em|date:"d/m/Y H:i" }}{% if pedido.cancelado_por %}
+     por {{ pedido.cancelado_por.get_full_name|default:pedido.cancelado_por.get_username }}{% endif %}.
+     Motivo: {{ pedido.motivo_cancelamento }}</p>
+  {% endif %}
+  {% if pedido.foi_editado %}
+  <p class="ajuda">Este pedido foi alterado em {{ pedido.editado_em|date:"d/m/Y H:i" }}{% if pedido.editado_por %}
+     por {{ pedido.editado_por.get_full_name|default:pedido.editado_por.get_username }}{% endif %}.
+     A folha que vale é a última anexada aqui.</p>
+  {% endif %}
+  {% if pedido.data_corte %}
+  <p class="ajuda">As quantidades são as que estavam na lista de compra com os dados de
+     {{ pedido.data_corte|date:"d/m/Y" }}, congeladas no dia do pedido. A lista de compra de
+     hoje já é outra; é contra este pedido que a nota é conferida.</p>
+  {% endif %}
+  <div class="acoes-do-pedido">
+    <a class="botao" href="{% url 'pedidos:imprimir' pedido.numero %}">Gerar o pedido de compra em PDF</a>
+    {% if perms.pedidos.anexar_documento and not pedido.foi_cancelado %}
+    <form method="post" action="{% url 'pedidos:receber' pedido.numero %}">{% csrf_token %}
+      {% if pedido.aberto %}
+      <input type="hidden" name="recebido" value="1">
+      <button type="submit" class="botao secundario">Marcar que a mercadoria chegou</button>
+      {% else %}
+      <input type="hidden" name="recebido" value="0">
+      <button type="submit" class="botao secundario">Voltar para esperando mercadoria</button>
+      {% endif %}
+    </form>
+    {% endif %}
+  </div>
+  <p class="ajuda">O PDF sai com o timbre da loja e o endereço da entrega, pronto para mandar
+     ao fornecedor. É a mesma folha da lista de compra, com as quantidades deste pedido.</p>
+</section>
+
+{% if perms.pedidos.anexar_documento %}
+<section class="cartao" id="anexar">
+  <h2>Anexar documento</h2>
+  <form method="post" action="{% url 'pedidos:anexar' pedido.numero %}"
+        enctype="multipart/form-data" class="formulario-anexo">{% csrf_token %}
+    <p>
+      <label for="arquivo">Arquivo</label>
+      <input type="file" id="arquivo" name="arquivo" required
+             accept=".xml,.pdf,.png,.jpg,.jpeg,.csv,.txt">
+    </p>
+    <p>
+      <label for="tipo">O que é este arquivo</label>
+      <select id="tipo" name="tipo">
+        {% for valor, rotulo in tipos %}
+        <option value="{{ valor }}" {% if valor == "nota_fiscal" %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p>
+      <label for="observacao">Observação (opcional)</label>
+      <input type="text" id="observacao" name="observacao" maxlength="200"
+             placeholder="Ex.: faltou uma caixa, combinado por telefone">
+    </p>
+    <button type="submit" class="botao">Anexar</button>
+  </form>
+  <p class="ajuda">Até {{ limite_mb }} MB por arquivo. <strong>Mande o XML da nota fiscal</strong>
+     sempre que o fornecedor emitir: é com ele que o sistema confere item por item contra o
+     pedido. O PDF da nota e a foto do romaneio ficam guardados para consulta, mas o conteúdo
+     deles não se lê sem mandar o arquivo para fora do servidor, e nada daqui sai.</p>
+</section>
+{% endif %}
+
+{% for anexo, conferencia in anexos %}
+<section class="cartao anexo-do-pedido">
+  <h2>{{ anexo.get_tipo_display }}
+    <small>{{ anexo.nome_original }} · {{ anexo.tamanho_legivel }}</small></h2>
+  <p class="ajuda">Anexado em {{ anexo.enviado_em|date:"d/m/Y H:i" }}{% if anexo.enviado_por %}
+     por {{ anexo.enviado_por.get_full_name|default:anexo.enviado_por.get_username }}{% endif %}.
+     <a href="{% url 'pedidos:baixar' pedido.numero anexo.pk %}">Baixar o arquivo</a></p>
+  {% if anexo.observacao %}<p>{{ anexo.observacao }}</p>{% endif %}
+
+  {% if anexo.numero_do_documento or anexo.emitente or anexo.valor_do_documento is not None %}
+  <ul class="lista-simples">
+    {% if anexo.numero_do_documento %}<li>Documento nº {{ anexo.numero_do_documento }}</li>{% endif %}
+    {% if anexo.emitente %}<li>Emitido por {{ anexo.emitente }}{% if anexo.emitente_documento %}
+      (CNPJ/CPF {{ anexo.emitente_documento }}){% endif %}</li>{% endif %}
+    {% if anexo.emitido_em %}<li>Data de emissão: {{ anexo.emitido_em|date:"d/m/Y" }}</li>{% endif %}
+    {% if anexo.valor_do_documento is not None %}<li>Valor do documento: {{ anexo.valor_do_documento|reais }}</li>{% endif %}
+  </ul>
+  {% endif %}
+
+  {% if anexo.erro_de_leitura %}
+  <p class="ajuda">{{ anexo.erro_de_leitura }}</p>
+  {% endif %}
+
+  {% if conferencia and conferencia.tem_resultado %}
+  <h3>Conferência contra o pedido</h3>
+  <p class="resultado-da-conferencia {% if conferencia.tudo_confere %}confere{% else %}divergente{% endif %}">
+    {{ conferencia.resumo }}</p>
+  {% if conferencia.valor_do_documento is not None and not conferencia.valor_bate %}
+  <p class="ajuda">O documento soma {{ conferencia.valor_do_documento|reais }} e o pedido somava
+     {{ conferencia.valor_do_pedido|reais }}: diferença de
+     {{ conferencia.diferenca_de_valor|reais }}. O valor do pedido é o custo da última compra,
+     então diferença de preço aqui pode ser negociação, e não erro.</p>
+  {% endif %}
+  <div class="tabela-rolavel tabela-de-conferencia tabela-em-cartao">
+    <table>
+      <caption>Uma linha por produto. As divergências vêm primeiro.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col" class="numerico">Pedido</th>
+          <th scope="col" class="numerico">No documento</th>
+          <th scope="col" class="numerico">Custo de referência</th>
+          <th scope="col" class="numerico">Unitário do documento</th>
+          <th scope="col">O que diz</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in conferencia.linhas %}
+        <tr {% if not linha.confere %}class="linha-atencao"{% endif %}>
+          <td data-rotulo="Produto">{{ linha.descricao }}
+            {% if linha.codigo %}<span class="ajuda">código {{ linha.codigo }}</span>{% endif %}
+            {% if linha.como == "descricao" %}<span class="ajuda">casado {{ linha.rotulo_do_casamento }}</span>{% endif %}
+          </td>
+          <td class="numerico" data-rotulo="Pedido">{% if linha.quantidade_pedida is None %}—{% else %}{{ linha.quantidade_pedida|quantidade }}{% endif %}</td>
+          <td class="numerico" data-rotulo="No documento">{% if linha.quantidade_lida is None %}—{% else %}{{ linha.quantidade_lida|quantidade }}{% endif %}</td>
+          <td class="numerico" data-rotulo="Custo de referência">{% if linha.custo_pedido is None %}—{% else %}{{ linha.custo_pedido|reais }}{% endif %}</td>
+          <td class="numerico" data-rotulo="Unitário do documento">{% if linha.unitario_lido is None %}—{% else %}{{ linha.unitario_lido|reais }}{% endif %}</td>
+          <td data-rotulo="O que diz">{{ linha.situacao|capfirst }}
+            {% comment %}Sem repetir "acima da referência", que já está na frase da situação.{% endcomment %}
+            {% if linha.preco_subiu %}<span class="ajuda">{{ linha.diferenca_de_preco|floatformat:"1" }}% a mais</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endfor %}
+
+<section class="cartao">
+  <h2>O que foi pedido</h2>
+  {% if pode_mexer %}
+  <form method="post" action="{% url 'pedidos:editar' pedido.numero %}" class="formulario-do-pedido">{% csrf_token %}
+  {% endif %}
+  <div class="tabela-rolavel tabela-de-pedidos tabela-em-cartao">
+    <table>
+      <caption>As {{ pedido.quantas_linhas }} linha{{ pedido.quantas_linhas|pluralize }} do pedido, como estavam no dia.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col">Grupo</th>
+          <th scope="col" class="numerico">Custo unit.</th>
+          <th scope="col" class="numerico">Total</th>
+          <th scope="col" class="numerico">Quantidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in itens %}
+        <tr>
+          <td data-rotulo="Produto">{{ item.descricao }}
+            <span class="ajuda">código {{ item.codigo }}{% if item.codigo_barras %} · barras {{ item.codigo_barras }}{% endif %}</span></td>
+          <td data-rotulo="Grupo">{{ item.grupo|default:"—" }}</td>
+          <td class="numerico" data-rotulo="Custo unit.">{% if item.custo is None %}—{% else %}{{ item.custo|reais }}{% endif %}</td>
+          <td class="numerico" data-rotulo="Total">{{ item.valor|reais }}</td>
+          <td class="numerico celula-quantidade" data-rotulo="Quantidade">
+            {% if pode_mexer %}
+            <label class="oculto-visualmente" for="quantidade-{{ forloop.counter }}">Quantidade de {{ item.descricao }}</label>
+            <input type="text" inputmode="decimal" id="quantidade-{{ forloop.counter }}"
+                   name="quantidade-{{ item.codigo }}" value="{{ item.quantidade|quantidade }}"
+                   class="campo-quantidade">
+            {% else %}{{ item.quantidade|quantidade }}{% endif %}
+            {% if item.escolhida_a_mao %}<span class="ajuda">escolhida pela loja</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pode_mexer %}
+    <div class="campos-em-grade">
+      <p class="campo">
+        <label for="prazo_dias">Prazo combinado, em dias</label>
+        <input type="number" id="prazo_dias" name="prazo_dias" min="0" max="365"
+               value="{{ pedido.prazo_dias|default_if_none:'' }}">
+      </p>
+      <p class="campo campo-largo">
+        <label for="observacao-pedido">Observação que sai na folha</label>
+        <input type="text" id="observacao-pedido" name="observacao" maxlength="300"
+               value="{{ pedido.observacao }}"
+               placeholder="Ex.: entregar pela manhã, falar com a Henriett">
+      </p>
+    </div>
+    <button type="submit" class="botao">Salvar as alterações e refazer a folha</button>
+    <p class="ajuda">Escreva <strong>0</strong> para tirar o item do pedido. Salvar gera a folha
+       nova e deixa ela anexada aqui; a anterior continua guardada, para quem já recebeu a
+       primeira. O custo não se edita: ele é a referência do dia e é contra ele que a nota é
+       conferida.</p>
+  </form>
+  {% endif %}
+</section>
+
+{% if pode_mexer %}
+<section class="cartao">
+  <details class="explicacao-da-lista">
+    <summary>Cancelar o pedido<span class="ajuda">quando a compra não vai acontecer</span></summary>
+    <form method="post" action="{% url 'pedidos:cancelar' pedido.numero %}">{% csrf_token %}
+      <p class="campo">
+        <label for="motivo">Motivo do cancelamento</label>
+        <input type="text" id="motivo" name="motivo" maxlength="300" required
+               placeholder="Ex.: fornecedor sem estoque, combinado por telefone">
+      </p>
+      <button type="submit" class="botao secundario">Cancelar este pedido</button>
+      <p class="ajuda">O motivo é obrigatório. O pedido e os itens não são apagados: ficam
+         guardados como cancelados, com o motivo e com quem cancelou, e o número
+         {{ pedido.numero }} não é reaproveitado.</p>
+    </form>
+  </details>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Pedido {{ pedido.numero }}",
+    "texto": "O que foi pedido a {{ pedido.fornecedor }}, congelado no dia do pedido. A lista de compra muda a cada sincronização; este pedido não."
+  },
+  {
+    "seletor": ".formulario-anexo",
+    "titulo": "Anexar o que veio",
+    "texto": "Escolha o arquivo, diga se é romaneio ou nota fiscal e clique em Anexar. Com o XML da nota, o sistema confere item por item na hora."
+  },
+  {
+    "seletor": ".acoes-do-pedido",
+    "titulo": "Gerar o pedido de compra",
+    "texto": "Gera o PDF deste pedido com o timbre da loja e o endereço de entrega, pronto para mandar ao fornecedor. Dá para gerar quantas vezes quiser."
+  },
+  {
+    "seletor": ".formulario-do-pedido",
+    "titulo": "Editar ou cancelar",
+    "texto": "Enquanto o pedido está aberto, mude a quantidade de qualquer linha (0 tira o item) e clique em Salvar: a folha nova fica anexada. Para desistir do pedido, use Cancelar o pedido e informe o motivo."
+  },
+  {
+    "seletor": ".tabela-de-conferencia",
+    "titulo": "A conferência",
+    "texto": "Cada linha mostra o que foi pedido, o que veio no documento e o que o sistema achou: quantidade a mais, a menos, ou preço acima da referência."
+  }
+]
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Versões do sistema</h1>
+  <p><a href="{% url 'core:inicio' %}">Voltar ao início</a></p>
+</div>
+
+<section class="cartao estado-dados">
+  <h2>Versão {{ versao.numero }} instalada agora</h2>
+  <p>{% if versao.data %}Pacote gerado em {{ versao.data }}{% if versao.commit %}, código {{ versao.commit }}{% endif %}.
+     {% else %}Cópia de desenvolvimento, sem data de geração.{% endif %}</p>
+  <p class="ajuda">O número tem três partes: a primeira só muda em reescrita, a segunda quando entra função
+    nova e a terceira em correção. É o mesmo número que aparece no nome do arquivo de atualização.</p>
+</section>
+
+<section class="cartao">
+  <h2>Atualizações aplicadas neste servidor</h2>
+  {% if aplicacoes %}
+  <div class="tabela-rolavel">
+    <table>
+      <caption>Uma linha por atualização, da mais recente para a mais antiga.</caption>
+      <thead>
+        <tr><th scope="col">Quando</th><th scope="col">Versão</th><th scope="col">Arquivo de atualização</th><th scope="col">Resultado</th></tr>
+      </thead>
+      <tbody>
+        {% for aplicacao in aplicacoes %}
+        <tr{% if not aplicacao.deu_certo %} class="linha-erro"{% endif %}>
+          <td>{{ aplicacao.quando }}</td>
+          <td>{{ aplicacao.numero }}{% if aplicacao.commit %} <span class="ajuda">({{ aplicacao.commit }})</span>{% endif %}</td>
+          <td>{{ aplicacao.pacote|default:"—" }}</td>
+          <td>{% if aplicacao.deu_certo %}Concluída{% else %}{{ aplicacao.resultado }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Ainda não há registro de atualização neste servidor. A primeira linha aparece na próxima vez que o
+     <code>atualizar.ps1</code> for executado.</p>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>O que mudou em cada versão</h2>
+  {% for mudanca in mudancas %}
+  <h3>{{ mudanca.numero }}{% if mudanca.data %} — {{ mudanca.data }}{% endif %}
+    {% if mudanca.numero == versao.numero %}<span class="etiqueta">instalada</span>{% endif %}</h3>
+  <ul>{% for item in mudanca.itens %}<li>{{ item }}</li>{% endfor %}</ul>
+  {% empty %}
+  <p>A lista de mudanças não veio neste pacote.</p>
+  {% endfor %}
+</section>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Versões do sistema",
+    "texto": "Esta tela diz qual versão está rodando no servidor, quais atualizações já foram aplicadas aqui e o que mudou em cada uma."
+  },
+  {
+    "seletor": ".estado-dados",
+    "titulo": "Versão instalada",
+    "texto": "É o mesmo número que aparece no pé de todas as telas. Informe esse número ao relatar qualquer problema."
+  },
+  {
+    "seletor": ".tabela-rolavel",
+    "titulo": "Atualizações aplicadas",
+    "texto": "Uma linha por atualização: quando entrou, qual versão e qual arquivo de atualização foi usado."
+  }
+]
+</script>
+{% endblock %}

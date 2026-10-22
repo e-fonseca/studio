@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Contas a pagar</h1>
+  <p><a href="{% url 'financeiro:despesas' %}">Ver para onde o dinheiro vai</a></p>
+</div>
+
+<section class="cartao estado-dados estado-{{ estado.nivel }}">
+  <h2>{{ estado.titulo }}</h2>
+  <p>{{ estado.detalhe }}</p>
+</section>
+
+{% include "financeiro/_resumo.html" %}
+
+{% if resumo.vencidas.quantidade %}
+<section class="cartao cartao-erro">
+  <h2>{{ resumo.vencidas.quantidade }} conta{{ resumo.vencidas.quantidade|pluralize }} vencida{{ resumo.vencidas.quantidade|pluralize }}</h2>
+  <p>Somam <strong>{{ resumo.vencidas.valor|reais }}</strong> e estão na primeira parte da lista abaixo. Pode
+     ser pagamento feito e ainda não baixado no SET: confira antes de cobrar o setor.</p>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>Quando o dinheiro sai</h2>
+  <p>O que já está lançado no SET, mais os pagamentos previstos que a loja registrou aqui.</p>
+  <div class="faixas-caixa">
+    {% for faixa in resumo.por_faixa %}
+    <div class="faixa-caixa">
+      <span class="numero">{{ faixa.valor|reais }}</span>
+      <span class="rotulo">{{ faixa.rotulo }}</span>
+      {% if faixa.previsto %}<span class="ajuda">inclui {{ faixa.previsto|reais }} de previsto</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <p class="ajuda">Compare com a venda do mesmo período antes de autorizar uma compra grande.</p>
+</section>
+
+<section class="cartao">
+  <h2>Procurar uma conta</h2>
+  <form method="get" class="busca-produto" role="search">
+    <input type="hidden" name="filtro" value="{{ filtro }}">
+    <label for="busca">Fornecedor, descrição, número do documento ou classificação</label>
+    <input type="search" id="busca" name="busca" value="{{ busca }}"
+           placeholder="Ex.: GENALDO, luz, 000317" autocomplete="off"
+           data-sugestoes="{% url 'financeiro:sugestoes_da_busca' %}">
+    <button type="submit" class="botao">Procurar</button>
+    {% if busca %}<a href="?filtro={{ filtro }}" class="botao secundario">Limpar</a>{% endif %}
+  </form>
+  <p class="ajuda">Enquanto você digita, o sistema sugere o que existe nas contas em
+     aberto, com quantas contas cada um tem. Pode digitar com acento ou sem:
+     <strong>quiteria</strong> acha <strong>QUITÉRIA</strong>. Os filtros abaixo passam a
+     contar só o que foi encontrado.</p>
+</section>
+
+<nav class="filtros-ficha" aria-label="Filtrar as contas a pagar">
+  {% for f in filtros %}
+  <a href="?filtro={{ f.chave }}{% if busca %}&amp;busca={{ busca|urlencode }}{% endif %}" class="filtro{% if f.chave == filtro %} filtro-ativo{% endif %}"
+     {% if f.chave == filtro %}aria-current="true"{% endif %} title="{{ f.explicacao }}">
+    <span class="filtro-rotulo">{{ f.rotulo }}</span>
+    <span class="filtro-numero">{{ f.quantidade }}</span>
+    <span class="filtro-valor">{{ f.valor|reais }}</span>
+  </a>
+  {% endfor %}
+</nav>
+{% for f in filtros %}{% if f.chave == filtro %}<p class="ajuda">{{ f.explicacao }}</p>{% endif %}{% endfor %}
+
+{% comment %}Os dois botões levam o MESMO endereço do filtro e da busca (?filtro=&busca=),
+senão o botão diria "de Vencidas" e sairia a lista inteira — foi assim que o pedido ao
+fornecedor saiu errado na 1.31.0. A planilha é o mesmo relatório, não o PDF convertido:
+sai da mesma função de montagem, com os números em células que somam.{% endcomment %}
+<p class="acoes-da-lista">
+  <a class="botao secundario" href="{% url 'financeiro:contas_a_pagar_em_pdf' %}?filtro={{ filtro }}&amp;busca={{ busca|urlencode }}"
+     target="_blank" rel="noopener">Gerar PDF de {{ rotulo_do_filtro }} para imprimir</a>
+  <a class="botao secundario" href="{% url 'financeiro:contas_a_pagar_em_planilha' %}?filtro={{ filtro }}&amp;busca={{ busca|urlencode }}">Baixar {{ rotulo_do_filtro }} em planilha</a>
+  <span class="ajuda">Sai exatamente esta lista{% if busca %}, com <strong>{{ busca }}</strong>{% endif %}, nos dois casos.
+    Trocando a lista acima, os botões passam a gerar a outra. Na planilha os valores
+    são número: a coluna soma, a data ordena e o atraso filtra.</span>
+</p>
+
+{% if contas %}
+<div class="tabela-rolavel tabela-dez">
+  <table class="tabela-contas">
+    <caption>{{ contas|length }} conta{{ contas|length|pluralize }}{% if busca %} com <strong>{{ busca }}</strong>{% endif %},
+      somando <strong>{{ total_da_lista|reais }}</strong>, da mais atrasada para a que vence mais longe.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Vencimento</th>
+        <th scope="col">Conta</th>
+        <th scope="col">Fornecedor</th>
+        <th scope="col">Classificação no SET</th>
+        <th scope="col" class="numerico">Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for conta in contas %}
+      <tr {% if conta.atraso %}class="linha-erro"{% endif %}>
+        <td>{{ conta.vencimento|date:"d/m/Y"|default:"sem data" }}
+          {% if conta.atraso %}<br><span class="etiqueta etiqueta-erro">{{ conta.atraso }} dia{{ conta.atraso|pluralize }} em atraso</span>{% endif %}</td>
+        <td>{{ conta.descricao|default:"—" }}
+          {% if conta.documento %}<br><span class="ajuda">doc. {{ conta.documento }}{% if conta.parcela %} parcela {{ conta.parcela }}{% endif %}</span>{% endif %}</td>
+        <td>{{ conta.contraparte|default:"—" }}</td>
+        <td>{{ conta.grupo }}</td>
+        <td class="numerico">{{ conta.valor|reais }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<section class="cartao">
+  {% if busca %}
+  <h2>Nada encontrado para "{{ busca }}"</h2>
+  <p>Nenhuma conta em aberto tem esse texto no fornecedor, na descrição, no documento ou na
+     classificação. <a href="?filtro={{ filtro }}">Ver a lista inteira</a>.</p>
+  {% elif filtro == 'todas' %}
+  <h2>Nenhuma conta em aberto</h2>
+  <p>Na última importação não havia conta a pagar em aberto no SET. Se você sabe de alguma,
+     ela ainda não foi lançada lá.</p>
+  {% else %}
+  <h2>Nenhuma conta neste filtro</h2>
+  <p>Não há conta nesta situação. <a href="?filtro=todas">Ver todas as contas em aberto</a>.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if previstos %}
+<section class="cartao">
+  <h2>Pagamentos previstos registrados aqui</h2>
+  <p>Ainda não estão no SET e já entram na projeção acima.</p>
+  <ul class="lista-simples">
+    {% for previsto in previstos %}
+    <li>{{ previsto.vencimento|date:"d/m/Y" }} — {{ previsto.descricao }}
+      {% if previsto.fornecedor %}({{ previsto.fornecedor }}){% endif %}: <strong>{{ previsto.valor|reais }}</strong></li>
+    {% endfor %}
+  </ul>
+  <p><a href="{% url 'financeiro:pagamentos' %}">Abrir pagamentos a fornecedores</a></p>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Contas a pagar",
+    "texto": "Esta tela mostra o que já está comprometido do caixa. Os valores vêm do financeiro do próprio SET, pela cópia do backup: o sistema não lança nada lá."
+  },
+  {
+    "seletor": ".faixas-caixa",
+    "titulo": "Quando o dinheiro sai",
+    "texto": "Antes de autorizar uma compra grande, olhe quanto já sai nos próximos dias. É a conta que falta quando a compra é feita no olhômetro."
+  },
+  {
+    "seletor": ".tabela-contas",
+    "titulo": "A lista",
+    "texto": "As contas em vermelho já venceram. Pode ser pagamento feito e não baixado no SET, então confira antes de cobrar alguém."
+  }
+]
+</script>
+{% endblock %}

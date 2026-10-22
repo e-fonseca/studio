@@ -1,0 +1,187 @@
+{% load cabana %}
+{% comment %}O mesmo período do ano passado, dentro da lista de compra.
+
+Era tela própria no menu até a 1.28.0. O Edson pediu em 14/10/2026 que virasse recurso
+daqui: a estação só muda a decisão se estiver à vista na hora de fechar o pedido. O
+quadro herda o fornecedor filtrado na tela, então filtrar um fornecedor compara esse
+fornecedor. A tabela produto a produto continua existindo, numa página à parte, aberta
+pelo link do fim deste quadro.
+
+Na 1.30.0 ele pediu "aumentar os filtros, permitir edição por período e trazer outro
+comparativo de vendas do mesmo período dos anos anteriores": entraram o grupo de produto,
+os dois campos de escolher mês e a lista ano a ano.{% endcomment %}
+<section class="cartao" id="ano-passado">
+  <h2>Comparar com o ano passado</h2>
+
+  {% if not ano_passado.meses_disponiveis %}
+  <p>A venda mês a mês do ano passado ainda não entrou nesta foto do SET, então não há com o
+     que comparar. Ela é montada durante a sincronização; depois da próxima, o mesmo período
+     do ano passado aparece aqui. Veja em <a href="{% url 'importacao:historico' %}">Importações</a>.</p>
+  {% else %}
+
+  <p class="ajuda">A loja vende por estação, e o que o mês que vem vendeu no ano passado é a
+     melhor pista do que ele vai vender agora. Olhar só os últimos doze meses esconde isso.</p>
+
+  {% comment %}Dois botões no mesmo formulário, e não um só: um compara o período pronto do
+  seletor, o outro compara os meses escolhidos a dedo. Com um botão só o sistema teria que
+  adivinhar em qual dos dois controles a pessoa mexeu. O fornecedor e a situação viajam
+  escondidos para o filtro da TELA não se perder quando alguém mexe só neste quadro; o
+  fornecedor sai do próprio quadro, que guarda o que foi pedido na tela, e não da lista de
+  compra, que descarta quem não tem nada para comprar hoje.{% endcomment %}
+  <form class="filtros filtros-comparar" method="get" action="{% url 'compras:lista' %}">
+    <label for="periodo-ano">Período
+      <select name="periodo" id="periodo-ano">
+        {% for valor, rotulo, meses in periodos %}
+        <option value="{{ valor }}" {% if valor == ano_passado.periodo %}selected{% endif %}>Últimos {{ rotulo }}</option>
+        {% endfor %}
+        {% if ano_passado.escolhido_a_dedo %}
+        <option value="livre" selected>Meses escolhidos</option>
+        {% endif %}
+      </select></label>
+    <label for="grupo-ano">Grupo de produto
+      <select name="grupo" id="grupo-ano">
+        <option value="">Todos</option>
+        {% for nome in ano_passado.grupos %}
+        <option value="{{ nome }}" {% if nome == ano_passado.filtro_grupo %}selected{% endif %}>{{ nome }}</option>
+        {% endfor %}
+      </select></label>
+    <button type="submit" class="botao">Comparar</button>
+
+    {% comment %}Os dois meses e o botão deles andam juntos: soltos na mesma fileira, o
+    "De" ficava no fim de uma linha e o "Até" no começo da outra.{% endcomment %}
+    <div class="filtros-meses">
+    <span class="filtros-ou">ou escolha os meses</span>
+    <label for="de-ano">De
+      <select name="de" id="de-ano">
+        {% for valor, rotulo in ano_passado.meses_disponiveis %}
+        <option value="{{ valor }}" {% if valor == ano_passado.de %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select></label>
+    <label for="ate-ano">Até
+      <select name="ate" id="ate-ano">
+        {% for valor, rotulo in ano_passado.meses_disponiveis %}
+        <option value="{{ valor }}" {% if valor == ano_passado.ate %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select></label>
+    <button type="submit" name="comparar" value="meses" class="botao secundario">Ver estes meses</button>
+    </div>
+
+    <input type="hidden" name="fornecedor" value="{{ ano_passado.filtro_fornecedor }}">
+    <input type="hidden" name="situacao" value="{{ lista.filtro_urgencia }}">
+  </form>
+
+  {% if ano_passado.falta_historico %}
+  <p class="aviso-parado">{{ ano_passado.falta_historico }}</p>
+  {% elif not ano_passado.tem_historico %}
+  <p>Este período não tem o mesmo período do ano passado nesta foto do SET. Escolha outro
+     período, ou espere a próxima sincronização.</p>
+  {% else %}
+
+  <p class="destaque">{{ ano_passado.rotulo_de_agora|capfirst }}
+     {% if ano_passado.filtro_grupo %}em <strong>{{ ano_passado.filtro_grupo }}</strong>{% endif %}
+     {% if ano_passado.filtro_fornecedor %}em <strong>{{ ano_passado.filtro_fornecedor }}</strong>{% endif %}
+     contra {{ ano_passado.rotulo_de_antes }}, os mesmos meses de um ano atrás.</p>
+
+  <div class="cartoes-numero">
+    <div class="cartao-numero">
+      <span class="cartao-titulo">{{ ano_passado.rotulo_de_agora|capfirst }}</span>
+      <strong class="cartao-valor">{{ ano_passado.receita|reais }}</strong>
+      <span class="cartao-rodape">{{ ano_passado.unidades|floatformat:"-2g" }} unidades vendidas.</span>
+    </div>
+    <div class="cartao-numero">
+      <span class="cartao-titulo">{{ ano_passado.rotulo_de_antes|capfirst }}</span>
+      <strong class="cartao-valor">{{ ano_passado.receita_antes|reais }}</strong>
+      <span class="cartao-rodape">{{ ano_passado.unidades_antes|floatformat:"-2g" }} unidades vendidas.</span>
+    </div>
+    {% comment %}Diferença de zero não é boa notícia: é nada. Verde ali faria a tela
+    comemorar um período sem venda nenhuma no filtro escolhido.{% endcomment %}
+    <div class="cartao-numero {% if ano_passado.diferenca < 0 %}nivel-ruim{% elif ano_passado.diferenca > 0 %}nivel-bom{% else %}nivel-neutro{% endif %}">
+      <span class="cartao-titulo">Diferença</span>
+      <strong class="cartao-valor">{{ ano_passado.diferenca|reais }}</strong>
+      <span class="cartao-rodape">{% if ano_passado.variacao is not None %}{{ ano_passado.variacao }}% em relação ao ano passado.{% else %}Sem o ano passado para comparar.{% endif %}</span>
+    </div>
+  </div>
+
+  {% if ano_passado.mes_de_fora %}
+  <p class="ajuda">{{ ano_passado.mes_de_fora|capfirst }} ainda está correndo e fica de fora: meio
+     mês contra um mês inteiro do ano passado acusaria uma queda que não existe.</p>
+  {% endif %}
+
+  {% if ano_passado.anos %}
+  <h3>O mesmo período, ano a ano</h3>
+  <p class="ajuda">Os mesmos meses em cada ano, para ver se a queda (ou a alta) é deste ano
+     ou vem de longe. O sistema guarda {{ ano_passado.meses_na_foto }} meses de venda mês a mês.</p>
+  <ul class="barras-lista barras-lista-grafico">
+    {% for linha in ano_passado.anos %}
+    <li>
+      <span class="barras-nome">{{ linha.rotulo|capfirst }}
+        <small>{{ linha.unidades|floatformat:"-2g" }} unidades{% if linha.variacao is not None %}
+          · {{ linha.variacao }}% em relação a {{ linha.ano|add:"-1" }}{% endif %}</small></span>
+      <span class="barras-trilho"><span class="barras-preenchida" style="width: {{ linha.largura }}%"></span></span>
+      <span class="barras-valor">{{ linha.receita|reais }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <p class="ajuda"><strong>{{ ano_passado.subiram|contagem }}</strong> produtos venderam mais que
+     no ano passado e <strong>{{ ano_passado.cairam|contagem }}</strong> venderam menos.
+     <strong>{{ ano_passado.novos|contagem }}</strong> não vendiam nada neste período do ano
+     passado, então são novos na prateleira e não crescimento;
+     <strong>{{ ano_passado.sumiram|contagem }}</strong> vendiam e este ano não venderam nada.</p>
+
+  {% if ano_passado.cresceram or ano_passado.encolheram %}
+  <div class="duas-colunas">
+    <div>
+      <h3>Venderam mais que no ano passado</h3>
+      {% if ano_passado.cresceram %}
+      <p class="ajuda">Vale conferir se há estoque para o que vem.</p>
+      <ul class="barras-lista barras-lista-grafico">
+        {% for linha in ano_passado.cresceram|slice:":5" %}
+        <li>
+          <span class="barras-nome">{{ linha.descricao }}
+            <small>{{ linha.unidades|quantidade }} contra {{ linha.unidades_antes|quantidade }} unidades
+              {% if linha.variacao is not None %} · {{ linha.variacao }}%{% else %} · não vendia no ano passado{% endif %}
+              · tem {{ linha.estoque|quantidade }} na prateleira</small></span>
+          <span class="barras-trilho"><span class="barras-preenchida" style="width: {{ linha.largura }}%"></span></span>
+          <span class="barras-valor">+{{ linha.diferenca|reais }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="ajuda">Nenhum produto vendeu mais que no ano passado neste período.</p>
+      {% endif %}
+    </div>
+    <div>
+      <h3>Venderam menos que no ano passado</h3>
+      {% if ano_passado.encolheram %}
+      <p class="ajuda">Antes de repor, vale ver se o produto perdeu a graça ou se é só falta
+         na prateleira.</p>
+      <ul class="barras-lista barras-lista-grafico">
+        {% for linha in ano_passado.encolheram|slice:":5" %}
+        <li>
+          <span class="barras-nome">{{ linha.descricao }}
+            <small>{{ linha.unidades|quantidade }} contra {{ linha.unidades_antes|quantidade }} unidades
+              {% if linha.variacao is not None %} · {{ linha.variacao }}%{% endif %}
+              · tem {{ linha.estoque|quantidade }} na prateleira</small></span>
+          <span class="barras-trilho"><span class="barras-preenchida" style="width: {{ linha.largura }}%"></span></span>
+          <span class="barras-valor">{{ linha.diferenca|reais }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="ajuda">Nenhum produto vendeu menos que no ano passado neste período.</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="acoes-da-lista">
+    <a class="botao secundario" href="{% url 'compras:comparar' %}?periodo={{ ano_passado.periodo }}&amp;de={{ ano_passado.de }}&amp;ate={{ ano_passado.ate }}&amp;grupo={{ ano_passado.filtro_grupo|urlencode }}&amp;fornecedor={{ ano_passado.filtro_fornecedor|urlencode }}">Abrir produto a produto</a>
+    <span class="ajuda">{{ ano_passado.encontrados|contagem }} produto{{ ano_passado.encontrados|pluralize }}
+      venderam no período, aqui ou no ano passado. A tabela aberta traz todos, com grupo de
+      produto, busca por nome e o arquivo para o Excel.</span>
+  </p>
+  {% endif %}
+  {% endif %}
+</section>

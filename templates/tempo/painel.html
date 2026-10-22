@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+{% comment %}Esta tela saiu do menu na 1.29.0: o tempo virou indicador da Visão geral,
+que é onde ele muda o que a loja faz nesta semana. Aqui ficou o que é trabalho e não
+indicador: anotar como o dia foi de verdade, ver dia a dia e dizer onde fica a loja. Por
+não estar no menu, o caminho de volta tem que estar na tela: é o link daqui de cima, e a
+seta de "anterior" no pé da página.{% endcomment %}
+<section class="abertura abertura-{{ estado.nivel }}">
+  <div>
+    <h1>Tempo e venda</h1>
+    <p class="abertura-sub">O que o clima faz com o movimento, dentro da
+      <a href="{% url 'painel:geral' %}#tempo">visão geral</a></p>
+  </div>
+  <div class="abertura-dados">
+    <strong>{{ estado.titulo }}</strong>
+    <span>{{ estado.detalhe }}</span>
+  </div>
+</section>
+
+{% if tempo.tem_previsao %}
+<section class="cartao">
+  <h2>O que vem por aí</h2>
+  <p class="ajuda">A previsão que o servidor guardou na última busca. Ela não entra em conta
+     nenhuma do sistema: serve para a loja se preparar, e o fim de semana está marcado porque
+     é quando ela fatura.</p>
+  <ul class="tempo-proximos">
+    {% for dia in tempo.proximos %}
+    <li class="tempo-dia {% if dia.fim_de_semana %}tempo-dia-fds{% endif %} {% if dia.choveu %}tempo-dia-chuva{% endif %}">
+      <span class="tempo-quando">{{ dia.dia_da_semana }}
+        <small>{{ dia.data|date:"d/m" }}{% if dia.fim_de_semana %} · fim de semana{% endif %}</small></span>
+      <span class="tempo-como">{{ dia.resumo }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if not analise.tem_dados %}
+<section class="cartao cartao-destaque">
+  <h2>Ainda não há dia nenhum com o tempo anotado</h2>
+  <p>A conta começa a existir quando houver dias de chuva e dias de sol registrados, para
+     comparar um com o outro. Anote o dia de hoje aqui embaixo, ou escreva a cidade da loja
+     aqui em baixo e o sistema passa a guardar o tempo sozinho, todo dia.</p>
+  <p class="ajuda">Dia previsto não conta nesta conta: previsão é o que pode acontecer, e aqui
+     se mede o que aconteceu.</p>
+</section>
+{% else %}
+
+<section class="cartao">
+  <h2>Quanto a chuva custa à loja</h2>
+  <p class="ajuda">A conta é feita dentro do mesmo tipo de dia. Misturar um sábado de chuva
+     com uma terça de sol mediria o dia da semana, e não o tempo: a loja faz a maior parte
+     do faturamento no fim de semana.</p>
+
+  {% for grupo in analise.grupos %}
+  <h3>{{ grupo.nome }}</h3>
+  {% if grupo.media_com_chuva is not None and grupo.media_sem_chuva is not None %}
+  <ul class="barras-lista barras-lista-grafico">
+    <li>
+      <span class="barras-nome">Dias sem chuva
+        <small>{{ grupo.dias_sem_chuva }} dia{{ grupo.dias_sem_chuva|pluralize }} com registro</small></span>
+      <span class="barras-trilho"><span class="barras-preenchida" style="width: {{ grupo.largura_sem_chuva }}%"></span></span>
+      <span class="barras-valor">{{ grupo.media_sem_chuva|reais }}</span>
+    </li>
+    <li>
+      <span class="barras-nome">Dias de chuva
+        <small>{{ grupo.dias_com_chuva }} dia{{ grupo.dias_com_chuva|pluralize }} com registro</small></span>
+      <span class="barras-trilho"><span class="barras-preenchida" style="width: {{ grupo.largura_com_chuva }}%"></span></span>
+      <span class="barras-valor">{{ grupo.media_com_chuva|reais }}</span>
+    </li>
+  </ul>
+  <p class="destaque">Em média, um dia de chuva {% if grupo.variacao < 0 %}tira
+     <strong>{{ grupo.diferenca|reais }}</strong> do caixa ({{ grupo.variacao }}%)
+     {% else %}rende <strong>{{ grupo.diferenca|reais }}</strong> a mais ({{ grupo.variacao }}%)
+     {% endif %} em relação a um dia sem chuva.</p>
+  {% if not grupo.da_para_concluir %}
+  <p class="aviso-parado">São poucos dias registrados para concluir. A partir de
+     {{ dias_para_concluir }} dias de chuva e {{ dias_para_concluir }} sem chuva, este número
+     começa a valer como medida.</p>
+  {% endif %}
+  {% else %}
+  <p class="ajuda">Ainda faltam dias registrados neste tipo de dia: há
+     {{ grupo.dias_com_chuva }} com chuva e {{ grupo.dias_sem_chuva }} sem chuva.</p>
+  {% endif %}
+  {% endfor %}
+
+  <p class="ajuda">{{ analise.dias_com_tempo|contagem }} dia{{ analise.dias_com_tempo|pluralize }}
+     com tempo anotado e {{ analise.dias_sem_tempo|contagem }} ainda sem, dos
+     {{ analise.dias_com_venda|contagem }} dias com venda na última importação.</p>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>Anotar o tempo de um dia</h2>
+  <p class="ajuda">O que a pessoa da loja escreve vale mais do que a previsão: a busca
+     automática nunca escreve por cima disto.</p>
+  <form method="post" action="{% url 'tempo:anotar' %}" class="formulario">{% csrf_token %}
+    <div class="campos-do-tempo">
+      <div class="campo">
+        <label for="data">Dia</label>
+        <input type="date" id="data" name="data" value="{{ hoje|date:'Y-m-d' }}" required>
+      </div>
+      <div class="campo">
+        <label for="condicao">Como foi o dia</label>
+        <select id="condicao" name="condicao">
+          <option value="">Não sei dizer</option>
+          {% for valor, rotulo in condicoes %}
+          <option value="{{ valor }}">{{ rotulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="chuva">Chuva (mm)</label>
+        <input type="text" id="chuva" name="chuva" inputmode="decimal" placeholder="12,5">
+      </div>
+      <div class="campo">
+        <label for="minima">Temperatura mínima</label>
+        <input type="text" id="minima" name="minima" inputmode="decimal" placeholder="18">
+      </div>
+      <div class="campo">
+        <label for="maxima">Temperatura máxima</label>
+        <input type="text" id="maxima" name="maxima" inputmode="decimal" placeholder="29">
+      </div>
+    </div>
+    <div class="campo">
+      <label><input type="checkbox" name="feriado" value="1"> Feriado ou data especial</label>
+    </div>
+    <div class="campo">
+      <label for="observacao">O que mais aconteceu no dia</label>
+      <input type="text" id="observacao" name="observacao" maxlength="200"
+             placeholder="Ex.: choveu só de manhã; teve festa na praça; rua interditada.">
+    </div>
+    <div class="acoes"><button type="submit" class="botao">Anotar o dia</button></div>
+  </form>
+
+  {% if sem_registro %}
+  <p class="ajuda">Dias com venda que ainda estão sem o tempo anotado:
+    {% for dia in sem_registro %}<strong>{{ dia|date:"d/m" }}</strong>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+  {% endif %}
+</section>
+
+{% if pode_configurar %}
+<section class="cartao">
+  <h2>Onde fica a loja</h2>
+  <p>O sistema busca o tempo de cada dia, e a previsão dos próximos, num serviço aberto de
+     meteorologia: uma vez por dia, sem cadastro e sem mensalidade. Para isso ele só precisa
+     do <strong>nome da cidade</strong> — a latitude e a longitude ele descobre sozinho ao
+     salvar, e o que ele achou aparece escrito logo abaixo.</p>
+  <p class="ajuda">A latitude e a longitude ficam à vista e dá para corrigi-las à mão quando a
+     loja fica longe do centro da cidade. Mudando a cidade, o sistema descobre o lugar de novo.</p>
+  {% if configuracao.o_que_falta %}
+  <p class="aviso-parado">Falta: <strong>{{ configuracao.o_que_falta|join:", " }}</strong>.</p>
+  {% endif %}
+  {% if configuracao.lugar_encontrado %}
+  <p class="destaque">O sistema está buscando o tempo de
+     <strong>{{ configuracao.lugar_encontrado }}</strong>. Se não for essa a cidade, corrija o
+     nome e salve de novo.</p>
+  {% endif %}
+  {% if configuracao.ultimo_erro %}
+  <p class="aviso-parado">A última busca não deu certo: {{ configuracao.ultimo_erro }}</p>
+  {% elif configuracao.ultima_busca %}
+  <p class="ajuda">Última busca em {{ configuracao.ultima_busca|date:"d/m/Y \à\s H:i" }}.</p>
+  {% endif %}
+  <form method="post" action="{% url 'tempo:configurar' %}" class="formulario">{% csrf_token %}
+    {% include "_form.html" %}
+    <div class="acoes"><button type="submit" class="botao">Salvar</button></div>
+  </form>
+  {% if configuracao.da_para_buscar %}
+  <form method="post" action="{% url 'tempo:buscar_agora' %}">{% csrf_token %}
+    <button type="submit" class="botao secundario">Buscar o tempo agora</button>
+  </form>
+  <p class="ajuda">Busca os últimos catorze dias e a previsão da semana, na hora. Serve para
+     conferir que o servidor da loja alcança a internet antes de confiar na tarefa da
+     madrugada, que roda às 06:10.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if analise.tabela %}
+<section class="cartao">
+  <h2>Dia a dia</h2>
+  <p class="acoes-da-lista">
+    <a class="botao secundario" href="{% url 'tempo:em_arquivo' %}">Baixar o tempo e a venda em arquivo</a>
+    <span class="ajuda">Os dias mais recentes aparecem aqui; o arquivo leva o período inteiro
+      da última importação.</span>
+  </p>
+  <div class="tabela-rolavel tabela-dez">
+    <table>
+      <caption class="oculto-visualmente">Tempo e venda de cada dia</caption>
+      <thead>
+        <tr>
+          <th scope="col">Dia</th>
+          <th scope="col">Tempo</th>
+          <th scope="col" class="numerico">Vendas</th>
+          <th scope="col" class="numerico">Faturamento</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dia in analise.tabela %}
+        <tr>
+          <th scope="row">{{ dia.data|date:"d/m/Y" }}
+            <span class="linha-detalhe">{{ dia.dia_da_semana }}{% if dia.fim_de_semana %} · fim de semana{% endif %}</span></th>
+          <td>{% if dia.tem_tempo %}{{ dia.tempo.resumo }}
+            {% if dia.tempo.observacao %}<span class="linha-detalhe">{{ dia.tempo.observacao }}</span>{% endif %}
+            {% else %}<span class="ajuda">sem registro</span>{% endif %}</td>
+          <td class="numerico">{{ dia.vendas|contagem }}</td>
+          <td class="numerico">{{ dia.venda|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Tempo e venda",
+    "texto": "A condição do tempo de cada dia, guardada ao lado do que a loja vendeu naquele dia. Serve para medir quanto o clima pesa no movimento da loja física."
+  },
+  {
+    "seletor": ".barras-lista",
+    "titulo": "Chuva contra sol",
+    "texto": "A média do que a loja vendeu nos dias de chuva e nos dias sem chuva, separada por tipo de dia. Fim de semana e meio de semana são contas diferentes de propósito."
+  },
+  {
+    "seletor": ".tempo-proximos",
+    "titulo": "O que vem por aí",
+    "texto": "A previsão dos próximos dias, com o fim de semana marcado. É só para a loja se preparar: previsão não entra em conta nenhuma do sistema, porque média de palpite não mede nada."
+  },
+  {
+    "seletor": ".campos-do-tempo",
+    "titulo": "Anotar o dia",
+    "texto": "Basta a condição; o resto é detalhe. O que a pessoa escreve nunca é apagado pela busca automática, porque quem estava na loja viu o que a previsão não vê."
+  }
+]
+</script>
+{% endblock %}

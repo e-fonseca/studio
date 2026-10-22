@@ -1,0 +1,125 @@
+{% extends "base.html" %}{% load cabana %}
+{% block migalhas %}
+<nav class="migalhas" aria-label="Você está em">
+  <a href="{% url 'core:inicio' %}">Início</a> ›
+  <a href="{% url 'processos:quadro' %}">Base de processos</a> ›
+  <a href="{% url 'processos:ficha_tecnica' %}">Ficha técnica</a>
+</nav>
+{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Ficha técnica do sistema</h1>
+  <a class="botao secundario" href="{% url 'processos:quadro' %}">Voltar ao quadro</a>
+</div>
+<p class="ajuda">De que o sistema é feito, para quem um dia precisar mantê-lo sem ter
+   participado de nada disto. É a mesma ideia da Base de processos: o que uma pessoa sabe
+   tem que estar escrito em algum lugar que outra pessoa alcance.</p>
+
+<section class="cartao cartao-destaque">
+  <h2>Esta instalação</h2>
+  <p>Você está vendo a versão <strong>{{ versao.numero }}</strong>, rodando em
+     <strong>{{ request.get_host }}</strong>. O que mudou em cada versão está em
+     <a href="{% url 'core:versoes' %}">Versões do sistema</a>.</p>
+  <p>Os números da tabela abaixo não são digitados à mão: cada um é perguntado agora a
+     quem sabe a resposta — o Python diz a sua versão, o banco responde pela conexão
+     aberta, o motor Firebird é lido do arquivo no disco. Por isso esta página continua
+     certa depois de qualquer atualização. O que não puder ser lido aparece dizendo
+     que não pôde, nunca um palpite.</p>
+</section>
+
+<h2>De que o sistema é feito</h2>
+<div class="tabela-rolavel">
+  <table>
+    <caption>A linguagem é o Python; o banco de dados é o PostgreSQL. O resto é apoio.</caption>
+    <thead>
+      <tr><th scope="col">Peça</th><th scope="col">Versão</th><th scope="col">Para que serve</th></tr>
+    </thead>
+    <tbody>
+      {% for p in pecas %}
+      <tr>
+        <th scope="row">{{ p.nome }}</th>
+        <td>{% if p.lida %}<strong>{{ p.versao }}</strong>{% else %}<span class="etiqueta etiqueta-atencao">{{ p.versao }}</span>{% endif %}</td>
+        <td>{{ p.para_que }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>As decisões que explicam o resto</h2>
+<p class="ajuda">Estas não se leem de lugar nenhum, e sem elas a tabela acima é só uma
+   lista de nomes.</p>
+<dl class="procedimento">
+  {% for titulo, texto in decisoes %}
+  <dt>{{ titulo }}</dt>
+  <dd>{{ texto }}</dd>
+  {% endfor %}
+</dl>
+
+<h2>Onde cada coisa fica no disco</h2>
+<dl class="lista-dados">
+  {% for rotulo, caminho in caminhos %}
+  <dt>{{ rotulo }}</dt>
+  <dd><code>{{ caminho }}</code></dd>
+  {% endfor %}
+</dl>
+
+<h2>Como o sistema é atualizado</h2>
+<p>Toda entrega é um pacote completo, um arquivo <code>.zip</code> único. Quem atualiza
+   salva esse arquivo em <code>C:\instalacao</code> e roda, no PowerShell como
+   administrador:</p>
+<p><code>powershell -ExecutionPolicy Bypass -File C:\instalacao\atualizar.ps1</code></p>
+<p>O script faz backup do banco, troca os arquivos do programa, aplica as mudanças de
+   banco, confere se elas entraram, refaz as permissões dos perfis e roda uma importação
+   no fim. Ele também limpa a pasta <code>C:\instalacao</code>: guarda os três últimos
+   pacotes, logs de 90 dias e as duas versões anteriores do sistema. Não existe "pacote de
+   correção" avulso: se o número da versão no topo da tela não mudou, a atualização não
+   entrou.</p>
+
+<h2>Como o sistema é higienizado</h2>
+<p>Todo dia às 03:40 o sistema limpa sozinho o que acumulou: a cópia do banco do SET que a
+   importação já leu, as fotos de dados além das dez últimas sincronizações, sessões
+   vencidas, registros de acesso e de envio com mais de 90 dias e arquivo de anexo sem
+   dono. Para ver o que há para limpar, sem limpar nada:</p>
+<p><code>powershell -ExecutionPolicy Bypass -File C:\cabana-sistema\scripts\higienizar.ps1 -Conferir</code></p>
+<p>O mesmo comando sem o <code>-Conferir</code> limpa na hora. O que uma pessoa digitou
+   &mdash; ficha de fornecedor, pagamento previsto, inventário, extrato conferido,
+   auditoria &mdash; nunca entra nessa limpeza, e nada nela encosta no SET.</p>
+
+{% comment %}Os dois comandos juntos, a pedido dele em 19/10/2026: quem abre o PowerShell
+no servidor costuma fazer as duas coisas na mesma visita, e procurar o outro comando em
+outro lugar da página é o que ele não quer fazer.{% endcomment %}
+<h3>Os comandos do servidor, na ordem em que se usam</h3>
+<dl class="lista-dados">
+  <dt>Atualizar o sistema</dt>
+  <dd><code>powershell -ExecutionPolicy Bypass -File C:\instalacao\atualizar.ps1</code></dd>
+  <dt>Conferir a limpeza, sem limpar</dt>
+  <dd><code>powershell -ExecutionPolicy Bypass -File C:\cabana-sistema\scripts\higienizar.ps1 -Conferir</code></dd>
+  <dt>Higienizar agora</dt>
+  <dd><code>powershell -ExecutionPolicy Bypass -File C:\cabana-sistema\scripts\higienizar.ps1</code></dd>
+</dl>
+<p class="ajuda">Nenhum dos dois é obrigatório no dia a dia: a higienização roda sozinha
+   às 03:40 e a atualização só quando chega pacote novo. Estão aqui para quando alguém
+   quiser fazer na hora.</p>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Ficha técnica",
+    "texto": "De que o sistema é feito: a linguagem, o banco de dados e as peças de apoio. Serve para quem precisar manter o sistema um dia, e para responder a quem perguntar o que está rodando no servidor da loja."
+  },
+  {
+    "seletor": "table",
+    "titulo": "Os números são lidos, não digitados",
+    "texto": "Cada versão aqui é perguntada ao próprio sistema no momento em que a tela abre. Uma versão escrita à mão envelheceria na primeira atualização, e ficha que mente é pior do que ficha nenhuma."
+  },
+  {
+    "seletor": ".procedimento",
+    "titulo": "As decisões",
+    "texto": "Por que o sistema é isolado numa pasta só, por que o Firebird aqui só lê a cópia do backup do SET e por que nenhuma tela depende da internet. São escolhas de projeto, e explicam o formato do resto."
+  }
+]
+</script>
+{% endblock %}

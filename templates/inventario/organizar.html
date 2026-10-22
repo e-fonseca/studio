@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Organizar a prateleira</h1>
+  <p><a href="{% url 'inventario:lista' %}">Voltar ao inventário</a></p>
+</div>
+
+{% comment %}Cinco grupos, duas origens: sem etiqueta, danificado, conserto e descarte
+vêm da contagem, com a peça na mão; parado vem da venda, porque a peça está perfeita e o
+que está errado é que ela não sai. A pergunta é a mesma nos cinco, e é por isso que estão
+na mesma tela em vez de cinco telas no menu.{% endcomment %}
+{% comment %}Sem cartões de número no topo: seriam cinco, e no celular cinco cartões
+empilhados ocupam a tela inteira antes da primeira peça. O número de cada grupo está no
+título dele, e o dinheiro, na linha logo abaixo — onde a pessoa já está olhando quando
+decide.{% endcomment %}
+
+{% for grupo in grupos %}
+<section class="cartao" id="grupo-{{ grupo.chave }}">
+  <h2>{{ grupo.titulo }}{% if grupo.quantos %} <span class="etiqueta etiqueta-atencao">{{ grupo.quantos }}</span>{% endif %}</h2>
+  <p>{{ grupo.o_que_fazer }}{% if grupo.quantos %}
+     <strong>{{ grupo.valor|reais }} ao custo.</strong>{% endif %}</p>
+
+  {% if grupo.vazio %}
+  <p class="ajuda">{% if grupo.de_produto %}Nada neste grupo: todo produto com peça na
+     prateleira vendeu alguma coisa nos últimos {{ meses_parado }} meses.
+     {% else %}Nada neste grupo. Peça marcada na contagem aparece aqui.{% endif %}</p>
+
+  {% elif grupo.de_produto %}
+  <div class="tabela-rolavel tabela-dez tabela-em-cartao tabela-de-organizar">
+    <table class="tabela-contagens">
+      <caption class="oculto-visualmente">Produtos parados, do maior valor ao custo para o menor.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col" class="numerico">Estoque</th>
+          <th scope="col" class="numerico">Valor ao custo</th>
+          <th scope="col">Última venda</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in grupo.na_tela %}
+        <tr>
+          <td data-rotulo="Produto">{{ item.descricao }}<br>
+            <span class="ajuda">código {{ item.codigo }}{% if item.grupo %} · {{ item.grupo }}{% endif %}{% if item.fornecedor %} · {{ item.fornecedor }}{% endif %}</span></td>
+          <td data-rotulo="Estoque" class="numerico">{{ item.estoque|quantidade }}</td>
+          <td data-rotulo="Valor ao custo" class="numerico">{{ item.valor|reais }}</td>
+          <td data-rotulo="Última venda" class="celula-decide {% if item.encalhado %}valor-ruim{% endif %}">
+            {% if item.nunca_vendeu %}nunca vendeu
+            {% else %}{{ item.ultima_venda|date:"d/m/Y" }} · {{ item.meses_sem_vender }} meses{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if grupo.escondidos %}
+  <p class="ajuda">São {{ grupo.quantos }} produtos; a tela mostra os {{ grupo.na_tela|length }}
+     de maior valor ao custo, e o relatório traz todos.</p>
+  {% endif %}
+
+  {% else %}
+  <div class="tabela-rolavel tabela-dez tabela-em-cartao tabela-de-organizar">
+    <table class="tabela-contagens">
+      <caption class="oculto-visualmente">Peças esperando providência, da mais cara para a mais barata.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Peça</th>
+          <th scope="col" class="numerico">Unidades</th>
+          <th scope="col" class="numerico">Valor ao custo</th>
+          <th scope="col">Onde foi achada</th>
+          <th scope="col">O que fazer</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in grupo.na_tela %}
+        <tr>
+          <td data-rotulo="Peça">{{ item.descricao }}<br>
+            <span class="ajuda">código {{ item.codigo }}{% if item.observacao %} · {{ item.observacao }}{% endif %}</span></td>
+          <td data-rotulo="Unidades" class="numerico">{{ item.quantidade|quantidade }}</td>
+          <td data-rotulo="Valor ao custo" class="numerico">{{ item.valor_no_custo|reais }}</td>
+          <td data-rotulo="Onde foi achada">{{ item.contagem.nome }}<br>
+            <span class="ajuda">{% if item.estado_em %}{{ item.estado_em|date:"d/m H:i" }}{% endif %}{% if item.estado_por %} · {{ item.estado_por.get_username }}{% endif %}</span></td>
+          <td data-rotulo="O que fazer" class="celula-decide">
+            {% if grupo.classificar_em %}
+            <form method="post" action="{% url 'inventario:classificar' item.pk %}" class="acoes-da-peca">{% csrf_token %}
+              {% for rotulo, destino in grupo.classificar_em %}
+              <button type="submit" name="estado" value="{{ destino }}" class="botao secundario">{{ rotulo }}</button>
+              {% endfor %}
+            </form>
+            {% endif %}
+            {% if grupo.resolver_rotulo %}
+            <form method="post" action="{% url 'inventario:resolver' item.pk %}" class="acoes-da-peca">{% csrf_token %}
+              <button type="submit" class="botao secundario">{{ grupo.resolver_rotulo }}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if grupo.escondidos %}
+  <p class="ajuda">São {{ grupo.quantos }} peças; a tela mostra as {{ grupo.na_tela|length }}
+     de maior valor ao custo, e o relatório traz todas.</p>
+  {% endif %}
+  {% if grupo.chave == 'sem_etiqueta' and com_etiqueta %}
+  <p><a class="botao" href="{% url 'inventario:etiquetas' %}">Folha de etiquetas para imprimir</a></p>
+  <p class="ajuda">{{ com_etiqueta }} de {{ grupo.quantos }} têm código de barras no cadastro
+     do SET, e por isso têm etiqueta para refazer. Nas outras o número precisa nascer no SET
+     primeiro, e isso não é coisa que este sistema faça.</p>
+  {% endif %}
+  {% endif %}
+
+  {% if grupo.relatorio and grupo.quantos %}
+  <p><a class="botao secundario" href="{% url grupo.relatorio %}">Relatório em PDF</a>
+     <a class="botao secundario" href="{% url grupo.relatorio %}?formato=planilha">em planilha</a></p>
+  {% endif %}
+</section>
+{% endfor %}
+
+<details class="cartao bloco-recolhido">
+  <summary><strong>Como esta tela decide os grupos</strong></summary>
+  <h3>Sem etiqueta e danificado</h3>
+  <p>Só se descobre com a peça na mão, então vêm da contagem: quem está contando marca no
+     leitor do celular ou na tela do computador.</p>
+  <h3>A classificação é em dois tempos</h3>
+  <p>Quem está na prateleira marca <strong>danificado</strong>, e só isso. Na hora da
+     contagem não se decide se uma luminária de vime descascada vale um conserto ou vai
+     para o lixo, e obrigar a decidir ali faria a pessoa marcar o que for mais rápido.
+     Quem decide é a gerência, aqui, com o custo da peça à vista.</p>
+  <h3>Parado</h3>
+  <p>Ninguém vê olhando a peça, porque a peça está perfeita: o que está errado é que ela
+     não sai. Entra na lista o produto com peça na prateleira e nenhuma unidade vendida há
+     mais de {{ meses_parado }} meses; a partir de {{ meses_encalhado }} meses, ou nunca
+     vendido, a linha sai em vermelho. Abaixo de {{ meses_parado }} meses ainda cabe
+     estação: peça de Natal não vende em março e nem por isso está encalhada.</p>
+  <h3>Nada sai sozinho</h3>
+  <p>Nenhuma peça deixa estas listas por conta do tempo. Sai quando alguém diz que a
+     providência foi tomada, e isso fica na auditoria com o nome e a hora. Sem isso a tela
+     seria um histórico que só cresce, e no segundo mês ninguém mais acharia o que ainda
+     está esperando.</p>
+  <h3>O SET</h3>
+  <p>Nada daqui mexe no SET. A baixa do descarte e o acerto do saldo são digitados lá por
+     uma pessoa, porque é lá que o estoque vale; este sistema lê o backup do SET e nunca
+     escreve nele.</p>
+</details>
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Organizar a prateleira",
+    "texto": "Peça sem etiqueta, peça danificada esperando decisão, peça na oficina, peça a descartar e produto que não vende há meses. A pergunta é a mesma nos cinco: o que eu faço com esta peça?"
+  },
+  {
+    "seletor": "#grupo-danificado",
+    "titulo": "A classificação acontece aqui",
+    "texto": "Quem contou marcou a peça como danificada. Aqui, com o custo à vista, ela vira conserto ou descarte — e é isso que alimenta os dois relatórios."
+  },
+  {
+    "seletor": "#grupo-parado",
+    "titulo": "Dinheiro parado",
+    "texto": "Produto com peça na prateleira e nenhuma venda há meses. Em vermelho, o que passou de um ano ou nunca vendeu."
+  }
+]
+</script>
+{% endblock %}

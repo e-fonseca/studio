@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Despesas</h1>
+  <p><a href="{% url 'financeiro:contas_a_pagar' %}">Voltar para contas a pagar</a></p>
+</div>
+
+<section class="cartao estado-dados estado-{{ estado.nivel }}">
+  <h2>{{ estado.titulo }}</h2>
+  <p>{{ estado.detalhe }}</p>
+</section>
+
+{% include "financeiro/_resumo.html" %}
+
+{% if meses %}
+<section class="cartao">
+  <h2>Entrou e saiu, mês a mês</h2>
+  <p>Recebido e pago em cada mês, pelo que está baixado no SET. Quando a barra vermelha passa
+     da verde, saiu mais dinheiro do que entrou naquele mês.</p>
+  <div class="meses-caixa">
+    {% for mes in meses %}
+    <div class="mes-caixa">
+      <span class="mes-rotulo">{{ mes.mes }}/{{ mes.ano }}</span>
+      <span class="valor-entrou">Entrou {{ mes.recebido|reais }}</span>
+      <span class="valor-saiu">Saiu {{ mes.pago|reais }}</span>
+      <span class="valor-sobra {% if mes.sobra < 0 %}negativo{% endif %}">
+        {% if mes.sobra < 0 %}Faltou{% else %}Sobrou{% endif %} {{ mes.sobra|reais }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if grupos %}
+<div class="tabela-rolavel">
+  <table class="tabela-despesas">
+    <caption>Para onde o dinheiro foi nos últimos 12 meses, pela classificação do próprio SET.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Classificação</th>
+        <th scope="col" class="numerico">Pago</th>
+        <th scope="col" class="numerico">Lançamentos</th>
+        <th scope="col" class="numerico">Fatia</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for grupo in grupos %}
+      <tr>
+        <td>{{ grupo.grupo }}</td>
+        <td class="numerico">{{ grupo.valor|reais }}</td>
+        <td class="numerico">{{ grupo.quantidade }}</td>
+        <td class="numerico">{{ grupo.fatia|floatformat:1 }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="ajuda">A classificação é a do plano de contas do SET. Para mudar o nome ou o agrupamento,
+   mude lá: aqui o sistema só lê.</p>
+{% else %}
+<section class="cartao">
+  <h2>Ainda não há despesa para mostrar</h2>
+  <p>A lista sai dos pagamentos baixados no SET nos últimos 12 meses.</p>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Despesas",
+    "texto": "Mostra quanto a loja gasta por mês e em quê, usando a classificação que já existe no SET."
+  },
+  {
+    "seletor": ".meses-caixa",
+    "titulo": "Entrou e saiu",
+    "texto": "O mês em que faltou dinheiro aparece escrito. É o contraponto do painel de compras: comprar demais aparece aqui, no caixa."
+  }
+]
+</script>
+{% endblock %}

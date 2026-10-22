@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>{{ contagem.nome }}</h1>
+  <p>{% if contagem.aberta %}<a class="botao secundario" href="{% url 'inventario:camera' contagem.pk %}">Contar pela câmera do celular</a>
+     {% endif %}<a href="{% url 'inventario:lista' %}">Voltar ao inventário</a></p>
+</div>
+
+<div class="cartoes-numero">
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Produtos contados</span>
+    <strong class="cartao-valor">{{ resumo.contados }}</strong>
+    <span class="cartao-rodape">{{ resumo.conferem }} batem com o SET.</span>
+  </div>
+  <div class="cartao-numero {% if resumo.divergentes %}cartao-atencao{% endif %}">
+    <span class="cartao-titulo">Diferentes do SET</span>
+    <strong class="cartao-valor">{{ resumo.divergentes }}</strong>
+    <span class="cartao-rodape">{{ resumo.faltando|quantidade:"0" }} faltando e
+      {{ resumo.sobrando|quantidade:"0" }} sobrando na prateleira.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Diferença em dinheiro</span>
+    <strong class="cartao-valor">{{ resumo.diferenca_em_dinheiro|reais }}</strong>
+    <span class="cartao-rodape">Ao custo. Negativo é mercadoria que o SET conta e a prateleira não tem.</span>
+  </div>
+</div>
+
+{% if contagem.aberta %}
+<section class="cartao">
+  <h2>Contar</h2>
+  <p class="ajuda">Passe o leitor no código de barras do produto e digite quantas unidades
+     você contou. Sem leitor dá para digitar o código ou o nome. Contar o mesmo produto duas
+     vezes soma, que é o certo quando ele está em dois lugares.</p>
+  <form method="post" action="{% url 'inventario:contar' contagem.pk %}" class="formulario-contagem">{% csrf_token %}
+    <div class="formulario-campo campo-produto">
+      <label for="produto">Produto, código ou código de barras</label>
+      <input type="text" id="produto" name="produto" required autofocus autocomplete="off"
+             data-sugestoes="{% url 'importacao:sugestoes' %}" placeholder="Passe o leitor aqui">
+    </div>
+    <div class="formulario-campo campo-quantidade">
+      <label for="quantidade">Quantas unidades</label>
+      <input type="text" id="quantidade" name="quantidade" required inputmode="decimal"
+             autocomplete="off" placeholder="Ex.: 3">
+    </div>
+    <button type="submit" class="botao">Registrar</button>
+  </form>
+</section>
+{% else %}
+<section class="cartao">
+  <h2>Contagem fechada</h2>
+  <p>Fechada em {{ contagem.fechada_em|date:"d/m/Y H:i" }}
+     {% if contagem.fechada_por %}por {{ contagem.fechada_por.get_username }}{% endif %}.
+     Para continuar contando, abra uma contagem nova.</p>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>O que está diferente do SET</h2>
+  <p class="ajuda">Da maior diferença em dinheiro para a menor. É esta a lista que alguém
+     da loja digita no SET, uma linha de cada vez.</p>
+  {% if resumo.itens_divergentes %}
+  <div class="tabela-rolavel tabela-dez tabela-em-cartao tabela-de-organizar">
+    <table class="tabela-contagens">
+      <caption class="oculto-visualmente">Produtos com diferença entre a prateleira e o SET.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col" class="numerico">Saldo no SET</th>
+          <th scope="col" class="numerico">Contado</th>
+          <th scope="col" class="numerico">Diferença</th>
+          <th scope="col" class="numerico">Em dinheiro</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in resumo.itens_divergentes %}
+        <tr>
+          <td data-rotulo="Produto">{{ item.descricao }}<br><span class="ajuda">código {{ item.codigo }}</span></td>
+          <td data-rotulo="Saldo no SET" class="numerico">{{ item.saldo_set|quantidade }}</td>
+          <td data-rotulo="Contado" class="numerico">{{ item.quantidade|quantidade }}</td>
+          <td data-rotulo="Diferença" class="numerico {% if item.diferenca < 0 %}valor-ruim{% endif %}">{{ item.diferenca|quantidade }}</td>
+          <td data-rotulo="Em dinheiro" class="celula-decide {% if item.diferenca < 0 %}valor-ruim{% endif %}">{{ item.valor_da_diferenca|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if perms.inventario.fechar_contagem %}
+  <p><a class="botao secundario" href="{% url 'inventario:divergencia' contagem.pk %}">Relatório em PDF</a>
+     <a class="botao secundario" href="{% url 'inventario:divergencia' contagem.pk %}?formato=planilha">em planilha</a>
+     <a class="botao secundario" href="{% url 'inventario:ajustes' contagem.pk %}">Lista para digitar no SET</a></p>
+  {% endif %}
+  {% else %}
+  <p>Por enquanto tudo o que foi contado bate com o SET.</p>
+  {% endif %}
+</section>
+
+{% if resumo.divergentes and perms.inventario.fechar_contagem %}
+<section class="cartao {% if conferencia.falta_ajustar %}cartao-atencao{% endif %}">
+  <h2>Os ajustes entraram no SET?</h2>
+  {% if conferencia.disponivel %}
+  <p>Conferido com o backup do SET de
+     {{ conferencia.importacao.data_corte|date:"d/m/Y"|default:"agora" }}:
+     <strong>{{ conferencia.entraram }}</strong> ajuste{{ conferencia.entraram|pluralize }}
+     já entr{{ conferencia.entraram|pluralize:"ou,aram" }} no SET e
+     <strong>{{ conferencia.falta_ajustar }}</strong> ainda não.</p>
+  {% if conferencia.tudo_entrou %}
+  <p>Está tudo digitado: o saldo do SET agora é o que foi contado na prateleira.</p>
+  {% endif %}
+  <div class="tabela-rolavel tabela-dez tabela-em-cartao tabela-de-organizar">
+    <table class="tabela-contagens">
+      <caption class="oculto-visualmente">Divergências da contagem e o saldo do SET de hoje.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col" class="numerico">Contado</th>
+          <th scope="col" class="numerico">No SET hoje</th>
+          <th scope="col">O que diz</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in conferencia.linhas %}
+        <tr>
+          <td data-rotulo="Produto">{{ linha.item.descricao }}<br>
+            <span class="ajuda">código {{ linha.item.codigo }}</span></td>
+          <td data-rotulo="Contado" class="numerico">{{ linha.item.quantidade|quantidade }}</td>
+          <td data-rotulo="No SET hoje" class="numerico">{{ linha.saldo_de_hoje|quantidade }}</td>
+          <td data-rotulo="O que diz" class="celula-decide {% if not linha.entrou %}valor-ruim{% endif %}">{{ linha.recado }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if conferencia.sumiram %}
+  <p class="ajuda">{{ conferencia.sumiram }} produto{{ conferencia.sumiram|pluralize }} saiu do
+     cadastro do SET entre a contagem e agora, e por isso não entra nesta conta.</p>
+  {% endif %}
+  {% else %}
+  <p>Esta conferência aparece depois da próxima importação. Ela lê o backup novo do SET e
+     diz, sozinha, quais dos ajustes acima já foram digitados lá — ninguém precisa voltar
+     aqui para conferir à mão.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>Tudo o que já foi contado</h2>
+  {% if itens %}
+  <div class="tabela-rolavel tabela-dez tabela-em-cartao tabela-de-organizar">
+    <table class="tabela-contagens">
+      <caption class="oculto-visualmente">Produtos contados nesta contagem.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col" class="numerico">Contado</th>
+          <th scope="col" class="numerico">Saldo no SET</th>
+          <th scope="col">Quem contou</th>
+          <th scope="col">Como foi achada</th>
+          {% if contagem.aberta %}<th scope="col"><span class="oculto-visualmente">Tirar da contagem</span></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in itens %}
+        <tr>
+          <td>{{ item.descricao }}<br><span class="ajuda">código {{ item.codigo }}</span></td>
+          <td class="numerico">{{ item.quantidade|quantidade }}</td>
+          <td class="numerico">{{ item.saldo_set|quantidade }}</td>
+          <td data-rotulo="Quem contou">{{ item.contado_por.get_username|default:"—" }}<br>
+            <span class="ajuda">{{ item.contado_em|date:"d/m H:i" }}</span></td>
+          <td data-rotulo="Como foi achada" class="celula-decide">
+            {% if contagem.aberta %}
+            {% comment %}A peça pode estar perfeita no número e torta na prateleira: é
+            aqui que isso se diz, sem sair da contagem. O destino (conserto ou descarte)
+            é decidido depois, na tela Organizar.{% endcomment %}
+            <form method="post" action="{% url 'inventario:estado' contagem.pk item.pk %}"
+                  class="acoes-da-peca marcar-estado">{% csrf_token %}
+              <input type="hidden" name="da_tela" value="1">
+              {% for valor, rotulo in estados_na_prateleira %}
+              <button type="submit" name="estado" value="{{ valor }}"
+                      class="botao secundario {% if item.estado == valor %}botao-marcado{% endif %}"
+                      aria-pressed="{% if item.estado == valor %}true{% else %}false{% endif %}">{{ rotulo }}</button>
+              {% endfor %}
+            </form>
+            {% if item.estado == 'conserto' or item.estado == 'descarte' %}
+            <span class="ajuda">Já classificada: {{ item.get_estado_display|lower }}. Para
+              mudar, use a tela Organizar.</span>
+            {% endif %}
+            {% else %}
+            {{ item.get_estado_display }}{% if item.resolvido %} · resolvido{% endif %}
+            {% endif %}
+          </td>
+          {% if contagem.aberta %}
+          <td>
+            <form method="post" action="{% url 'inventario:remover' contagem.pk item.pk %}">{% csrf_token %}
+              <button type="submit" class="botao secundario">Tirar</button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nada contado ainda.</p>
+  {% endif %}
+</section>
+
+{% if contagem.aberta and faltam %}
+<section class="cartao">
+  <h2>Ainda não passaram pelo leitor</h2>
+  <p class="ajuda">{{ resumo.nao_contados }} produto{{ resumo.nao_contados|pluralize }} da última
+     importação ainda não foram contados. Estes são os de maior saldo no SET, que são os que
+     mais mudam a conta.</p>
+  <div class="tabela-rolavel tabela-dez tabela-em-cartao tabela-de-organizar">
+    <table class="tabela-contagens">
+      <caption class="oculto-visualmente">Produtos ainda não contados, do maior saldo para o menor.</caption>
+      <thead>
+        <tr><th scope="col">Produto</th><th scope="col" class="numerico">Saldo no SET</th></tr>
+      </thead>
+      <tbody>
+        {% for produto in faltam %}
+        <tr>
+          <td data-rotulo="Produto">{{ produto.descricao }}<br><span class="ajuda">código {{ produto.codigo }}</span></td>
+          <td data-rotulo="Saldo no SET" class="numerico">{{ produto.estoque|quantidade }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if contagem.aberta and perms.inventario.fechar_contagem %}
+<section class="cartao">
+  <h2>Fechar a contagem</h2>
+  <p>Depois de fechada não dá para contar mais nada nela. A lista de ajustes continua aqui
+     para consulta e para baixar.</p>
+  <form method="post" action="{% url 'inventario:fechar' contagem.pk %}">{% csrf_token %}
+    <button type="submit" class="botao">Fechar contagem</button>
+  </form>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Contando",
+    "texto": "Passe o leitor no produto, digite quantas unidades contou e registre. O sistema compara com o saldo do SET na hora."
+  },
+  {
+    "seletor": ".formulario-contagem",
+    "titulo": "O leitor digita sozinho",
+    "texto": "Com o cursor na primeira caixa, o leitor escreve o código e pula para a quantidade. Sem leitor, digite o código ou o nome do produto."
+  }
+]
+</script>
+{% endblock %}

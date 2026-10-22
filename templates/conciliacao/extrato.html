@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Extrato de {{ extrato.banco|default:"banco não informado" }}</h1>
+  <p>{% if extrato.periodo_inicio %}{{ extrato.periodo_inicio|date:"d/m/Y" }}
+     a {{ extrato.periodo_fim|date:"d/m/Y" }}{% endif %}
+     {% if extrato.conta %}· conta {{ extrato.conta }}{% endif %}
+     · <a href="{% url 'conciliacao:lista' %}">Voltar para os extratos</a></p>
+</div>
+
+<div class="cartoes-numero">
+  <div class="cartao-numero {% if resumo.pendentes %}nivel-atencao{% else %}nivel-bom{% endif %}">
+    <span class="cartao-titulo">Falta conferir</span>
+    <strong class="cartao-valor">{{ resumo.pendentes }}</strong>
+    <span class="cartao-rodape">de {{ resumo.saidas }} saída{{ resumo.saidas|pluralize }} do banco.
+      {% if resumo.pendentes %}São {{ resumo.valor_a_conferir|reais }} ainda sem conta marcada.
+      {% else %}Tudo o que saiu da conta já tem destino.{% endif %}</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Saiu da conta no período</span>
+    <strong class="cartao-valor">{{ resumo.valor_saidas|reais }}</strong>
+    <span class="cartao-rodape">{{ resumo.conferidas }} já conferida{{ resumo.conferidas|pluralize }},
+      somando {{ resumo.valor_conferido|reais }}.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Entrou na conta</span>
+    <strong class="cartao-valor">{{ resumo.valor_entradas|reais }}</strong>
+    <span class="cartao-rodape">{{ resumo.entradas }} entrada{{ resumo.entradas|pluralize }}.
+      Entrada é venda e cartão, não conta a pagar: fica fora do confronto.</span>
+  </div>
+  <div class="cartao-numero {% if resumo.sem_par %}nivel-ruim{% endif %}">
+    <span class="cartao-titulo">Saídas sem conta no SET</span>
+    <strong class="cartao-valor">{{ resumo.sem_par }}</strong>
+    <span class="cartao-rodape">Saiu do banco e não achei conta paga com esse valor nestes
+      dias. É aqui que mora o problema que vale a pena olhar.</span>
+  </div>
+</div>
+
+{% if resumo.com_uma %}
+<section class="cartao">
+  <h2>{{ resumo.com_uma }} linha{{ resumo.com_uma|pluralize }} com uma conta só</h2>
+  <p>Essas têm uma única conta possível: mesmo valor e data perto. Dá para confirmar todas
+     de uma vez, e desfazer depois qualquer uma que estiver errada.</p>
+  <form method="post" action="{% url 'conciliacao:conferir_as_obvias' extrato.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="botao">Conferir as {{ resumo.com_uma }} de uma vez</button>
+  </form>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>O extrato, linha a linha</h2>
+  <p class="ajuda">A busca pela conta usa o <strong>mesmo valor</strong> e até
+     {{ dias_de_folga }} dias de diferença entre o pagamento no banco e a baixa no SET.</p>
+
+  <ul class="linhas-extrato">
+    {% for c in confrontos %}
+    <li class="linha-extrato linha-{{ c.situacao }}">
+      <div class="linha-topo">
+        <span class="linha-data">{{ c.linha.data|date:"d/m/Y" }}</span>
+        <span class="linha-descricao">{{ c.linha.descricao|default:"sem descrição" }}
+          {% if c.linha.documento %}<small>doc. {{ c.linha.documento }}</small>{% endif %}</span>
+        <span class="linha-valor {% if c.linha.saiu %}valor-saida{% else %}valor-entrada{% endif %}">
+          {% if c.linha.saiu %}&minus;{% endif %}{{ c.linha.valor_absoluto|reais }}</span>
+      </div>
+
+      {% if c.situacao == "conferida" %}
+      <div class="linha-resposta resposta-ok">
+        <p><strong>Conferida</strong> com {{ c.linha.lancamento_rotulo }}
+           {% if c.linha.conferida_por %}<span class="ajuda">por {{ c.linha.conferida_por }},
+           em {{ c.linha.conferida_em|date:"d/m/Y H:i" }}</span>{% endif %}</p>
+        <form method="post" action="{% url 'conciliacao:desfazer' c.linha.pk %}">
+          {% csrf_token %}<button type="submit" class="botao secundario">Desfazer</button>
+        </form>
+      </div>
+
+      {% elif c.situacao == "sem_conta" %}
+      <div class="linha-resposta">
+        <p><strong>Marcada como saída sem conta no SET.</strong>
+           {% if c.linha.observacao %}{{ c.linha.observacao }}{% endif %}
+           {% if c.linha.conferida_por %}<span class="ajuda">por {{ c.linha.conferida_por }},
+           em {{ c.linha.conferida_em|date:"d/m/Y H:i" }}</span>{% endif %}</p>
+        <form method="post" action="{% url 'conciliacao:desfazer' c.linha.pk %}">
+          {% csrf_token %}<button type="submit" class="botao secundario">Desfazer</button>
+        </form>
+      </div>
+
+      {% elif c.situacao == "entrada" %}
+      <p class="linha-resposta ajuda">Entrada de dinheiro: venda, cartão ou transferência
+         recebida. Conta a pagar não tem a ver com ela.</p>
+
+      {% else %}
+      <div class="linha-resposta">
+        {% if c.candidatas %}
+        {% comment %}A candidata única que JÁ está marcada em outra linha não é obviedade:
+        é o caso de duas saídas iguais no banco com uma conta só no SET, que normalmente
+        quer dizer que falta lançar a outra no SET. Chamar isso de "bate com esta saída"
+        levaria a pessoa a marcar o mesmo dinheiro duas vezes.{% endcomment %}
+        <p>{% if c.unica and c.unica.ja_usada %}A única conta do SET com este valor
+           <strong>já está marcada em outra saída</strong>. Uma conta paga uma saída só:
+           se o banco tem duas saídas iguais, é provável que falte lançar esta no SET.
+           {% elif c.unica %}Uma conta do SET bate com esta saída:{% else %}
+           {{ c.candidatas|length }} contas do SET podem ser esta saída. Escolha a certa:{% endif %}</p>
+        <ul class="candidatas">
+          {% for candidata in c.candidatas %}
+          <li>
+            <form method="post" action="{% url 'conciliacao:conferir' c.linha.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="conta" value="{{ candidata.conta.id_set }}">
+              <span class="candidata-texto">
+                <strong>{{ candidata.conta.descricao|default:"conta sem descrição" }}</strong>
+                {% if candidata.conta.contraparte %}— {{ candidata.conta.contraparte }}{% endif %}
+                <span class="ajuda">baixada no SET em {{ candidata.conta.pagamento|date:"d/m/Y" }}
+                  {% if candidata.distancia_em_dias %}({{ candidata.distancia_em_dias }}
+                  dia{{ candidata.distancia_em_dias|pluralize }} de diferença){% else %}(mesmo dia){% endif %}
+                  {% if candidata.ja_usada %}· <strong>já marcada em outra linha</strong>{% endif %}</span>
+              </span>
+              <button type="submit" class="botao">É esta</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p><strong>Nenhuma conta paga no SET com este valor nestes dias.</strong>
+           Pode ser tarifa do banco, imposto, retirada dos sócios, ou um pagamento que
+           ninguém lançou no SET.</p>
+        {% endif %}
+        <form method="post" action="{% url 'conciliacao:sem_conta' c.linha.pk %}" class="formulario-sem-conta">
+          {% csrf_token %}
+          <label for="obs{{ c.linha.pk }}">Se não é conta do SET, anote o que é e tire da lista</label>
+          <input type="text" id="obs{{ c.linha.pk }}" name="observacao" maxlength="300"
+                 placeholder="Ex.: tarifa de manutenção, imposto, retirada">
+          <button type="submit" class="botao secundario">Não é conta do SET</button>
+        </form>
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="cartao">
+  <h2>Apagar este extrato</h2>
+  <p>Apaga o arquivo importado e tudo o que foi conferido nele. Serve para quando o extrato
+     veio errado ou incompleto; depois dá para importar o certo.</p>
+  <form method="post" action="{% url 'conciliacao:apagar' extrato.pk %}"
+        onsubmit="return confirm('Apagar este extrato e as conferências dele?');">
+    {% csrf_token %}<button type="submit" class="botao secundario">Apagar o extrato</button>
+  </form>
+</section>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "O extrato aberto",
+    "texto": "Cada linha é um movimento do banco. As saídas são confrontadas com as contas que o SET diz que foram pagas; as entradas ficam de fora, porque são venda e cartão."
+  },
+  {
+    "seletor": ".linhas-extrato",
+    "titulo": "Conferir uma linha",
+    "texto": "Quando o sistema acha a conta, clique em 'É esta'. Quando não acha, ou quando a saída é tarifa, imposto ou retirada, use 'Não é conta do SET' e anote o que foi."
+  },
+  {
+    "seletor": ".cartoes-numero",
+    "titulo": "Saídas sem conta no SET",
+    "texto": "Esse é o número que interessa: dinheiro que saiu da conta e não tem lançamento no SET. Cada um é uma pergunta para o setor de contas."
+  }
+]
+</script>
+{% endblock %}

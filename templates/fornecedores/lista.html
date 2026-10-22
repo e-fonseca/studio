@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Fornecedores</h1>
+  <p><a href="{% url 'painel:painel' %}">Voltar ao painel</a></p>
+</div>
+
+<section class="cartao aviso-prazo">
+  <h2>Por que o prazo importa</h2>
+  <p>O sistema calcula <strong>quando</strong> comprar somando o prazo de entrega ao tempo que o estoque ainda
+     aguenta. O SET grava na compra a data da nota, não a data do pedido, então o prazo medido sai curto e a
+     sugestão de compra chega tarde. O prazo informado aqui vale mais que o medido.</p>
+  <p>A <strong>reputação em estrelas</strong> e a relação (parceiro, flexível ou eventual) são
+     julgamento da gerência: o SET não guarda nada disso. Servem para na hora de comprar saber
+     de quem dá para pedir prazo e de quem é melhor não depender.</p>
+  {% if sem_prazo %}
+  <p class="destaque">{{ sem_prazo }} fornecedor{{ sem_prazo|pluralize:"es" }} ainda sem prazo informado e sem prazo
+     medido no SET. Comece pelos de cima, que são os que mais pesam na compra.</p>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>Procurar um fornecedor</h2>
+  <form method="get" class="busca-produto" role="search">
+    <label for="busca">Nome do fornecedor</label>
+    <input type="search" id="busca" name="busca" value="{{ busca }}"
+           placeholder="Ex.: QUITERIA, vime, lenzi" autocomplete="off"
+           data-sugestoes="{% url 'fornecedores:sugestoes' %}">
+    <button type="submit" class="botao">Procurar</button>
+    {% if busca %}<a href="{% url 'fornecedores:lista' %}" class="botao secundario">Limpar</a>{% endif %}
+  </form>
+  <p class="ajuda">A loja tem {{ quantos_ao_todo }} fornecedor{{ quantos_ao_todo|pluralize:"es" }} na
+     última importação. Enquanto você digita, o sistema sugere os nomes que existem, com quanto
+     foi comprado de cada um no ano. Pode digitar com acento ou sem:
+     <strong>quiteria</strong> acha <strong>QUITÉRIA</strong>.</p>
+</section>
+
+{% if fornecedores %}
+<div class="tabela-rolavel">
+  <table class="tabela-fornecedores">
+    <caption>{% if busca %}{{ fornecedores|length }} fornecedor{{ fornecedores|length|pluralize:"es" }} com <strong>{{ busca }}</strong> no nome, do que mais custou em 12 meses para o que menos.{% else %}Fornecedores da última importação, do que mais custou em 12 meses para o que menos.{% endif %}</caption>
+    <thead>
+      <tr>
+        <th scope="col">Fornecedor</th>
+        <th scope="col" class="numerico">Comprado em 12m</th>
+        <th scope="col" class="numerico">Produtos</th>
+        <th scope="col" class="numerico">Prazo medido</th>
+        <th scope="col">Prazo informado (dias)</th>
+        <th scope="col">Reputação e relação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in fornecedores %}
+      <tr {% if f.precisa_de_prazo %}class="linha-atencao"{% endif %}>
+        <td>
+          <a href="{% url 'fornecedores:ficha' %}?nome={{ f.nome|urlencode }}">{{ f.nome }}</a>
+          {% if f.documento_rotulo %}<span class="ajuda">{{ f.documento_rotulo }}</span>{% endif %}
+          {% if f.observacao %}<span class="ajuda">{{ f.observacao }}</span>{% endif %}
+        </td>
+        <td class="numerico">{{ f.valor_comprado_12m|reais }}</td>
+        {% comment %}O número é link: quem quer ver a variedade do fornecedor clica
+        justamente na contagem de produtos dele.{% endcomment %}
+        <td class="numerico"><a href="{% url 'fornecedores:produtos' %}?nome={{ f.nome|urlencode }}">{{ f.produtos }}</a></td>
+        <td class="numerico">{% if f.prazo_medido is None %}<span class="ajuda">sem compra</span>
+          {% elif f.prazo_medido == 0 %}<span class="ajuda">zero (data da nota)</span>
+          {% else %}{{ f.prazo_medido }}{% endif %}</td>
+        <td>
+          {% if perms.fornecedores.change_fornecedor %}
+          <form method="post" action="{% url 'fornecedores:salvar' %}" class="formulario-prazo">{% csrf_token %}
+            <input type="hidden" name="nome" value="{{ f.nome }}">
+            <label class="oculto-visualmente" for="prazo-{{ forloop.counter }}">Prazo de {{ f.nome }} em dias</label>
+            <input type="number" id="prazo-{{ forloop.counter }}" name="prazo_dias" min="0" max="{{ prazo_maximo }}"
+                   inputmode="numeric" value="{{ f.prazo_informado|default_if_none:'' }}" placeholder="dias">
+            <button type="submit" class="botao secundario">Salvar</button>
+          </form>
+          {% else %}
+            {{ f.prazo_informado|default_if_none:"—" }}
+          {% endif %}
+        </td>
+        <td>
+          {% if perms.fornecedores.change_fornecedor %}
+          <form method="post" action="{% url 'fornecedores:avaliar' %}" class="formulario-avaliacao">{% csrf_token %}
+            <input type="hidden" name="nome" value="{{ f.nome }}">
+            <fieldset class="estrelas-escolha">
+              <legend class="oculto-visualmente">Reputação de {{ f.nome }}</legend>
+              {% for nota in estrelas_possiveis %}
+              <input type="radio" id="nota-{{ forloop.parentloop.counter }}-{{ nota }}"
+                     name="reputacao" value="{{ nota }}" {% if f.reputacao == nota %}checked{% endif %}>
+              <label for="nota-{{ forloop.parentloop.counter }}-{{ nota }}"
+                     title="{{ nota }} de 5">★<span class="oculto-visualmente">{{ nota }} estrela{{ nota|pluralize }}</span></label>
+              {% endfor %}
+            </fieldset>
+            <label class="oculto-visualmente" for="relacao-{{ forloop.counter }}">Relação com {{ f.nome }}</label>
+            <select name="relacao" id="relacao-{{ forloop.counter }}">
+              {% for valor, rotulo in relacoes %}
+              <option value="{{ valor }}" {% if f.relacao == valor %}selected{% endif %}>{{ rotulo }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="botao secundario">Avaliar</button>
+          </form>
+          {% else %}
+            {% if f.reputacao %}
+            <span class="estrelas">{% for cheia in f.estrelas %}<span class="estrela {% if cheia %}cheia{% endif %}" aria-hidden="true">★</span>{% endfor %}
+              <span class="oculto-visualmente">{{ f.reputacao }} de 5 estrelas</span></span>
+            {% else %}—{% endif %}
+            {% if f.relacao_rotulo %}<br><span class="etiqueta etiqueta-{{ f.relacao }}">{{ f.relacao_rotulo }}</span>{% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif busca %}
+<section class="cartao">
+  <h2>Nenhum fornecedor com <strong>{{ busca }}</strong> no nome</h2>
+  <p>A busca olha os {{ quantos_ao_todo }} fornecedor{{ quantos_ao_todo|pluralize:"es" }} da última
+     importação. Confira a escrita ou
+     <a href="{% url 'fornecedores:lista' %}">veja a lista inteira</a>.</p>
+</section>
+{% else %}
+<section class="cartao">
+  <h2>Nenhum fornecedor para mostrar ainda</h2>
+  <p>A lista sai da última importação concluída. Depois da primeira importação, os fornecedores aparecem aqui.</p>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Fornecedores",
+    "texto": "Esta tela existe para uma coisa: informar em quantos dias cada fornecedor entrega. É o que faz a sugestão de compra chegar na hora certa."
+  },
+  {
+    "seletor": ".busca-produto",
+    "titulo": "Procurar pelo nome",
+    "texto": "Comece a digitar e o sistema oferece os fornecedores que existem, com quanto a loja comprou de cada um no ano. Pode digitar sem acento."
+  },
+  {
+    "seletor": ".tabela-fornecedores",
+    "titulo": "A ordem da lista",
+    "texto": "Os fornecedores de quem a loja mais comprou nos últimos 12 meses vêm primeiro. Preencher os primeiros já melhora quase toda a sugestão."
+  },
+  {
+    "seletor": ".formulario-avaliacao",
+    "titulo": "Reputação do fornecedor",
+    "texto": "Clique na estrela para dar a nota, escolha se é parceiro, flexível ou eventual, e clique em Avaliar. Isso aparece na visão geral, para quem decide a compra."
+  },
+  {
+    "seletor": ".formulario-prazo",
+    "titulo": "Informar o prazo",
+    "texto": "Escreva quantos dias passam entre fazer o pedido e a mercadoria chegar, e clique em Salvar. Deixar em branco volta a usar o prazo medido no SET."
+  }
+]
+</script>
+{% endblock %}

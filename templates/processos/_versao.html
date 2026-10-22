@@ -1,0 +1,17 @@
+{% load cabana %}<dl class="procedimento">
+  <dt>Objetivo</dt><dd>{{ versao.objetivo|linebreaksbr }}</dd>
+  {% if versao.gatilho %}<dt>Quando fazer (gatilho)</dt><dd>{{ versao.gatilho|linebreaksbr }}</dd>{% endif %}
+  {% if versao.frequencia %}<dt>Frequência</dt><dd>{{ versao.frequencia }}</dd>{% endif %}
+  {% if versao.pre_requisitos %}<dt>Antes de começar</dt><dd>{{ versao.pre_requisitos|linebreaksbr }}</dd>{% endif %}
+  {% if versao.tela_origem %}<dt>Tela ou sistema</dt><dd>{{ versao.tela_origem }}</dd>{% endif %}
+  <dt>Passos</dt>
+  <dd><ol class="passos">{% for passo in versao.lista_passos %}<li>{{ passo }}</li>{% endfor %}</ol></dd>
+  {% if versao.conferencias %}<dt>Conferências</dt><dd>{{ versao.conferencias|linebreaksbr }}</dd>{% endif %}
+  {% if versao.excecoes %}<dt>Exceções</dt><dd>{{ versao.excecoes|linebreaksbr }}</dd>{% endif %}
+  {% if versao.aprovacao_necessaria %}<dt>Aprovação necessária</dt><dd>{{ versao.aprovacao_necessaria|linebreaksbr }}</dd>{% endif %}
+  {% if versao.documentos_entrada %}<dt>Documentos de entrada</dt><dd>{{ versao.documentos_entrada|linebreaksbr }}</dd>{% endif %}
+  {% if versao.documentos_saida %}<dt>Documentos de saída</dt><dd>{{ versao.documentos_saida|linebreaksbr }}</dd>{% endif %}
+  {% if versao.exemplos %}<dt>Exemplos</dt><dd>{{ versao.exemplos|linebreaksbr }}</dd>{% endif %}
+  {% if versao.evidencia_conclusao %}<dt>Como saber que terminou</dt><dd>{{ versao.evidencia_conclusao|linebreaksbr }}</dd>{% endif %}
+</dl>
+<p class="ajuda">Versão {{ versao.numero }}, escrita por {{ versao.autor|nome_pessoa }} em {{ versao.criado_em|date:"d/m/Y H:i" }}. {{ versao.resumo_mudanca }}</p>

@@ -1,0 +1,30 @@
+{# Barra de progresso enquanto a importação roda e o aviso de como ela terminou. #}
+{% if em_andamento %}
+<section class="cartao andamento" role="status" aria-live="polite">
+  <h2>Importando os dados do SET</h2>
+  <p class="etapa">{{ em_andamento.etapa|default:"Preparando" }} — {{ em_andamento.progresso }}%</p>
+  <progress max="100" value="{{ em_andamento.progresso }}">{{ em_andamento.progresso }}%</progress>
+  <p class="ajuda">Começou às {{ em_andamento.iniciada_em|date:"H:i" }}. Ler a cópia do banco leva
+    alguns minutos; esta página se atualiza sozinha e avisa quando terminar. Pode fechar e voltar depois.</p>
+</section>
+{% elif ultima and ultima.recente %}
+<section class="cartao resultado {% if ultima.deu_certo %}resultado-ok{% else %}resultado-erro{% endif %}"
+         role="status" aria-live="polite" tabindex="-1" id="resultado-importacao">
+  {% if ultima.deu_certo %}
+    <h2>Importação concluída às {{ ultima.importacao.concluida_em|date:"H:i" }}</h2>
+    <p>{{ ultima.importacao.mensagem }}</p>
+  {% else %}
+    <h2>A importação das {{ ultima.importacao.concluida_em|date:"H:i" }} falhou</h2>
+    <p class="destaque">{{ ultima.explicacao.titulo }}</p>
+    <p>{{ ultima.explicacao.o_que_aconteceu }}</p>
+    <h3>O que fazer</h3>
+    <ol class="passos">
+      {% for passo in ultima.explicacao.como_resolver %}<li>{{ passo }}</li>{% endfor %}
+    </ol>
+    <details>
+      <summary>Mensagem técnica do erro</summary>
+      <p class="mensagem-tecnica">{{ ultima.importacao.mensagem }}</p>
+    </details>
+  {% endif %}
+</section>
+{% endif %}

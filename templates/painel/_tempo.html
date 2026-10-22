@@ -1,0 +1,80 @@
+{% load cabana %}
+{% comment %}O tempo como indicador da Visão geral (1.29.0).
+
+Era tela própria no menu. O Edson pediu em 14/10/2026 que virasse recurso daqui. É a
+única coisa desta tela que olha para frente: tudo o mais são doze meses que já passaram.
+Por isso ele lidera com o que VEM — o próximo fim de semana, que é quando a loja fatura —
+e só depois mostra o que a chuva já custou, medido nos dias guardados.
+
+A tela de Tempo e venda continua existindo inteira, para anotar o dia e ver dia a dia, e
+abre pelo link do fim deste quadro.{% endcomment %}
+<section class="cartao bloco-largo cartao-tempo nivel-{{ tempo.nivel }}" id="tempo">
+  <h2>O tempo e a venda</h2>
+
+  {% if not tempo.configurada %}
+  <p>A loja fatura a maior parte no fim de semana, e chuva de sábado não é chuva de terça.
+     O sistema pode guardar o tempo de cada dia sozinho e avisar o que vem: para isso basta
+     escrever <strong>a cidade da loja</strong> uma vez.</p>
+  {% if perms.tempo.anotar_tempo %}
+  <p><a class="botao secundario" href="{% url 'tempo:painel' %}">Escrever a cidade da loja</a></p>
+  {% endif %}
+
+  {% else %}
+  {% if tempo.ultimo_erro %}
+  <p class="aviso-parado">A última busca do tempo não deu certo: {{ tempo.ultimo_erro }}</p>
+  {% endif %}
+
+  {% if tempo.fim_de_semana %}
+  {% comment %}O espaço entre as duas frases vai DENTRO do span: o spaceless come o que
+  fica entre as etiquetas, e sem isso sai "sábado.Num fim de semana".{% endcomment %}
+  <p class="destaque">{% spaceless %}
+    {% if tempo.chuva_no_fim_de_semana %}
+      Chuva prevista para
+      {% for dia in tempo.dias_de_chuva_no_fim_de_semana %}<span>{% if not forloop.first %} e {% endif %}<strong>{{ dia.dia_da_semana|lower }}</strong></span>{% endfor %}<span>.</span>
+      {% if tempo.da_para_concluir %}
+        <span> Num fim de semana de chuva a loja vende
+        <strong>{{ tempo.quanto_a_chuva_mexe|reais }}</strong>
+        {% if tempo.chuva_custa %}a menos{% else %}a mais{% endif %}
+        ({{ tempo.variacao }}%), em média, do que num sem chuva.</span>
+      {% endif %}
+    {% else %}
+      <span>Sem chuva prevista para o próximo fim de semana, que é quando a loja fatura.</span>
+    {% endif %}
+  {% endspaceless %}</p>
+  {% elif tempo.tem_previsao %}
+  <p class="destaque">A previsão dos próximos dias já está guardada. O próximo fim de semana
+     aparece aqui quando entrar na janela de sete dias.</p>
+  {% endif %}
+
+  {% if tempo.tem_previsao %}
+  <ul class="tempo-proximos">
+    {% for dia in tempo.proximos %}
+    <li class="tempo-dia {% if dia.fim_de_semana %}tempo-dia-fds{% endif %} {% if dia.choveu %}tempo-dia-chuva{% endif %}">
+      <span class="tempo-quando">{{ dia.dia_da_semana }}
+        <small>{{ dia.data|date:"d/m" }}{% if dia.fim_de_semana %} · fim de semana{% endif %}</small></span>
+      <span class="tempo-como">{{ dia.resumo }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="ajuda">São dias previstos, e previsão não entra em conta nenhuma do sistema: ela
+     serve para a loja se preparar. A conta de quanto a chuva custa sai só de dia que já
+     fechou.</p>
+  {% else %}
+  <p>Ainda não há previsão guardada. O servidor busca o tempo uma vez por dia, às 06:10;
+     depois da primeira busca os próximos dias aparecem aqui.
+     {% if tempo.o_que_falta %}Falta <strong>{{ tempo.o_que_falta|join:", " }}</strong>.{% endif %}</p>
+  {% endif %}
+
+  {% if tempo.dias_registrados %}
+  <p class="ajuda">{{ tempo.dias_registrados|contagem }} dia{{ tempo.dias_registrados|pluralize }}
+     com o tempo guardado ao lado da venda{% if tempo.dias_sem_registro %},
+     e {{ tempo.dias_sem_registro|contagem }} ainda sem{% endif %}.
+     {% if not tempo.da_para_concluir %}Faltam {{ tempo.falta_quanto }} dia{{ tempo.falta_quanto|pluralize }}
+     para a conta de quanto a chuva custa começar a valer como medida.{% endif %}</p>
+  {% endif %}
+
+  {% if perms.tempo.anotar_tempo %}
+  <p><a href="{% url 'tempo:painel' %}">Abrir o tempo dia a dia, e anotar o dia de hoje</a></p>
+  {% endif %}
+  {% endif %}
+</section>

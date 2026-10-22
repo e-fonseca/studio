@@ -1,0 +1,27 @@
+from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
+from django.dispatch import receiver
+
+from .models import EventoAuditoria
+from .servicos import registrar
+
+
+@receiver(user_logged_in)
+def ao_entrar(sender, request, user, **kwargs):
+    registrar("acesso.entrada", usuario=user)
+
+
+@receiver(user_logged_out)
+def ao_sair(sender, request, user, **kwargs):
+    if user is not None:
+        registrar("acesso.saida", usuario=user)
+
+
+@receiver(user_login_failed)
+def ao_falhar(sender, credentials, request=None, **kwargs):
+    # Registra só o nome de usuário tentado; a senha nunca chega aqui.
+    registrar(
+        "acesso.falha",
+        servico="autenticacao",
+        resultado=EventoAuditoria.Resultado.FALHA,
+        depois={"usuario_tentado": str(credentials.get("username", ""))[:150]},
+    )

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+{% block classe_corpo %}entrada{% endblock %}
+{# Na tela de entrada não há menu nem usuário: o topo escuro vira o fundo da página. #}
+{% block topo %}{% endblock %}
+{% block conteudo %}
+<div class="marca-entrada">
+  <img class="marca-simbolo" src="{% static 'img/logo.png' %}" alt="" width="108" height="108">
+  <strong>Cabana do Jacarandá</strong>
+  <span>Sistema auxiliar ao SET</span>
+</div>
+
+<section class="cartao cartao-entrada">
+  <h1>Entrar</h1>
+  <p class="ajuda">Use seu próprio usuário. As ações ficam registradas para conferência e organização do trabalho.</p>
+  <form method="post" class="formulario-entrada">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<p class="mensagem error" role="alert">Usuário ou senha não conferem. Confira e tente de novo. Depois de 5 tentativas o acesso fica bloqueado por 15 minutos.</p>{% endif %}
+    <label for="id_username">Usuário</label>
+    <input type="text" name="username" id="id_username" autocomplete="username" required autofocus value="{{ form.username.value|default:'' }}">
+    <label for="id_password">Senha</label>
+    <input type="password" name="password" id="id_password" autocomplete="current-password" required>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="botao">Entrar</button>
+  </form>
+</section>
+
+{% comment %}Pedido do Edson em 08/10/2026: a versão saiu do rodapé e veio para perto do
+campo de entrada, junto com o endereço do servidor e o IP de quem está acessando. Os três
+respondem a mesma pergunta antes de alguém digitar a senha — "estou na máquina certa, na
+versão certa?" — e é a primeira coisa a conferir quando ele liga dizendo que uma tela
+está diferente. O IP aqui é o mesmo que a auditoria grava em cada ação, então o que
+aparece nesta tela é o que vai aparecer no registro.{% endcomment %}
+<dl class="identificacao-entrada">
+  <div><dt>Versão</dt><dd>{{ versao_sistema.numero }}</dd></div>
+  <div><dt>Servidor</dt><dd>{{ request.get_host }}</dd></div>
+  <div><dt>Seu acesso</dt><dd>{{ request.META.REMOTE_ADDR|default:"—" }}</dd></div>
+</dl>
+
+<p class="ajuda-entrada">Esqueceu a senha ou não tem usuário? Fale com a gerência.
+  Nunca use o usuário de outra pessoa.</p>
+{% endblock %}

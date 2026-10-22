@@ -1,0 +1,74 @@
+{% extends "base.html" %}{% load cabana %}
+{% block migalhas %}{% include "processos/_migalhas.html" %}{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Base de processos</h1>
+  <a class="botao secundario" href="{% url 'processos:ficha_tecnica' %}">Ficha técnica do sistema</a>
+  {% if perms.processos.documentar_processo %}<a class="botao" href="{% url 'processos:novo' %}">Cadastrar processo</a>{% endif %}
+</div>
+<p class="ajuda">Cada cartão é um processo da loja. Ele só chega a “Validado pela gestão” depois que outra pessoa executa o procedimento usando somente o que está escrito.</p>
+
+{% comment %}A transferência de conhecimento se concentra aqui (pedido do Edson, 07/10/2026):
+o número que importa é quanto do que a loja sabe já está escrito e validado, e ele abre a tela.{% endcomment %}
+<section class="cartao cartao-destaque">
+  <h2>Transferência de conhecimento</h2>
+  <p>O objetivo desta base é simples: o que está na cabeça de uma pessoa tem que passar
+     para o papel, e outra pessoa tem que conseguir executar só com o que está escrito.
+     Vale para o trabalho da loja e vale para o próprio sistema, que tem a sua
+     <a href="{% url 'processos:ficha_tecnica' %}">ficha técnica</a> aqui do lado.</p>
+  <div class="barra-progresso" role="img"
+       aria-label="{{ transferencia.validados }} de {{ transferencia.total }} processos validados pela gestão.">
+    <div class="barra-progresso-trilha">
+      <div class="barra-progresso-feita" style="width: {{ transferencia.porcentagem }}%"></div>
+    </div>
+    <p class="barra-progresso-legenda">
+      <strong>{{ transferencia.validados }} de {{ transferencia.total }}</strong> processos já estão
+      validados pela gestão, {{ transferencia.porcentagem }}% do total.
+      {% if transferencia.criticos_sem_validacao %}
+      Faltam {{ transferencia.criticos_sem_validacao }} de criticidade alta, que são os que param
+      a loja se a pessoa faltar.
+      {% else %}
+      Nenhum processo de criticidade alta está sem validação.
+      {% endif %}
+    </p>
+  </div>
+  <ul class="contagem">
+    {% for rotulo, valor, n in transferencia.estados %}
+      <li><a href="#coluna-{{ valor }}"><span class="numero">{{ n }}</span> {{ rotulo }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+<form method="get" class="filtros" role="search">
+  <label>Buscar <input type="search" name="q" value="{{ busca }}" placeholder="título, passo, observação"></label>
+  <label>Área
+    <select name="area"><option value="">Todas</option>
+      {% for v, r in areas %}<option value="{{ v }}" {% if v == area %}selected{% endif %}>{{ r }}</option>{% endfor %}
+    </select></label>
+  <label>Criticidade
+    <select name="criticidade"><option value="">Todas</option>
+      {% for v, r in criticidades %}<option value="{{ v }}" {% if v == criticidade %}selected{% endif %}>{{ r }}</option>{% endfor %}
+    </select></label>
+  <button type="submit" class="botao secundario">Filtrar</button>
+  {% if busca or area or criticidade %}<a href="{% url 'processos:quadro' %}">Limpar filtros</a>{% endif %}
+</form>
+<p>{{ total }} processo(s).</p>
+<div class="kanban">
+  {% for coluna in colunas %}
+  <section class="coluna" id="coluna-{{ coluna.estado }}" aria-labelledby="titulo-{{ coluna.estado }}">
+    <h2 id="titulo-{{ coluna.estado }}">{{ coluna.rotulo }} <span class="contador">{{ coluna.cartoes|length }}</span></h2>
+    {% for p in coluna.cartoes %}
+      <article class="cartao-kanban criticidade-{{ p.criticidade }}">
+        <h3><a href="{% url 'processos:detalhe' p.pk %}">{{ p.codigo }} · {{ p.titulo }}</a></h3>
+        <p>{{ p.get_area_display }}</p>
+        <p>Criticidade: <strong>{{ p.get_criticidade_display }}</strong></p>
+        {% if p.prazo_coleta %}<p>Prazo: {{ p.prazo_coleta|date:"d/m/Y" }}</p>{% endif %}
+        <p>Titular: {{ p.titular|nome_pessoa }}</p>
+        {% if p.versao_atual %}<p>Versão {{ p.versao_atual.numero }}</p>{% endif %}
+      </article>
+    {% empty %}
+      <p class="vazio">Nenhum processo aqui.</p>
+    {% endfor %}
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block migalhas %}{% include "processos/_migalhas.html" %}{% endblock %}
+{% block conteudo %}
+<h1>{{ titulo }}</h1>
+<form method="post" class="formulario">
+  {% csrf_token %}
+  {% include "_form.html" %}
+  <div class="acoes">
+    <button type="submit" class="botao">Salvar</button>
+    <a href="{% if processo %}{% url 'processos:detalhe' processo.pk %}{% else %}{% url 'processos:quadro' %}{% endif %}">Voltar sem salvar</a>
+  </div>
+</form>
+{% endblock %}

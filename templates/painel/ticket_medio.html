@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Ticket médio</h1>
+  <p>Quanto o cliente gasta por compra, pelas vendas registradas no SET.</p>
+</div>
+
+{% if not t.tem_dados %}
+<section class="cartao cartao-atencao">
+  <h2>Ainda não há venda para calcular</h2>
+  <p>O ticket médio sai das vendas da última importação. Assim que uma importação
+     concluir com vendas no período escolhido, os números aparecem aqui.</p>
+</section>
+{% else %}
+
+<form method="get" class="filtros" role="search">
+  <label>Período
+    <select name="periodo">
+      {% for valor, rotulo, dias in periodos %}
+      <option value="{{ valor }}" {% if valor == t.periodo %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Forma de pagamento
+    <select name="forma">
+      <option value="">Todas</option>
+      {% for forma in t.formas %}
+      <option value="{{ forma }}" {% if forma == t.filtro_forma %}selected{% endif %}>{{ forma }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Dia da semana
+    <select name="dia">
+      <option value="">Todos</option>
+      {% for valor, rotulo in dias_da_semana %}
+      <option value="{{ valor }}" {% if t.filtro_dia == valor|stringformat:"s" %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Vendedor
+    <select name="vendedor">
+      <option value="">Todos</option>
+      {% for nome in t.vendedores %}
+      <option value="{{ nome }}" {% if nome == t.filtro_vendedor %}selected{% endif %}>{{ nome }}</option>
+      {% endfor %}
+    </select></label>
+  <button type="submit" class="botao secundario">Filtrar</button>
+  {% if t.filtro_forma or t.filtro_vendedor or t.filtro_dia or t.periodo != "12m" %}
+  <a href="{% url 'painel:ticket_medio' %}">Limpar filtros</a>
+  {% endif %}
+</form>
+
+<div class="cartoes-numero">
+  <div class="cartao-numero nivel-bom">
+    <span class="cartao-titulo">Ticket médio</span>
+    <strong class="cartao-valor">{{ t.total.ticket|reais }}</strong>
+    <span class="cartao-rodape">É o que cada compra deixa no caixa, em média, no recorte escolhido.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Vendas no período</span>
+    <strong class="cartao-valor">{{ t.total.vendas }}</strong>
+    <span class="cartao-rodape">{{ t.rotulo_periodo }}, até {{ t.ate|date:"d/m/Y" }}.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Faturamento</span>
+    <strong class="cartao-valor">{{ t.total.faturamento|reais }}</strong>
+    <span class="cartao-rodape">Soma das vendas do recorte, sem as estornadas.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Maior venda</span>
+    <strong class="cartao-valor">{{ t.maior_venda|reais }}</strong>
+    <span class="cartao-rodape">Desconto médio de {{ t.desconto_medio|reais }} por venda.</span>
+  </div>
+</div>
+
+{% if t.total.pouco_para_comparar %}
+<section class="cartao cartao-atencao">
+  <h2>Poucas vendas neste recorte</h2>
+  <p>São {{ t.total.vendas }} vendas. Abaixo de {{ minimo_para_comparar }}, uma compra
+     fora do normal muda a média inteira: use o número com cuidado.</p>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>Mês a mês</h2>
+  <p class="ajuda">O ticket médio de cada mês do período, para ver se está subindo ou caindo.</p>
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-ticket">
+      <caption class="oculto-visualmente">Ticket médio por mês.</caption>
+      <thead><tr>
+        <th scope="col">Mês</th><th scope="col" class="numerico">Vendas</th>
+        <th scope="col" class="numerico">Faturamento</th><th scope="col" class="numerico">Ticket médio</th>
+      </tr></thead>
+      <tbody>
+        {% for linha in t.por_mes %}
+        <tr>
+          <td>{{ linha.rotulo }}</td>
+          <td class="numerico">{{ linha.vendas }}</td>
+          <td class="numerico">{{ linha.faturamento|reais }}</td>
+          <td class="numerico"><strong>{{ linha.ticket|reais }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="grade-visao">
+  <section class="cartao">
+    <h2>Por dia da semana</h2>
+    <p class="ajuda">Dia sem venda no período não aparece.</p>
+    <table class="tabela-ticket">
+      <caption class="oculto-visualmente">Ticket médio por dia da semana.</caption>
+      <thead><tr>
+        <th scope="col">Dia</th><th scope="col" class="numerico">Vendas</th>
+        <th scope="col" class="numerico">Ticket médio</th>
+      </tr></thead>
+      <tbody>
+        {% for linha in t.por_dia_da_semana %}
+        <tr>
+          <td>{{ linha.rotulo }}</td>
+          <td class="numerico">{{ linha.vendas }}</td>
+          <td class="numerico"><strong>{{ linha.ticket|reais }}</strong>{% if linha.pouco_para_comparar %}
+            <span class="ajuda">poucas vendas</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="cartao">
+    <h2>Por forma de pagamento</h2>
+    <p class="ajuda">É aqui que costuma aparecer a diferença maior: quem paga no cartão
+       de crédito costuma levar mais do que quem paga à vista.</p>
+    <table class="tabela-ticket">
+      <caption class="oculto-visualmente">Ticket médio por forma de pagamento.</caption>
+      <thead><tr>
+        <th scope="col">Forma</th><th scope="col" class="numerico">Vendas</th>
+        <th scope="col" class="numerico">Ticket médio</th>
+      </tr></thead>
+      <tbody>
+        {% for linha in t.por_forma %}
+        <tr>
+          <td>{{ linha.rotulo }}</td>
+          <td class="numerico">{{ linha.vendas }}</td>
+          <td class="numerico"><strong>{{ linha.ticket|reais }}</strong>{% if linha.pouco_para_comparar %}
+            <span class="ajuda">poucas vendas</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<section class="cartao">
+  <h2>Por vendedor</h2>
+  {% if t.vendas_sem_vendedor %}
+  <p class="ajuda">Atenção ao ler esta lista: {{ t.vendas_sem_vendedor }} das
+     {{ t.total.vendas }} vendas do recorte saíram do SET <strong>sem vendedor
+     preenchido</strong>, então elas não estão em linha nenhuma aqui. Para a comparação
+     valer, a loja precisa lançar a venda no nome de quem vendeu, no próprio SET.</p>
+  {% endif %}
+  {% if t.por_vendedor %}
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-ticket">
+      <caption class="oculto-visualmente">Ticket médio por vendedor.</caption>
+      <thead><tr>
+        <th scope="col">Vendedor</th><th scope="col" class="numerico">Vendas</th>
+        <th scope="col" class="numerico">Faturamento</th><th scope="col" class="numerico">Ticket médio</th>
+      </tr></thead>
+      <tbody>
+        {% for linha in t.por_vendedor %}
+        <tr>
+          <td>{{ linha.rotulo }}</td>
+          <td class="numerico">{{ linha.vendas }}</td>
+          <td class="numerico">{{ linha.faturamento|reais }}</td>
+          <td class="numerico"><strong>{{ linha.ticket|reais }}</strong>{% if linha.pouco_para_comparar %}
+            <span class="ajuda">poucas vendas</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nenhuma venda do recorte tem vendedor preenchido no SET.</p>
+  {% endif %}
+</section>
+
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Ticket médio",
+    "texto": "É o faturamento dividido pelo número de vendas: quanto cada cliente deixa, em média, por compra. Subir o ticket médio é vender mais para quem já está na loja."
+  },
+  {
+    "seletor": ".filtros",
+    "titulo": "Os filtros",
+    "texto": "Período, forma de pagamento, dia da semana e vendedor. Eles valem para os números de cima e para todas as tabelas de baixo ao mesmo tempo."
+  },
+  {
+    "seletor": ".cartoes-numero",
+    "titulo": "Cuidado com recorte pequeno",
+    "texto": "Quando o recorte tem poucas vendas, uma compra fora do normal muda a média. A tela avisa quando isso acontece."
+  }
+]
+</script>
+{% endblock %}

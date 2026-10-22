@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Não consegui entregar o certificado</h1>
+  <p>O arquivo da autoridade da loja não existe neste servidor, e tentar criá-lo agora
+     também não deu certo.</p>
+</div>
+
+<section class="cartao estado-dados estado-ruim">
+  <h2>O que aconteceu</h2>
+  {% if erro_ao_gerar %}
+  <p>O motivo exato foi:</p>
+  <p><code>{{ erro_ao_gerar }}</code></p>
+  {% else %}
+  <p>O arquivo deveria estar em <code>{{ pasta }}</code> e não está.</p>
+  {% endif %}
+  <p>Quase sempre é permissão de pasta: a conta que roda o sistema precisa poder gravar
+     em <code>{{ pasta }}</code>. Depois de ajustar, reinicie o sistema pela tarefa
+     agendada <strong>Cabana\CabanaSistema</strong> e tente de novo.</p>
+  <p><a class="botao" href="{% url 'core:certificado' %}">Voltar para a tela do certificado</a></p>
+</section>
+
+{% endblock %}

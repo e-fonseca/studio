@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load static %}
+{% block classe_corpo %}entrada{% endblock %}
+{% block topo %}{% endblock %}
+{% block conteudo %}
+<div class="marca-entrada">
+  <img class="marca-simbolo" src="{% static 'img/logo.png' %}" alt="" width="108" height="108">
+  <strong>Cabana do Jacarandá</strong>
+  <span>Sistema auxiliar ao SET</span>
+</div>
+
+<section class="cartao cartao-entrada">
+  <h1>Acesso bloqueado por alguns minutos</h1>
+  <p>Houve tentativas de entrada sem sucesso. Espere 15 minutos e tente de novo, ou fale com a gerência.</p>
+</section>
+{% endblock %}

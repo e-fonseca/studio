@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block cabeca %}{% if em_andamento %}<meta http-equiv="refresh" content="5">{% endif %}{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Painel completo</h1>
+  <p><a href="{% url 'painel:painel' %}">Voltar ao painel resumido</a> ·
+     <a href="{% url 'importacao:historico' %}">Ver as importações</a></p>
+</div>
+
+{% include "importacao/_andamento.html" %}
+
+{# Estado dos dados: é a primeira coisa que a pessoa precisa saber antes de decidir compra. #}
+<section class="cartao estado-dados estado-{{ estado.nivel }}">
+  <h2>{{ estado.titulo }}</h2>
+  <p>{{ estado.detalhe }}</p>
+  {% if em_andamento %}
+    <p class="ajuda">O andamento aparece no quadro acima.</p>
+  {% elif perms.importacao.executar_importacao %}
+    <form method="post" action="{% url 'importacao:importar' %}">{% csrf_token %}
+      <button type="submit" class="botao">Importar agora</button>
+      <span class="ajuda">Lê uma cópia do backup do SET. Não mexe no SET nem na venda.</span>
+    </form>
+    <p class="ajuda"><a href="{% url 'importacao:historico' %}">Conferir o backup e forçar a atualização</a>,
+      para ver o tamanho e a data do arquivo antes de importar.</p>
+  {% endif %}
+</section>
+
+{% if painel %}
+<div class="resumo-painel">
+  <div>
+    <span class="numero">{{ painel.resumo.valor_estoque|reais }}</span>
+    <span class="rotulo">Valor parado em estoque hoje</span>
+  </div>
+  <div>
+    <span class="numero">{{ painel.resumo.itens }}</span>
+    <span class="rotulo">Produtos cadastrados no SET</span>
+  </div>
+  <div>
+    <span class="numero">{{ painel.importacao.dias_abertos_12m }}</span>
+    <span class="rotulo">Dias com venda nos últimos 12 meses</span>
+  </div>
+</div>
+{% if painel.itens_sem_custo %}
+<p class="ajuda">{{ painel.itens_sem_custo }} produtos sem custo cadastrado ficam fora dos valores acima.</p>
+{% endif %}
+
+<section class="cartao aviso-contagem">
+  <h2>Antes de usar os números</h2>
+  <p>A loja ainda não fez a contagem física do estoque, então o saldo que vem do SET pode estar errado.
+     Os indicadores marcados como <strong>depende da contagem</strong> são estimativa até a contagem ser feita.
+     O indicador em destaque usa só nota de compra e de venda, por isso vale como está.</p>
+</section>
+
+<h2 class="secao-titulo">Onde o dinheiro está</h2>
+<p class="ajuda">Clique em um quadro para ver a lista de produtos daquele indicador.</p>
+<ul class="indicadores">
+  {% for i in painel.indicadores %}
+  <li class="indicador {% if i.destaque %}indicador-destaque{% endif %}">
+    {% if i.destaque %}<span class="selo-destaque">O número mais firme</span>{% endif %}
+    <a href="?lista={{ i.chave }}" {% if lista_escolhida == i.chave %}aria-current="true"{% endif %}>
+      <span class="numero">{{ i.valor|reais }}</span>
+      <span class="rotulo">{{ i.titulo }}</span>
+      <span class="ajuda">{{ i.itens }} produto{{ i.itens|pluralize:"s" }}</span>
+    </a>
+    <p class="ajuda">{{ i.explicacao }}</p>
+    <p class="etiqueta {% if i.depende_da_contagem %}etiqueta-atencao{% endif %}">
+      {% if i.depende_da_contagem %}Depende da contagem{% else %}Não depende da contagem{% endif %}
+    </p>
+  </li>
+  {% endfor %}
+</ul>
+
+{% if melhores %}
+<h2 class="secao-titulo">Melhores produtos para comprar agora</h2>
+<p class="ajuda">Entre os produtos que chegaram ao ponto de reposição, os que mais deram margem nos últimos
+  12 meses: preço de venda menos custo, vezes o que saiu.</p>
+<div class="tabela-rolavel">
+  <table>
+    <thead>
+      <tr><th scope="col">Produto</th><th scope="col">Fornecedor</th>
+        <th scope="col" class="numerico">Margem em 12m</th>
+        <th scope="col" class="numerico">Custo da reposição</th><th scope="col">Situação</th></tr>
+    </thead>
+    <tbody>
+      {% for linha in melhores %}
+      <tr>
+        <td>{{ linha.descricao|default:linha.codigo }}<br><span class="ajuda">{{ linha.cobertura }}</span></td>
+        <td>{{ linha.fornecedor|default:"—" }}</td>
+        <td class="numerico">{{ linha.lucro_12m|reais }}</td>
+        <td class="numerico">{{ linha.valor|reais }}</td>
+        <td>{{ linha.situacao }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if recentes %}
+<h2 class="secao-titulo">Comprados recentemente</h2>
+<p class="ajuda">As últimas entradas registradas no SET, da mais nova para a mais antiga. Serve para conferir
+  a compra da semana contra o que o estoque pedia.</p>
+<div class="tabela-rolavel">
+  <table>
+    <thead>
+      <tr><th scope="col">Última compra</th><th scope="col">Produto</th><th scope="col">Fornecedor</th>
+        <th scope="col" class="numerico">Estoque</th><th scope="col" class="numerico">Vendeu 12m</th>
+        <th scope="col">Situação</th></tr>
+    </thead>
+    <tbody>
+      {% for linha in recentes %}
+      <tr>
+        <td>{{ linha.ultima_compra|date:"d/m/Y" }}</td>
+        <td>{{ linha.descricao|default:linha.codigo }}</td>
+        <td>{{ linha.fornecedor|default:"—" }}</td>
+        <td class="numerico">{{ linha.estoque|quantidade }}</td>
+        <td class="numerico">{{ linha.vendas_12m|quantidade }}</td>
+        <td>{{ linha.situacao }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if parados %}
+<h2 class="secao-titulo">Comprados há anos e ainda em estoque</h2>
+<p class="ajuda">Produtos cuja última entrada tem mais de dois anos, que ainda têm saldo e não venderam nada
+  nos últimos 12 meses. É dinheiro dormindo na prateleira desde aquela compra.</p>
+<div class="tabela-rolavel">
+  <table>
+    <thead>
+      <tr><th scope="col">Última compra</th><th scope="col">Produto</th><th scope="col">Fornecedor</th>
+        <th scope="col" class="numerico">Estoque</th><th scope="col" class="numerico">Valor parado</th></tr>
+    </thead>
+    <tbody>
+      {% for linha in parados %}
+      <tr>
+        <td>{{ linha.ultima_compra|date:"d/m/Y" }}</td>
+        <td>{{ linha.descricao|default:linha.codigo }}</td>
+        <td>{{ linha.fornecedor|default:"—" }}</td>
+        <td class="numerico">{{ linha.estoque|quantidade }}</td>
+        <td class="numerico">{{ linha.valor|reais }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if indicador_escolhido %}
+<h2 class="secao-titulo">{{ indicador_escolhido.titulo }}</h2>
+<p class="ajuda">{{ indicador_escolhido.explicacao }} Mostrando os {{ linhas|length }} maiores
+  de {{ indicador_escolhido.itens }} produto{{ indicador_escolhido.itens|pluralize:"s" }}.</p>
+<div class="tabela-rolavel">
+  <table>
+    <caption>Produtos ordenados pelo valor envolvido.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Código</th><th scope="col">Produto</th><th scope="col">Grupo</th>
+        <th scope="col" class="numerico">Valor</th><th scope="col" class="numerico">Estoque</th>
+        <th scope="col" class="numerico">Vendeu 12m</th><th scope="col" class="numerico">Comprou 12m</th>
+        <th scope="col">Situação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for linha in linhas %}
+      <tr>
+        <td>{{ linha.codigo }}</td>
+        <td>{{ linha.descricao|default:"sem descrição" }}<br><span class="ajuda">{{ linha.motivo }}</span></td>
+        <td>{{ linha.grupo }}</td>
+        <td class="numerico">{{ linha.valor|reais }}</td>
+        <td class="numerico">{{ linha.estoque|quantidade }}</td>
+        <td class="numerico">{{ linha.vendas_12m|quantidade }}</td>
+        <td class="numerico">{{ linha.compras_12m|quantidade }}</td>
+        <td>{{ linha.situacao }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="vazio">Nenhum produto neste indicador.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% include "painel/_meses.html" %}
+
+{% if painel.itens_com_pedido %}
+<p class="ajuda">{{ painel.itens_com_pedido }} produto{{ painel.itens_com_pedido|pluralize:"s" }} com pedido de compra
+  em aberto no SET. Essa mercadoria a caminho já é descontada do que falta comprar, para não comprar duas vezes.</p>
+{% endif %}
+
+{% if painel.compras_com_prazo and painel.entrega_no_mesmo_dia %}
+<section class="cartao aviso-prazo">
+  <h2>Sobre o prazo de entrega</h2>
+  <p>Das {{ painel.compras_com_prazo }} compras com data de pedido e de entrega no SET,
+    {{ painel.entrega_no_mesmo_dia }} estão com a entrega no mesmo dia do pedido. Onde isso acontece, o SET registrou a
+    data da nota, e não o prazo real do fornecedor, então o sistema calcula que repor é imediato e sugere comprar mais
+    tarde do que deveria. Informar o prazo de cada fornecedor corrige isso.</p>
+</section>
+{% endif %}
+
+<p class="ajuda">
+  {% if painel.itens_sem_prazo %}{{ painel.itens_sem_prazo }} produtos não têm compra registrada, então o sistema não
+  calcula quando repor.{% endif %}
+  {% if painel.itens_prazo_estimado %} {{ painel.itens_prazo_estimado }} usam o prazo médio da loja porque o fornecedor
+  tem poucas compras no histórico.{% endif %}
+  {% if painel.itens_prazo_informado %} {{ painel.itens_prazo_informado }} já usam o prazo informado em
+  Fornecedores.{% endif %}
+  {% if painel.itens_sem_prazo or painel.itens_prazo_estimado %}Informar o prazo de entrega de cada fornecedor deixa a
+  sugestão de reposição mais firme.{% endif %}
+  {% if perms.fornecedores.view_fornecedor %}<a href="{% url 'fornecedores:lista' %}">Informar os prazos</a>.{% endif %}
+</p>
+
+{% else %}
+<section class="cartao">
+  <h2>Sem números para mostrar ainda</h2>
+  <p>O painel precisa de uma importação concluída. Depois da primeira, os indicadores aparecem aqui e passam a
+     ser atualizados toda noite.</p>
+</section>
+{% endif %}
+{% endblock %}
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Painel de compras e estoque",
+    "texto": "Esta tela responde uma pergunta: onde está o dinheiro da loja hoje. Tudo aqui vem dos dados do SET importados pelo sistema. Avance com Avançar ou com a seta do teclado."
+  },
+  {
+    "seletor": ".estado-dados",
+    "titulo": "De quando são os dados",
+    "texto": "Sempre confira esta data antes de decidir compra. Até um dia de atraso é o normal, porque a importação lê o backup da noite. De dois dias em diante o sistema avisa em todas as telas."
+  },
+  {
+    "seletor": "#abrir-ajuda",
+    "titulo": "Esta ajuda",
+    "texto": "F1 abre a ajuda em qualquer tela do sistema e explica o que está na tela em que você estiver."
+  },
+  {
+    "seletor": ".estado-dados form",
+    "titulo": "Importar agora",
+    "texto": "Use quando não quiser esperar a importação da madrugada. Ele lê uma cópia do backup do SET; o SET e a venda não são tocados."
+  },
+  {
+    "seletor": ".aviso-contagem",
+    "titulo": "Por que alguns números são estimativa",
+    "texto": "A loja ainda não fez a contagem física. O que depende do saldo do estoque fica marcado, e o indicador em destaque não depende dele."
+  },
+  {
+    "seletor": ".indicador-destaque",
+    "titulo": "O número mais confiável",
+    "texto": "Compras acima do que foi vendido no mesmo período. Sai de nota fiscal de compra e de venda, então vale mesmo sem a contagem. É o número para conversar sobre compra planejada."
+  },
+  {
+    "seletor": ".grafico-meses",
+    "titulo": "Compra e venda mês a mês",
+    "texto": "Cada mês tem duas barras: a verde é o que a loja vendeu, a laranja é o que comprou. Mês em que a laranja passa a verde é mês em que o caixa apertou."
+  },
+  {
+    "seletor": ".indicadores",
+    "titulo": "Os seis indicadores",
+    "texto": "Cada quadro é um jeito de ver o dinheiro: parado, em excesso, comprado demais, faltando, e o que repor. Clique em um deles para ver a lista de produtos daquele indicador."
+  },
+  {
+    "seletor": ".tabela-rolavel table",
+    "titulo": "A lista de produtos",
+    "texto": "Os maiores valores primeiro, com o motivo de cada um embaixo do nome. É por aqui que se decide o que fazer item a item."
+  },
+  {
+    "seletor": ".aviso-prazo",
+    "titulo": "O prazo de entrega",
+    "texto": "O SET costuma gravar a entrega no mesmo dia do pedido, então o prazo calculado sai curto e a sugestão de compra chega tarde. Assim que os prazos reais dos fornecedores forem informados, esta conta fica firme."
+  },
+  {
+    "titulo": "Pronto",
+    "texto": "Em Ver as importações você acompanha cada importação, com data, resultado e duração. Esc fecha a ajuda."
+  }
+]
+</script>
+{% endblock %}

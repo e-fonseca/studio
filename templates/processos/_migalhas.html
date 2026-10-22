@@ -1,0 +1,5 @@
+<nav class="migalhas" aria-label="Você está em">
+  <a href="{% url 'core:inicio' %}">Início</a> ›
+  <a href="{% url 'processos:quadro' %}">Base de processos</a>
+  {% if processo %} › <a href="{% url 'processos:detalhe' processo.pk %}">{{ processo.codigo }}</a>{% endif %}
+</nav>

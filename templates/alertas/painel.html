@@ -1,0 +1,225 @@
+{% extends "base.html" %}{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Alertas e notificações</h1>
+  {% if configuracao.pronta %}
+  <form method="post" action="{% url 'alertas:testar' %}">{% csrf_token %}
+    <button type="submit" class="botao secundario">Enviar e-mail de teste</button>
+  </form>
+  {% endif %}
+</div>
+<p class="ajuda">O sistema manda os relatórios sozinho, nos horários abaixo, por e-mail e
+   por Telegram. Ele não manda nada sem notícia: num dia sem conta vencida, sem conta do
+   dia e sem conta da semana, nada sai, para o aviso continuar valendo a pena quando
+   chegar. Os dois caminhos são independentes: um pode estar ligado e o outro não.</p>
+
+{% if faltas %}
+<section class="cartao cartao-destaque">
+  <h2>Falta preencher para o envio funcionar</h2>
+  <p>O sistema ainda não consegue mandar e-mail. Falta: <strong>{{ faltas|join:", " }}</strong>.</p>
+  <p>A senha do campo abaixo é a da caixa que <strong>envia</strong>
+     ({{ configuracao.usuario|default:"o endereço preenchido abaixo" }}): a mesma de quem entra
+     no webmail dela. Não é a senha do e-mail que recebe os relatórios. Ela fica gravada
+     cifrada e o sistema nunca mostra de volta.</p>
+</section>
+{% elif not configuracao.ativo %}
+<section class="cartao cartao-destaque">
+  <h2>Está tudo preenchido, mas o envio está desligado</h2>
+  <p>Marque <strong>mandar os relatórios</strong> abaixo e salve. Antes disso, vale usar o
+     botão de teste para ver se a mensagem chega.</p>
+</section>
+{% else %}
+<section class="cartao cartao-destaque">
+  <h2>Envio ligado</h2>
+  <p>Os relatórios vão para <strong>{{ configuracao.lista_de_destinatarios|join:", " }}</strong>.
+     O próximo diário sai em <strong>{{ proximo.diario|date:"d/m/Y \à\s H:i" }}</strong> e os
+     semanais em <strong>{{ proximo.semanal|date:"d/m/Y \à\s H:i" }}</strong>.</p>
+  {% if not tem_importacao %}
+  <p class="destaque">Ainda não há importação concluída, então os relatórios sairiam vazios.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<h2>Os quatro relatórios</h2>
+{% comment %}Cartões e não tabela: são quatro itens com dois botões cada, e tabela com
+botão rola de lado no celular justamente onde ficam os botões.{% endcomment %}
+<p class="ajuda">Cada um sai no seu horário. A prévia mostra como o e-mail chega, sem mandar nada.</p>
+<div class="cartoes-relatorio">
+  {% for r in rotinas %}
+  <article class="cartao-relatorio">
+    <h3>{{ r.nome }}</h3>
+    <p class="cartao-relatorio-quando">{{ r.cadencia }}</p>
+    <p class="ajuda">{{ r.descricao }}</p>
+    <p class="cartao-relatorio-ultimo">
+      {% if r.ultimo %}
+        E-mail em {{ r.ultimo.quando|date:"d/m \à\s H:i" }}:
+        {% if r.ultimo.deu_certo %}<span class="etiqueta">entregue</span>
+        {% elif r.ultimo.sem_noticia %}<span class="etiqueta">sem novidade</span>
+        {% else %}<span class="etiqueta etiqueta-atencao">não saiu</span>{% endif %}
+      {% else %}E-mail: nunca enviado.{% endif %}
+      {% if r.ultimo_telegram %}<br>Telegram em {{ r.ultimo_telegram.quando|date:"d/m \à\s H:i" }}:
+        {% if r.ultimo_telegram.deu_certo %}<span class="etiqueta">entregue</span>
+        {% elif r.ultimo_telegram.sem_noticia %}<span class="etiqueta">sem novidade</span>
+        {% else %}<span class="etiqueta etiqueta-atencao">não saiu</span>{% endif %}{% endif %}
+    </p>
+    <div class="cartao-relatorio-acoes">
+      <a class="botao secundario" href="{% url 'alertas:previa' r.chave %}" target="_blank" rel="noopener">Ver prévia</a>
+      {% if configuracao.pronta %}
+      <form method="post" action="{% url 'alertas:mandar_agora' r.chave %}">{% csrf_token %}
+        <button type="submit" class="botao secundario">Mandar agora</button>
+      </form>
+      {% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<h2>Configuração</h2>
+<form method="post" class="formulario">
+  {% csrf_token %}
+  {% include "_form.html" %}
+  {% if configuracao.tem_senha %}
+  <p class="ajuda">Já existe uma senha gravada. Deixe o campo em branco para manter a que está;
+     escreva outra só para trocar. O sistema nunca mostra a senha de volta.</p>
+  {% endif %}
+  <div class="acoes"><button type="submit" class="botao">Salvar</button></div>
+</form>
+
+<h2>Aviso no Telegram</h2>
+<p class="ajuda">O Telegram chega no celular em segundos e leva a manchete e os números;
+   o relatório inteiro, com as tabelas, continua indo por e-mail. Precisa de duas coisas:
+   um robô, criado de graça no próprio Telegram, e a conversa para onde o aviso vai.</p>
+
+{% if faltas_telegram %}
+<section class="cartao cartao-destaque">
+  <h2>Como ligar o Telegram, em três passos</h2>
+  <p>Falta: <strong>{{ faltas_telegram|join:", " }}</strong>.</p>
+  <ol>
+    <li>No Telegram, no celular ou no computador, procure <strong>@BotFather</strong>,
+        mande <strong>/newbot</strong> e dê um nome ao robô (por exemplo
+        <em>Cabana do Jacarandá</em>). Ele responde com um <strong>token</strong>, uma
+        linha comprida com dois pontos no meio.</li>
+    <li>Cole esse token no campo abaixo e salve. Ele fica gravado cifrado e o sistema
+        nunca mostra de volta, igual à senha do e-mail.</li>
+    <li>Ainda no Telegram, abra a conversa com o robô que você acabou de criar e mande
+        qualquer mensagem para ele — um "oi" basta. Depois clique em
+        <strong>Descobrir a conversa</strong> aqui e escolha. O robô não consegue
+        escrever para quem nunca falou com ele primeiro.</li>
+  </ol>
+  <p class="ajuda">Para o aviso ir para mais de uma pessoa, crie um grupo no Telegram,
+     ponha o robô dentro e descubra a conversa do grupo do mesmo jeito.</p>
+</section>
+{% elif not telegram.ativo %}
+<section class="cartao cartao-destaque">
+  <h2>Está tudo preenchido, mas o aviso está desligado</h2>
+  <p>Marque <strong>mandar aviso no Telegram</strong> abaixo e salve. Antes disso, vale
+     usar o botão de teste para ver se chega no celular.</p>
+</section>
+{% else %}
+<section class="cartao cartao-destaque">
+  <h2>Telegram ligado</h2>
+  <p>Os avisos vão para <strong>{{ telegram.para_quem }}</strong>, nos mesmos horários do
+     e-mail.</p>
+</section>
+{% endif %}
+
+{% if chats %}
+<section class="cartao">
+  <h2>Conversas que já falaram com o robô</h2>
+  <p class="ajuda">Escolha para onde o aviso vai. Se a conversa certa não está aqui, mande
+     uma mensagem para o robô no Telegram e clique em descobrir de novo.</p>
+  <ul class="lista-chats">
+    {% for chat in chats %}
+    <li>
+      <span><strong>{{ chat.nome }}</strong> · {{ chat.id }}</span>
+      <form method="post" action="{% url 'alertas:usar_chat' %}">{% csrf_token %}
+        <input type="hidden" name="chat_id" value="{{ chat.id }}">
+        <input type="hidden" name="chat_nome" value="{{ chat.nome }}">
+        <button type="submit" class="botao secundario">Usar esta</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<form method="post" action="{% url 'alertas:configurar_telegram' %}" class="formulario formulario-telegram">
+  {% csrf_token %}
+  {% include "_form.html" with form=form_telegram %}
+  {% if telegram.tem_token %}
+  <p class="ajuda">Já existe um token gravado. Deixe o campo em branco para manter o que
+     está; escreva outro só para trocar de robô.</p>
+  {% endif %}
+  <div class="acoes">
+    <button type="submit" class="botao">Salvar o Telegram</button>
+  </div>
+</form>
+<div class="acoes acoes-telegram">
+  {% if telegram.tem_token %}
+  <form method="post" action="{% url 'alertas:descobrir_chat' %}">{% csrf_token %}
+    <button type="submit" class="botao secundario">Descobrir a conversa</button>
+  </form>
+  {% endif %}
+  {% if telegram.pronta %}
+  <form method="post" action="{% url 'alertas:testar_telegram' %}">{% csrf_token %}
+    <button type="submit" class="botao secundario">Enviar aviso de teste</button>
+  </form>
+  {% endif %}
+</div>
+
+<h2>Últimos envios</h2>
+{% if ultimos %}
+<div class="tabela-rolavel">
+  <table>
+    <caption>Para responder "não recebi o e-mail de ontem" sem abrir a caixa de entrada.
+      Cada linha é uma tentativa, e o e-mail e o Telegram têm cada um a sua.</caption>
+    <thead>
+      <tr><th scope="col">Quando</th><th scope="col">Relatório</th><th scope="col">Por onde</th><th scope="col">Resultado</th><th scope="col">O que dizia</th></tr>
+    </thead>
+    <tbody>
+      {% for e in ultimos %}
+      <tr>
+        <td>{{ e.quando|date:"d/m/Y H:i" }}</td>
+        <td>{{ e.get_rotina_display }}{% if e.disparado_por %}<br><small>por {{ e.disparado_por }}</small>{% endif %}</td>
+        <td>{{ e.get_canal_display }}{% if e.destinatarios %}<br><small>{{ e.destinatarios }}</small>{% endif %}</td>
+        <td>
+          {% if e.deu_certo %}<span class="etiqueta">entregue</span>
+          {% elif e.sem_noticia %}<span class="etiqueta">sem novidade</span><br><small>Nada que mudasse o dia; o e-mail não foi mandado.</small>
+          {% else %}<span class="etiqueta etiqueta-atencao">não saiu</span><br><small>{{ e.erro }}</small>{% endif %}
+        </td>
+        <td>{{ e.resumo|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>Nenhum envio ainda.</p>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Alertas e notificações",
+    "texto": "O sistema manda quatro relatórios sozinho: contas a pagar e vendas do dia todo dia, estoque e sugestão de compra toda semana. Eles saem por e-mail e, se você ligar, também por Telegram. Esta tela é onde se liga cada um, se confere o que já saiu e se manda um de propósito."
+  },
+  {
+    "seletor": ".formulario",
+    "titulo": "A senha da caixa de e-mail",
+    "texto": "A senha daqui é a da caixa que envia os relatórios, a mesma de quem entra no webmail dela. Não é a senha do e-mail que recebe. O servidor de saída e a porta já vêm preenchidos com os da caixa da loja: smtp.hostinger.com na porta 465. A senha fica gravada cifrada e o sistema nunca mostra ela de volta."
+  },
+  {
+    "seletor": ".formulario-telegram",
+    "titulo": "O robô do Telegram",
+    "texto": "O token vem do @BotFather, dentro do próprio Telegram, e é tratado como senha: gravado cifrado e nunca mostrado de volta. A conversa é descoberta pelo botão, depois de você mandar qualquer mensagem para o robô: ele não consegue escrever para quem nunca falou com ele primeiro."
+  },
+  {
+    "seletor": ".cartoes-relatorio",
+    "titulo": "Prévia antes de ligar",
+    "texto": "Ver prévia abre o e-mail como ele vai chegar, sem mandar nada. Mandar agora envia de verdade, mesmo que não haja notícia — que é o único caso em que o sistema manda um relatório vazio."
+  }
+]
+</script>
+{% endblock %}

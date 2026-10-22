@@ -1,0 +1,127 @@
+{% extends "base.html" %}{% load cabana %}
+{% block migalhas %}{% include "processos/_migalhas.html" %}{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>{{ processo.codigo }} · {{ processo.titulo }}</h1>
+  <span class="etiqueta estado-{{ processo.estado }}">{{ processo.get_estado_display }}</span>
+</div>
+
+<section class="cartao">
+  <h2>Cadastro</h2>
+  <dl class="lista-dados">
+    <dt>Área</dt><dd>{{ processo.get_area_display }}</dd>
+    <dt>Criticidade</dt><dd>{{ processo.get_criticidade_display }}</dd>
+    <dt>Quem conhece hoje</dt><dd>{{ processo.fonte_conhecimento|default:"não informado" }}</dd>
+    <dt>Responsável titular</dt><dd>{{ processo.titular|nome_pessoa }}</dd>
+    <dt>Substituto</dt><dd>{{ processo.substituto|nome_pessoa }}</dd>
+    <dt>Prazo para coleta</dt><dd>{{ processo.prazo_coleta|date:"d/m/Y"|default:"não definido" }}</dd>
+    {% if processo.versao_validada %}<dt>Última versão validada</dt><dd>Versão {{ processo.versao_validada.numero }}, por {{ processo.validado_por|nome_pessoa }} em {{ processo.validado_em|date:"d/m/Y" }}</dd>{% endif %}
+  </dl>
+  {% if perms.processos.documentar_processo %}<p><a href="{% url 'processos:editar_cadastro' processo.pk %}">Editar cadastro</a></p>{% endif %}
+</section>
+
+<section class="cartao">
+  <div class="cabecalho-pagina">
+    <h2>Procedimento</h2>
+    {% if perms.processos.documentar_processo %}<a class="botao" href="{% url 'processos:editar_procedimento' processo.pk %}">{% if versao %}Escrever nova versão{% else %}Escrever procedimento{% endif %}</a>{% endif %}
+  </div>
+  {% if versao %}{% include "processos/_versao.html" %}{% else %}<p>Ainda não há procedimento escrito.</p>{% endif %}
+</section>
+
+<section class="cartao">
+  <h2>Próximo passo</h2>
+  {% if processo.estado == "a_levantar" %}
+    <p>Conversar com quem executa hoje e escrever a primeira versão do procedimento.</p>
+  {% elif processo.estado == "em_documentacao" %}
+    {% if pendencias %}
+      <p>Para enviar para teste, falta:</p>
+      <ul>{% for p in pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+    {% elif perms.processos.documentar_processo %}
+      <form method="post" action="{% url 'processos:enviar_para_teste' processo.pk %}">{% csrf_token %}
+        <p>O procedimento está completo. Envie para que outra pessoa execute usando somente esta página.</p>
+        <button type="submit" class="botao">Enviar para teste</button>
+      </form>
+    {% endif %}
+  {% elif processo.estado == "em_teste" %}
+    {% if perms.processos.registrar_teste %}
+    <form method="post" action="{% url 'processos:registrar_teste' processo.pk %}" class="formulario">{% csrf_token %}
+      <h3>Registrar meu teste</h3>
+      <p class="ajuda">Só registre se você executou o procedimento usando esta página. Quem escreveu a versão ou é titular não pode testar.</p>
+      {% include "_form.html" with form=form_teste %}
+      <button type="submit" class="botao">Registrar teste</button>
+    </form>
+    {% endif %}
+    {% if perms.processos.validar_processo %}
+    <form method="post" action="{% url 'processos:validar' processo.pk %}" class="formulario">{% csrf_token %}
+      <h3>Validar pela gestão</h3>
+      <label for="observacao">Observação (opcional)</label>
+      <textarea id="observacao" name="observacao" rows="2"></textarea>
+      <button type="submit" class="botao">Validar processo</button>
+    </form>
+    {% endif %}
+  {% elif processo.estado == "validado" %}
+    <p>Processo validado. Revise sempre que a rotina mudar.</p>
+  {% endif %}
+  {% if processo.estado == "em_teste" and perms.processos.documentar_processo or processo.estado == "validado" and perms.processos.validar_processo %}
+  <details>
+    <summary>Devolver para documentação</summary>
+    <form method="post" action="{% url 'processos:devolver' processo.pk %}" class="formulario">{% csrf_token %}
+      {% include "_form.html" with form=form_motivo %}
+      <button type="submit" class="botao secundario">Devolver</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>Testes por outras pessoas</h2>
+  {% for t in testes %}
+    <p><strong>{{ t.executor|nome_pessoa }}</strong>, versão {{ t.versao.numero }}, {{ t.executado_em|date:"d/m/Y H:i" }}: {{ t.get_resultado_display }}{% if not t.usou_somente_documentacao %} (precisou de ajuda além da documentação){% endif %}.
+    {% if t.dificuldades %}<br>Dificuldades: {{ t.dificuldades|linebreaksbr }}{% endif %}</p>
+  {% empty %}<p>Nenhum teste registrado.</p>{% endfor %}
+</section>
+
+<section class="cartao">
+  <h2>O que foi dito, observado e aprovado</h2>
+  <p class="ajuda">Separamos a declaração de quem executa hoje, o que foi observado na prática e a regra aprovada pela gestão.</p>
+  {% for a in afirmacoes %}
+    <div class="afirmacao tipo-{{ a.tipo }}">
+      <p><span class="etiqueta">{{ a.get_tipo_display }}</span> {{ a.texto|linebreaksbr }}</p>
+      <p class="ajuda">Fonte: {{ a.fonte }}. Registrado por {{ a.registrado_por.username }} em {{ a.registrado_em|date:"d/m/Y" }}{% if a.aprovado_por %}; aprovado por {{ a.aprovado_por.username }}{% endif %}.</p>
+    </div>
+  {% empty %}<p>Nada registrado ainda.</p>{% endfor %}
+  {% if perms.processos.documentar_processo %}
+  <details>
+    <summary>Registrar declaração, observação ou regra</summary>
+    <form method="post" action="{% url 'processos:nova_afirmacao' processo.pk %}" class="formulario">{% csrf_token %}
+      {% include "_form.html" with form=form_afirmacao %}
+      <p class="ajuda">Só a gerência registra “Regra aprovada pela gestão”.</p>
+      <button type="submit" class="botao">Registrar</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>Anexos</h2>
+  {% for an in anexos %}
+    <p>{% if perms.processos.ver_anexo %}<a href="{% url 'processos:baixar_anexo' processo.pk an.pk %}">{{ an.nome_original }}</a>{% else %}{{ an.nome_original }}{% endif %}: {{ an.descricao }} ({{ an.tamanho|filesizeformat }}, enviado por {{ an.enviado_por.username }} em {{ an.enviado_em|date:"d/m/Y" }})</p>
+  {% empty %}<p>Nenhum anexo.</p>{% endfor %}
+  {% if perms.processos.documentar_processo %}
+  <details>
+    <summary>Enviar anexo</summary>
+    <form method="post" action="{% url 'processos:enviar_anexo' processo.pk %}" enctype="multipart/form-data" class="formulario">{% csrf_token %}
+      <p class="ajuda">PDF, PNG, JPG, XLSX, DOCX, CSV ou TXT até 10 MB. Fotos ou gravações com pessoas só com autorização registrada. Cubra dados pessoais que não forem necessários.</p>
+      {% include "_form.html" with form=form_anexo %}
+      <button type="submit" class="botao">Enviar</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>Histórico de versões</h2>
+  <ul>{% for v in versoes %}<li><a href="{% url 'processos:versao' processo.pk v.numero %}">Versão {{ v.numero }}</a>, {{ v.criado_em|date:"d/m/Y H:i" }}, {{ v.autor.username }}: {{ v.resumo_mudanca }}</li>{% empty %}<li>Sem versões.</li>{% endfor %}</ul>
+</section>
+<p><a href="{% url 'processos:quadro' %}">Voltar à base de processos</a></p>
+{% endblock %}

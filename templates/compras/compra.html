@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Compra {{ compra.numero }}</h1>
+  <a href="{% url 'compras:consulta' %}">Voltar às compras</a>
+</div>
+
+<div class="cartoes-numero">
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Valor da compra</span>
+    <strong class="cartao-valor">{{ compra.valor_total|reais }}</strong>
+    <span class="cartao-rodape">{{ compra.itens }} item{{ compra.itens|pluralize:"ns" }} na nota.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Data</span>
+    <strong class="cartao-valor cartao-texto">{{ compra.data|date:"d/m/Y"|default:"—" }}</strong>
+    <span class="cartao-rodape">{% if compra.data_nota %}Data da nota.{% else %}Data do pedido; a nota não foi lançada.{% endif %}</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Situação no SET</span>
+    <strong class="cartao-valor cartao-texto">{{ compra.situacao|default:"—" }}</strong>
+    <span class="cartao-rodape">{% if compra.pendente %}Mercadoria a caminho: ainda não entrou no estoque.{% else %}Entrou no estoque.{% endif %}</span>
+  </div>
+</div>
+
+<section class="cartao">
+  <h2>De onde veio</h2>
+  <dl class="ficha">
+    <div><dt>Fornecedor</dt><dd>
+      {% if compra.fornecedor %}
+        <a href="{% url 'fornecedores:ficha' %}?nome={{ compra.fornecedor|urlencode }}">{{ compra.fornecedor }}</a>
+      {% else %}—{% endif %}</dd></div>
+    <div><dt>Quem comprou</dt><dd>{{ compra.comprador|default:"—" }}</dd></div>
+    <div><dt>Nota fiscal</dt><dd>{{ compra.nota_fiscal|default:"—" }}</dd></div>
+    <div><dt>Pedido em</dt><dd>{{ compra.data_pedido|date:"d/m/Y"|default:"—" }}</dd></div>
+    <div><dt>Entregue em</dt><dd>{{ compra.data_entrega|date:"d/m/Y"|default:"—" }}</dd></div>
+    <div><dt>Demorou</dt><dd>{% if compra.dias_ate_entregar is None %}—{% elif compra.dias_ate_entregar == 0 %}
+      entrou no mesmo dia{% else %}{{ compra.dias_ate_entregar }} dia{{ compra.dias_ate_entregar|pluralize }}{% endif %}</dd></div>
+  </dl>
+</section>
+
+<section class="cartao">
+  <h2>O que veio nesta compra</h2>
+  {% if itens %}
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-compras">
+      <caption class="oculto-visualmente">Itens da compra, do que mais custou para o que menos.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col" class="numerico">Quantidade</th>
+          <th scope="col" class="numerico">Custo da unidade</th>
+          <th scope="col" class="numerico">Custo total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in itens %}
+        <tr>
+          <td>{{ item.descricao|default:"—" }}<br><span class="ajuda">código {{ item.codigo }}</span></td>
+          <td class="numerico">{{ item.quantidade|floatformat:"-3" }}</td>
+          <td class="numerico">{{ item.custo_unitario|reais }}</td>
+          <td class="numerico">{{ item.custo_total|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Esta compra não tem itens lançados no SET.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

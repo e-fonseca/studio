@@ -1,0 +1,10 @@
+{# Aviso de atualização dos dados. Aparece em todas as páginas quando a informação não está em dia. #}
+{% if estado_dados and estado_dados.avisar and not esconder_aviso_dados %}
+<div class="faixa-dados faixa-{{ estado_dados.nivel }}" role="status">
+  <div class="faixa-interna">
+    <strong>{{ estado_dados.titulo }}.</strong>
+    <span>{{ estado_dados.detalhe }}</span>
+    <a href="{% url 'painel:painel' %}">Abrir o painel</a>
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,21 @@
+{{ r.assunto|upper }} — CABANA DO JACARANDÁ
+{% if r.data_corte %}Dados do SET de {{ r.data_corte|date:"d/m/Y" }}.{% endif %}
+
+{{ r.manchete }}
+{% if r.aviso %}
+ATENÇÃO: {{ r.aviso }}
+{% endif %}
+{% for bloco in r.blocos %}
+----------------------------------------------------------------
+{{ bloco.titulo }}
+{% if bloco.frase %}{{ bloco.frase }}
+{% endif %}{% for linha in bloco.linhas %}
+  {% if linha.quando %}{{ linha.quando }}  {% endif %}{{ linha.quem }}{% if linha.o_que %} ({{ linha.o_que }}){% endif %} — {{ linha.valor }}{% if linha.detalhe %}
+     {{ linha.detalhe }}{% endif %}{% endfor %}{% if bloco.escondidas %}
+
+  ... e mais {{ bloco.escondidas }} linha(s) na tela do sistema.{% endif %}
+{% endfor %}
+----------------------------------------------------------------
+Enviado pelo sistema auxiliar da Cabana do Jacarandá em {{ quando|date:"d/m/Y H:i" }}.
+Este e-mail é só leitura: para agir, abra o sistema na rede da loja.
+Para parar de receber, desligue o envio na tela Alertas do sistema.

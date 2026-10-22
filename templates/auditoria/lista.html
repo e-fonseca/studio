@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Trilha de auditoria</h1>
+  <p><a href="{% url 'core:inicio' %}">Voltar ao início</a></p>
+</div>
+
+<section class="cartao">
+  <h2>Quem está vendo esta tela</h2>
+  <p>Você está conectado como <strong>{{ user.get_username }}</strong>{% if ip_de_agora %},
+     pelo endereço <strong>{{ ip_de_agora }}</strong>{% endif %}. Cada linha abaixo guarda o usuário e o
+     endereço de onde a ação partiu, e nada aqui pode ser alterado nem apagado depois de gravado.</p>
+  <form method="get" class="formulario-linha">
+    <label>Ação começa com <input type="text" name="acao" value="{{ acao }}" placeholder="processo."></label>
+    <label>Usuário <input type="text" name="usuario" value="{{ usuario }}"></label>
+    <button type="submit" class="botao secundario">Filtrar</button>
+  </form>
+</section>
+
+<section class="cartao">
+  <h2>Eventos</h2>
+  <p class="ajuda">Os mais recentes primeiro, em horário de Brasília. A tela mostra dez de cada vez;
+     o resto desce com a barra de rolagem.</p>
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-auditoria">
+      <caption class="oculto-visualmente">Eventos da trilha de auditoria, os mais recentes primeiro.</caption>
+      <thead><tr><th scope="col">Quando</th><th scope="col">Quem</th><th scope="col">De onde</th>
+        <th scope="col">Ação</th><th scope="col">Recurso</th><th scope="col">Resultado</th>
+        <th scope="col">Motivo</th><th scope="col">Correlação</th></tr></thead>
+      <tbody>
+      {% for e in pagina %}
+        <tr><td>{{ e.momento|date:"d/m/Y H:i:s" }}</td><td>{{ e.usuario_rotulo }}</td>
+          <td>{{ e.ip|default:"—" }}</td><td>{{ e.acao }}</td>
+          <td>{{ e.recurso_rotulo }}</td><td>{{ e.get_resultado_display }}</td><td>{{ e.motivo }}</td>
+          <td><code>{{ e.correlacao|truncatechars:9 }}</code></td></tr>
+      {% empty %}
+        <tr><td colspan="8">Nenhum evento encontrado.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <nav class="paginas" aria-label="Páginas">
+    {% if pagina.has_previous %}<a href="?pagina={{ pagina.previous_page_number }}&acao={{ acao|urlencode }}&usuario={{ usuario|urlencode }}">Anterior</a>{% endif %}
+    <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}<a href="?pagina={{ pagina.next_page_number }}&acao={{ acao|urlencode }}&usuario={{ usuario|urlencode }}">Próxima</a>{% endif %}
+  </nav>
+</section>
+
+{% endblock %}

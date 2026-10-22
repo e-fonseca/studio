@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% comment %}Esta tela quase nunca aparece: o início encaminha para o dashboard (apps/core/views.py).
+Ela é o que vê quem está cadastrado e ainda não recebeu nenhum perfil.{% endcomment %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Bem-vindo</h1>
+</div>
+<section class="cartao">
+  <h2>Seu acesso ainda não foi liberado</h2>
+  <p>Sua conta existe, mas ainda não tem nenhum módulo liberado. Fale com a gerência
+     para receber o perfil de trabalho: a partir daí o sistema abre direto no painel da loja.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Margem e markup</h1>
+  <p>Quanto cada produto dá de lucro, pelos dados do SET: o custo, o preço de venda e o
+     que as vendas de 12 meses de fato deixaram.</p>
+</div>
+
+{% if not t.tem_dados %}
+<section class="cartao cartao-atencao">
+  <h2>Ainda não há dados importados</h2>
+  <p>Custo e preço vêm do backup do SET. Assim que uma importação concluir, os números
+     aparecem aqui.</p>
+</section>
+{% else %}
+
+<div class="cartoes-numero">
+  <div class="cartao-numero nivel-bom">
+    <span class="cartao-titulo">Margem de lucro realizada</span>
+    <strong class="cartao-valor">{{ t.resumo.margem_realizada|default:"—" }}%</strong>
+    <span class="cartao-rodape">O que sobrou do preço depois de pagar a mercadoria, nas
+      vendas dos últimos 12 meses, com o custo do dia de cada venda.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Markup realizado</span>
+    <strong class="cartao-valor">{{ t.resumo.markup_realizado|default:"—" }}%</strong>
+    <span class="cartao-rodape">O preço de venda saiu, em média,
+      {{ t.resumo.vezes_o_custo|default:"—" }} vezes o custo. É o mesmo lucro do primeiro
+      cartão, contado em cima do custo.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Lucro bruto em 12 meses</span>
+    <strong class="cartao-valor valor-longo">{{ t.resumo.lucro|reais }}</strong>
+    <span class="cartao-rodape">{{ t.resumo.receita_com_custo|reais }} vendidos menos
+      {{ t.resumo.custo_vendido|reais }} de mercadoria. Antes de despesa, imposto e
+      salário.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Markup da tabela de hoje</span>
+    <strong class="cartao-valor">{{ t.resumo.markup_tabela|default:"—" }}%</strong>
+    <span class="cartao-rodape">Equivale a {{ t.resumo.margem_tabela|default:"—" }}% de
+      margem. É o que os preços de hoje dariam vendendo o mesmo do ano passado.</span>
+  </div>
+</div>
+
+<section class="cartao cartao-destaque">
+  <h2>Markup e margem não são a mesma coisa</h2>
+  <p>São duas maneiras de medir o mesmo lucro, e misturar as duas é o erro mais caro do
+     varejo: quem acha que tem {{ t.resumo.markup_realizado|default:"120" }}% de margem dá
+     um desconto que come o lucro inteiro.</p>
+  <dl class="conta-markup">
+    <div>
+      <dt>Markup</dt>
+      <dd><strong>{{ t.resumo.markup_realizado|default:"—" }}%</strong>
+        <span class="ajuda">(preço ÷ custo − 1) × 100 &mdash; quanto você põe em cima do
+          custo</span></dd>
+    </div>
+    <div>
+      <dt>Margem de lucro</dt>
+      <dd><strong>{{ t.resumo.margem_realizada|default:"—" }}%</strong>
+        <span class="ajuda">(preço − custo) ÷ preço × 100 &mdash; quanto sobra do que o
+          cliente paga</span></dd>
+    </div>
+  </dl>
+  <p class="ajuda">No SET existe um campo chamado <strong>% de lucro</strong> no cadastro do
+     produto. Apesar do nome, ele é <strong>markup</strong>: confere com a conta do markup
+     em 10.759 dos 10.764 produtos que têm os três campos preenchidos. A coluna
+     &ldquo;% no SET&rdquo; da tabela abaixo mostra esse campo como ele está lá, para dar
+     para comparar com o que o preço de hoje realmente rende.</p>
+</section>
+
+{% if t.resumo.tem_alerta %}
+<section class="cartao estado-dados estado-atencao">
+  <h2>O que o cadastro de preços está pedindo para arrumar</h2>
+  <ul class="alertas-margem">
+    {% if t.resumo.abaixo_do_custo %}
+    <li><strong>{{ t.resumo.abaixo_do_custo|contagem }} produto{{ t.resumo.abaixo_do_custo|pluralize:"s" }}
+      com preço abaixo do custo.</strong>
+      Vender tudo o que está na prateleira desses produtos, ao preço de hoje, custaria
+      {{ t.resumo.perda_abaixo_do_custo|reais }} do próprio bolso.
+      <a href="?situacao=abaixo">Ver quais são</a>.</li>
+    {% endif %}
+    {% if t.resumo.no_custo %}
+    <li>{{ t.resumo.no_custo|contagem }} produto{{ t.resumo.no_custo|pluralize:"s" }} com
+      preço igual ao custo, ou seja, markup zero.
+      <a href="?situacao=no_custo">Ver quais são</a>.</li>
+    {% endif %}
+    {% if t.resumo.sem_custo %}
+    <li>{{ t.resumo.sem_custo|contagem }} produto{{ t.resumo.sem_custo|pluralize:"s" }} com
+      preço de venda e <strong>sem custo</strong> no cadastro do SET: deles não há como
+      saber se dão lucro. <a href="?situacao=sem_custo">Ver quais são</a>.</li>
+    {% endif %}
+    {% if t.resumo.markup_set_errado %}
+    <li>{{ t.resumo.markup_set_errado|contagem }} produto{{ t.resumo.markup_set_errado|pluralize:"s" }}
+      com o &ldquo;% de lucro&rdquo; do SET diferente do que o preço dá (mais de
+      {{ tolerancia }} ponto de diferença): o preço mudou e o campo ficou para trás.
+      <a href="?situacao=markup_errado">Ver quais são</a>.</li>
+    {% endif %}
+    {% if t.resumo.sem_markup_set %}
+    <li>{{ t.resumo.sem_markup_set|contagem }} produto{{ t.resumo.sem_markup_set|pluralize:"s" }}
+      sem o &ldquo;% de lucro&rdquo; preenchido no SET. Não atrapalha o cálculo daqui, que
+      é feito do custo e do preço. <a href="?situacao=sem_markup">Ver quais são</a>.</li>
+    {% endif %}
+  </ul>
+</section>
+{% endif %}
+
+<form method="get" class="filtros" role="search">
+  <label>Grupo
+    <select name="grupo">
+      <option value="">Todos</option>
+      {% for nome in t.grupos_para_filtro %}
+      <option value="{{ nome }}" {% if nome == t.filtro_grupo %}selected{% endif %}>{{ nome }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Fornecedor
+    <select name="fornecedor">
+      <option value="">Todos</option>
+      {% for nome in t.fornecedores_para_filtro %}
+      <option value="{{ nome }}" {% if nome == t.filtro_fornecedor %}selected{% endif %}>{{ nome }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Situação
+    <select name="situacao">
+      <option value="">Todos os produtos</option>
+      {% for valor, rotulo in situacoes %}
+      <option value="{{ valor }}" {% if valor == t.filtro_situacao %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Ordenar por
+    <select name="ordem">
+      {% for valor, rotulo in ordens %}
+      <option value="{{ valor }}" {% if valor == t.ordem %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Produto
+    <input type="search" name="busca" value="{{ t.busca }}" placeholder="nome, código ou barras"></label>
+  <button type="submit" class="botao secundario">Filtrar</button>
+  {% if t.filtrou %}<a href="{% url 'margem:lista' %}">Limpar filtros</a>{% endif %}
+</form>
+
+{% if not t.filtro_situacao %}
+<section class="cartao">
+  <h2>Por grupo de produto</h2>
+  <p class="ajuda">A margem realizada é o que o grupo deixou nos últimos 12 meses; a da
+     tabela é o que os preços de hoje dariam. Grupo em que a da tabela é bem menor é grupo
+     com preço apertado agora.</p>
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-grupos-margem">
+      <caption class="oculto-visualmente">Margem e markup por grupo de produto.</caption>
+      <thead><tr>
+        <th scope="col">Grupo</th>
+        <th scope="col" class="numerico">Produtos</th>
+        <th scope="col" class="numerico">Faturou 12m</th>
+        <th scope="col" class="numerico">Lucro 12m</th>
+        <th scope="col" class="numerico">Margem</th>
+        <th scope="col" class="numerico">Markup</th>
+        <th scope="col" class="numerico">Margem da tabela</th>
+      </tr></thead>
+      <tbody>
+        {% for grupo in t.grupos %}
+        <tr>
+          <td>{{ grupo.nome }}</td>
+          <td class="numerico">{{ grupo.produtos|contagem }}</td>
+          <td class="numerico">{{ grupo.receita_12m|reais }}</td>
+          <td class="numerico"><strong>{{ grupo.lucro_12m|reais }}</strong></td>
+          <td class="numerico">{% if grupo.margem_12m is None %}&mdash;{% else %}{{ grupo.margem_12m }}%{% endif %}</td>
+          <td class="numerico">{% if grupo.markup_12m is None %}&mdash;{% else %}{{ grupo.markup_12m }}%{% endif %}</td>
+          <td class="numerico">{% if grupo.margem_tabela is None %}&mdash;{% else %}{{ grupo.margem_tabela }}%{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>Produto por produto</h2>
+  <p class="ajuda">
+    {% if t.quantos %}{{ t.quantos|contagem }} produto{{ t.quantos|pluralize:"s" }} neste
+    recorte{% if t.tem_mais %}, mostrando os {{ t.mostrando|contagem }} primeiros por
+    {{ t.rotulo_ordem|lower }}{% endif %}.{% endif %}
+    O arquivo leva todos, com a margem realizada de cada um.
+  </p>
+  <p><a class="botao secundario" href="{% url 'margem:em_arquivo' %}?{{ request.GET.urlencode }}">Baixar a tabela inteira</a></p>
+  {% if t.produtos %}
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-margem">
+      <caption class="oculto-visualmente">Custo, preço, markup e margem de cada produto.</caption>
+      <thead><tr>
+        <th scope="col">Código</th>
+        <th scope="col">Produto</th>
+        <th scope="col" class="numerico">Custo</th>
+        <th scope="col" class="numerico">Preço</th>
+        <th scope="col" class="numerico">Markup</th>
+        <th scope="col" class="numerico">Margem</th>
+        <th scope="col" class="numerico">% no SET</th>
+        <th scope="col" class="numerico">Vendeu 12m</th>
+        <th scope="col" class="numerico">Lucro 12m</th>
+      </tr></thead>
+      <tbody>
+        {% for item in t.produtos %}
+        <tr>
+          <td>{{ item.codigo }}</td>
+          <td>{{ item.descricao|default:"sem descrição" }}
+            <span class="linha-detalhe">{{ item.grupo }}{% if item.fornecedor %} &middot; {{ item.fornecedor }}{% endif %}</span>
+            {% if not item.mercadoria %}
+            <span class="linha-detalhe">Lançamento de balcão, não é mercadoria de revenda.</span>
+            {% endif %}
+            {% if item.rotulo_selo %}
+            <span class="selo selo-{{ item.situacao }}">{{ item.rotulo_selo }}</span>
+            {% endif %}
+          </td>
+          <td class="numerico">{{ item.custo|reais }}</td>
+          <td class="numerico">{{ item.venda|reais }}</td>
+          <td class="numerico">{% if item.markup is None %}&mdash;{% else %}{{ item.markup }}%{% endif %}</td>
+          <td class="numerico">{% if item.margem is None %}&mdash;{% else %}<strong>{{ item.margem }}%</strong>{% endif %}</td>
+          <td class="numerico">
+            {% if item.markup_set is None %}&mdash;
+            {% else %}{{ item.markup_set }}%{% if item.markup_set_confere is False %}
+              <span class="marca-divergente" title="O preço de hoje dá {{ item.markup }}% de markup">!</span>{% endif %}
+            {% endif %}</td>
+          <td class="numerico">{{ item.vendas_12m|quantidade:"0" }}</td>
+          <td class="numerico">{% if item.lucro_12m is None %}&mdash;{% else %}{{ item.lucro_12m|reais }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nenhum produto neste recorte. Tente outro filtro ou limpe os filtros.</p>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>De onde vem cada número</h2>
+  <p>Custo e preço são o cadastro do SET: <code>PRECOCUSTO</code> (ou
+     <code>PRECOCOMPRA</code>, quando o custo está zerado) e <code>PRECOVENDA</code>. O
+     lucro de 12 meses é outra coisa: cada item de venda guarda o custo que o produto tinha
+     <strong>no dia da venda</strong>, e é esse que entra na conta, não o custo de hoje.</p>
+  <p class="ajuda">Em parte dos itens vendidos esse custo do dia está vazio no SET, então a
+     margem realizada é calculada só sobre a receita dos itens que têm custo
+     ({{ t.resumo.cobertura_do_custo|default:"—" }}% do faturamento de 12 meses), para não
+     sair otimista. Os dados vão até {{ t.data_corte|date:"d/m/Y" }}.</p>
+</section>
+
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Markup e margem",
+    "texto": "Markup é quanto você põe em cima do custo; margem é quanto sobra do preço que o cliente paga. Um produto que custa 10 e vende a 20 tem 100% de markup e 50% de margem. É o mesmo lucro, contado de dois jeitos."
+  },
+  {
+    "seletor": ".cartoes-numero",
+    "titulo": "Os números da loja",
+    "texto": "Os dois primeiros são o que a loja de fato ganhou em 12 meses, com o custo gravado no dia de cada venda. O último é o que os preços de hoje dariam: quando ele cai, o preço está apertando."
+  },
+  {
+    "seletor": ".alertas-margem",
+    "titulo": "O que arrumar no SET",
+    "texto": "Produto vendido abaixo do custo e produto sem custo cadastrado aparecem aqui. Cada linha abre a lista filtrada, e a correção é no cadastro do SET: este sistema só lê."
+  },
+  {
+    "seletor": ".tabela-margem",
+    "titulo": "Produto por produto",
+    "texto": "A coluna % no SET é o campo de lucro do cadastro, como ele está lá. Quando aparece um ! ao lado, o preço mudou e aquele campo ficou para trás."
+  }
+]
+</script>
+{% endblock %}

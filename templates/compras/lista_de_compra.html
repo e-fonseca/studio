@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+{% load cabana l10n %}
+{% block conteudo %}
+
+<section class="abertura abertura-{{ estado.nivel }}">
+  <div>
+    <h1>Lista de compra</h1>
+    <p class="abertura-sub">O que comprar antes de faltar, e de quem</p>
+  </div>
+  <div class="abertura-dados">
+    <strong>{{ estado.titulo }}</strong>
+    <span>{{ estado.detalhe }}</span>
+  </div>
+</section>
+
+{% comment %}O menu de Compras ficou com quatro telas por escolha dele em 22/10/2026; as
+outras abrem desta fileira, logo abaixo do título, onde quem compra já está.{% endcomment %}
+{% if mais_em_compras %}
+<nav class="mais-em-compras" aria-label="Outras telas de compras">
+  <span class="ajuda">Também em Compras:</span>
+  {% for tela in mais_em_compras %}<a href="{{ tela.endereco }}" title="{{ tela.ajuda }}">{{ tela.rotulo }}</a>{% endfor %}
+</nav>
+{% endif %}
+
+{% include "importacao/_andamento.html" %}
+
+{% if not lista.tem_itens %}
+<section class="cartao">
+  <h2>Nada para comprar por esta regra</h2>
+  <p>Nenhum produto está abaixo do ponto de pedido com os números da última importação.
+     {% if lista.filtro_fornecedor or lista.filtro_urgencia %}Pode ser o filtro: <a href="{% url 'compras:lista' %}">ver a lista inteira</a>.{% endif %}</p>
+</section>
+
+{% include "compras/_ano_passado.html" %}
+{% else %}
+
+{% comment %}O carro-chefe em alerta vem antes de tudo: pedido dele em 22/10/2026, "deixar
+como padrão alerta de 30% para cada produto no estoque e destacar para os produtos mais
+vendidos, carro chefe da loja". O alerta sozinho acende em quase toda a lista — a loja nunca
+contou o estoque e a maioria dos saldos está em zero —, então o que decide é o cruzamento:
+o produto que mais fatura E que já caiu ao alerta. São poucos, e são os que não podem faltar.{% endcomment %}
+<section class="cartao cartao-carro-chefe" id="carros-chefe">
+  <h2>Carros-chefe no estoque mínimo</h2>
+  {% with chefes=lista.carros_chefe_em_alerta %}
+  {% if chefes %}
+  <p class="destaque">{% if chefes|length == 1 %}1 produto{% else %}{{ chefes|length }} produtos{% endif %}
+     entre os {{ lista.quantos_carros_chefe }} que mais faturam
+     {% if chefes|length == 1 %}está{% else %}estão{% endif %} no estoque mínimo ou abaixo dele:
+     {{ lista.alerta_percentual }}% do estoque ideal.</p>
+  <div class="tabela-rolavel tabela-de-compra tabela-em-cartao tabela-carro-chefe">
+    <table class="tabela-compra">
+      <caption class="oculto-visualmente">Carros-chefe no estoque mínimo ou abaixo dele</caption>
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col" class="numerico">Tem</th>
+          <th scope="col" class="numerico">Comprar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in chefes|slice:":10" %}
+        <tr>
+          <th scope="row"><a href="{% url 'compras:lista' %}?fornecedor={{ item.fornecedor|urlencode }}#produto-{{ item.codigo }}"><strong>{{ item.descricao }}</strong></a>
+            <span class="linha-detalhe">{{ item.fornecedor }} · faturou {{ item.receita_12m|reais }} em 12 meses</span></th>
+          <td class="numerico" data-rotulo="Tem">{{ item.estoque|quantidade }}</td>
+          <td class="numerico celula-decide" data-rotulo="Comprar"><strong>{{ item.quantidade|quantidade }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="ajuda">{% if chefes|length > 10 %}Os outros {{ chefes|length|add:"-10" }} estão no topo da lista do
+     fornecedor, marcados como carro-chefe. {% endif %}Para mudar a quantidade, toque no produto.</p>
+  {% else %}
+  <p>Nenhum dos {{ lista.quantos_carros_chefe }} produtos que mais faturam está no estoque
+     mínimo ({{ lista.alerta_percentual }}% do ideal){% if lista.filtro_fornecedor %} neste fornecedor{% endif %}.</p>
+  {% endif %}
+  {% endwith %}
+  {% if pode_ajustar %}
+  <details class="bloco-recolhido regra-do-alerta">
+    <summary>Mudar a regra: mínimo em {{ lista.alerta_percentual }}% do ideal, {{ lista.quantos_carros_chefe }} carros-chefe</summary>
+    <form method="post" action="{% url 'compras:politica' %}" class="filtros">{% csrf_token %}
+      <label>Estoque mínimo (% do ideal)
+        <input type="number" name="alerta_percentual" min="5" max="90" value="{{ lista.alerta_percentual }}"></label>
+      <label>Carros-chefe: os que mais faturam
+        <input type="number" name="carros_chefe" min="10" max="500" value="{{ lista.quantos_carros_chefe }}"></label>
+      <button type="submit" class="botao secundario">Salvar a regra</button>
+    </form>
+    <p class="ajuda">O estoque ideal é o que o produto vende no prazo do fornecedor, mais a
+       semana até a próxima compra e uma margem de segurança. O mínimo não muda quanto
+       comprar: diz o que não pode mais esperar.</p>
+  </details>
+  {% endif %}
+</section>
+
+{% comment %}Primeiro a decisão, depois o detalhe. Quem abre esta tela quer saber por onde
+começar o pedido do mês, não ler duas mil linhas.{% endcomment %}
+<section class="cartao cartao-destaque">
+  {% with quantos=lista.primeiro|length %}
+  <h2>{% if quantos == 1 %}Comece por este fornecedor{% else %}Comece por estes {{ quantos }} fornecedores{% endif %}</h2>
+  {% if lista.estourou_o_mes %}
+  <p class="destaque">A compra deste mês já passou do teto, então aqui está só o que está
+     faltando de verdade: <strong>{{ lista.valor_primeiro|reais }}</strong>.</p>
+  {% else %}
+  <p class="destaque">Fecha o buraco maior por <strong>{{ lista.valor_primeiro|reais }}</strong>,
+     dentro dos {{ lista.cabe_no_mes|reais }} que ainda cabem no mês.</p>
+  {% endif %}
+  <p class="ajuda">A ordem é a do que a loja mais deixa de vender por falta. Estar abaixo do
+     teto do mês não é motivo para comprar: o teto é só o que saiu da prateleira num mês médio.</p>
+
+  <div class="cartoes-fornecedor">
+    {% for bloco in lista.primeiro %}
+    <article class="cartao-fornecedor">
+      <h3><a href="{% url 'compras:lista' %}?fornecedor={{ bloco.nome|urlencode }}">{{ bloco.nome }}</a></h3>
+      <p class="cartao-fornecedor-valor">{{ bloco.valor|reais }}</p>
+      <p class="ajuda">{{ bloco.quantos }} produto{{ bloco.quantos|pluralize }},
+         {{ bloco.faltando }} já faltando. Prazo de
+         {{ bloco.prazo_dias }} dia{{ bloco.prazo_dias|pluralize }}{% if bloco.prazo_assumido %},
+         assumido pelo sistema{% endif %}.</p>
+      {% if bloco.parado_na_prateleira %}
+      {% comment %}O contrapeso: o sistema não manda comprar mais de quem a loja já comprou
+      errado sem dizer isso na mesma tela.{% endcomment %}
+      <p class="aviso-parado"><strong>{{ bloco.parado_na_prateleira|reais }}</strong> deste
+         fornecedor parados, sem vender no ano.</p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+
+  <p class="acoes-da-lista">
+    {% comment %}POST, e não link: gerar o pedido aqui é FAZER o pedido, que fica guardado
+    em Pedidos para receber o romaneio e a nota depois. Reimprimir a mesma folha no mesmo
+    dia não cria um segundo pedido.{% endcomment %}
+    {% comment %}O fornecedor filtrado VAI no endereço: sem ele, o botão que diz "deste
+    fornecedor" numa tela filtrada sairia pedindo a lista inteira, e desde a 1.31.0 isso
+    não é só uma folha a mais, é pedido gravado no sistema.{% endcomment %}
+    <form method="post" action="{% url 'compras:pedido_ao_fornecedor' %}?fornecedor={{ lista.filtro_fornecedor|urlencode }}&amp;situacao={{ lista.filtro_urgencia|urlencode }}&amp;media={{ lista.filtro_media|urlencode }}"
+          target="_blank" class="formulario-em-linha">{% csrf_token %}
+      <button type="submit" class="botao">{% if quantos == 1 %}Gerar o pedido deste fornecedor{% else %}Gerar os pedidos destes {{ quantos }} fornecedores{% endif %}</button>
+    </form>
+    <span class="ajuda">Sai um pedido por folha, com o timbre da loja e as quantidades
+      que estão aqui.{% if perms.pedidos.registrar_pedido %} O pedido fica guardado em
+      <a href="{% url 'pedidos:lista' %}">Pedidos</a>, para anexar o romaneio e a nota
+      fiscal quando a mercadoria chegar.{% endif %}</span>
+  </p>
+  {% if empresa.falta_preencher and perms.compras.change_dadosdaempresa %}
+  <p class="ajuda">O pedido sai como <strong>{{ empresa.razao_social }}</strong>, mas ainda
+     falta {{ empresa.falta_preencher|join:", " }} em
+     <a href="{% url 'compras:dados_da_empresa' %}">Dados da empresa</a>.</p>
+  {% endif %}
+
+  {% if lista.resto %}
+  <p class="ajuda">Depois {% if quantos == 1 %}dele{% else %}destes{% endif %} vêm mais
+     {{ lista.resto }} fornecedor{{ lista.resto|pluralize:"es" }}, somando
+     {{ lista.valor_resto|reais }}. Estão na lista completa aqui embaixo.</p>
+  {% endif %}
+  {% endwith %}
+</section>
+
+
+
+<section class="cartao">
+  <h2>Lista completa</h2>
+  {% comment %}Rótulo e campo ficam DENTRO do mesmo label: soltos, cada um virava um item
+  da fileira e a quebra de linha separava "Situação" do seu campo, como nas outras telas de
+  filtro do sistema.{% endcomment %}
+  <form class="filtros" method="get" action="{% url 'compras:lista' %}">
+    <label for="fornecedor">Fornecedor
+      <select name="fornecedor" id="fornecedor">
+        <option value="">Todos</option>
+        {% for nome in lista.nomes_de_fornecedor %}
+        <option value="{{ nome }}" {% if nome == lista.filtro_fornecedor %}selected{% endif %}>{{ nome }}</option>
+        {% endfor %}
+      </select></label>
+    <label for="situacao">Situação
+      <select name="situacao" id="situacao">
+        <option value="">Todas</option>
+        {% for valor, rotulo in situacoes %}
+        <option value="{{ valor }}" {% if valor == lista.filtro_urgencia %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select></label>
+    {% comment %}De que pedaço de calendário sai a média de venda que vira a sugestão.
+    Pedido do Edson em 14/10/2026. O campo se chama "media" na URL e não "periodo",
+    porque "periodo" já é o do quadro de comparação, nesta mesma tela.{% endcomment %}
+    <label for="media">Média de venda de
+      <select name="media" id="media">
+        {% for valor, rotulo, dias in janelas_de_media %}
+        <option value="{{ valor }}" {% if valor == lista.filtro_media %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select></label>
+    <button type="submit" class="botao">Filtrar</button>
+    <a class="botao secundario" href="{% url 'compras:lista_em_arquivo' %}?fornecedor={{ lista.filtro_fornecedor|urlencode }}&amp;situacao={{ lista.filtro_urgencia|urlencode }}&amp;media={{ lista.filtro_media|urlencode }}">Baixar em arquivo</a>
+  </form>
+  <p class="destaque">{{ lista.quantos }} produto{{ lista.quantos|pluralize }} em
+     {{ lista.fornecedores|length }} fornecedor{{ lista.fornecedores|length|pluralize:"es" }},
+     somando <strong>{{ lista.valor|reais }}</strong> ao custo.{% if lista.ajustados %}
+     Em {{ lista.ajustados }} linha{{ lista.ajustados|pluralize }} a quantidade foi escolhida
+     à mão, e é ela que entra nessa soma.{% endif %}</p>
+  {% comment %}A janela da média vale para a lista toda, então ela se diz UMA vez, aqui
+  embaixo do filtro que a escolheu. Escrever "pela venda de 3 meses" em duas mil linhas era
+  ruído, e ruído em toda linha faz a linha que importa passar batida.{% endcomment %}
+  {% if lista.filtro_media %}
+  <p class="ajuda">A quantidade sugerida saiu da venda dos <strong>últimos
+     {{ lista.janela.rotulo|lower }}</strong> ({{ lista.janela.dias_abertos }} dias de porta
+     aberta), e não da média de doze meses. Nessas linhas o ano passado não mexe mais na
+     quantidade, porque a venda deste período já é a da estação de agora.</p>
+  {% if lista.voltaram_para_12m %}
+  <p class="ajuda">Em <strong>{{ lista.voltaram_para_12m }}</strong> das {{ lista.quantos }}
+     linhas o produto não vendeu nada no período: a conta voltou para os doze meses, a linha
+     dele diz isso, e nelas o ano passado continua ajustando. Zerar a sugestão faria o produto
+     sumir da lista, que é justamente o que some da prateleira sem ninguém notar.</p>
+  {% endif %}
+  {% endif %}
+  <p class="ajuda">Aqui embaixo vêm abertos, produto a produto, os fornecedores do começo da
+     lista; os demais aparecem em uma linha cada. Para ver os produtos de um fornecedor
+     qualquer, escolha o nome no filtro. O arquivo sai sempre com tudo.</p>
+</section>
+
+{% for bloco in lista.primeiro %}
+<section class="cartao">
+  <h2>{{ bloco.nome }}</h2>
+  <p class="ajuda">{{ bloco.valor|reais }} em {{ bloco.quantos }} produto{{ bloco.quantos|pluralize }}.
+     Prazo de {{ bloco.prazo_dias }} dia{{ bloco.prazo_dias|pluralize }}{% if bloco.prazo_assumido %},
+     assumido pelo sistema{% endif %}.</p>
+  {% comment %}tabela-de-compra: no celular esta tabela vira um cartão por produto, em vez
+  de rolar de lado. A coluna "Comprar" é a razão desta tela e ficava fora do visor, atrás
+  de uma rolagem lateral que ninguém descobre: no celular a quantidade simplesmente não
+  aparecia.{% endcomment %}
+  <div class="tabela-rolavel tabela-dez tabela-de-compra tabela-em-cartao">
+    <table class="tabela-compra">
+      <caption class="oculto-visualmente">O que comprar de {{ bloco.nome }}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col">Situação</th>
+          <th scope="col" class="numerico">Tem</th>
+          <th scope="col" class="numerico">Comprar</th>
+          <th scope="col" class="numerico">Custo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in bloco.mostrados %}
+        <tr id="produto-{{ item.codigo }}"{% if item.carro_chefe %} class="linha-carro-chefe"{% endif %}>
+          {% comment %}Uma linha para decidir, o resto recolhido. Pedido dele em 22/10/2026:
+          "manter o modulo mais simples e intuitivo (...) tem muita informação para tomada de
+          decisão rápida". Cada produto chegava a ter oito linhas de explicação abertas, e a
+          tela passava de 70 mil pixels no celular. Nada do que estava aqui saiu: está dentro
+          de "Por que este número", para quem desconfiar da conta — a regra da 1.35.0,
+          recolher não é apagar.{% endcomment %}
+          <th scope="row">
+            <strong>{{ item.descricao }}</strong>{% if item.carro_chefe %}
+            <span class="selo selo-carro-chefe">Carro-chefe</span>{% endif %}
+            <span class="linha-detalhe">{{ item.codigo }} · vendeu {{ item.vendas_12m|quantidade }} em 12 meses</span>
+            <details class="por-que-da-linha">
+              <summary>Por que este número</summary>
+              {% if item.grupo %}<span class="linha-detalhe">Grupo {{ item.grupo }}.</span>{% endif %}
+              {% if item.a_caminho or item.minimo_set %}
+              <span class="linha-detalhe">{% if item.a_caminho %}A caminho: {{ item.a_caminho|quantidade }}.{% endif %}
+                {% if item.minimo_set %}Mínimo cadastrado no SET: {{ item.minimo_set|quantidade }}.{% endif %}</span>
+              {% endif %}
+              {% comment %}A venda de 90 dias, comparada ao ritmo do ano (seção 6 do pedido de
+              20/10/2026).{% endcomment %}
+              {% if item.giro_dos_90_dias %}
+              <span class="linha-detalhe">{{ item.giro_dos_90_dias|capfirst }}.</span>
+              {% endif %}
+              {% comment %}Os cinco números da conta, separados (seção 4 do mesmo pedido).{% endcomment %}
+              {% if item.conta_da_reposicao %}
+              <span class="linha-detalhe conta-da-reposicao">{{ item.conta_da_reposicao }}</span>
+              {% endif %}
+              {% comment %}O que entrou, o que saiu, e onde isso deixou a prateleira (pedido
+              de 14/10/2026).{% endcomment %}
+              {% with m=item.movimento %}
+              {% if m %}
+              <span class="linha-detalhe movimento">Em 12 meses comprou {{ m.comprado_12m|quantidade }}
+                e vendeu {{ m.vendido_12m|quantidade }}:
+                {% if m.comprou_menos_do_que_vendeu %}o estoque caiu {{ m.quanto_caiu|quantidade }}{% elif m.andou_12m %}o estoque subiu {{ m.andou_12m|quantidade }}{% else %}o estoque não andou{% endif %},
+                de {{ m.tinha_um_ano_atras|quantidade }} para {{ m.estoque|quantidade }}.</span>
+              {% if m.tem_ultima_compra %}
+              <span class="linha-detalhe movimento">Última compra:
+                {{ m.ultima_compra_unidades|quantidade }} em {{ m.ultima_compra_em|date:"d/m/Y" }}, há {{ m.ultima_compra_em|timesince:lista.data_corte }};
+                vendeu {{ m.vendido_desde_a_compra|quantidade }} desde então{% if m.ultima_compra_ja_vendida %}, e já saiu tudo{% else %}, e sobra{{ m.sobra_da_ultima_compra|pluralize:"m" }} {{ m.sobra_da_ultima_compra|quantidade }} dela{% endif %}.</span>
+              {% endif %}
+              {% endif %}
+              {% endwith %}
+              {% if item.saldo_desprezado %}
+              <span class="linha-detalhe">O saldo abaixo de zero conta como zero porque as vendas
+                que o abriram já estão na média: somá-lo seria comprar a mesma venda duas vezes.</span>
+              {% endif %}
+            </details>
+            {% comment %}Fica fora do recolhido: sem esta frase, TEM -69 e COMPRAR 1 na mesma
+            linha não fecham, e o número perde a confiança de quem compra.{% endcomment %}
+            {% if item.saldo_desprezado %}
+            <span class="linha-detalhe saldo-negativo">Saldo {{ item.estoque|quantidade }} conta como zero na compra.</span>
+            {% endif %}
+          </th>
+          <td><span class="selo selo-{{ item.urgencia }}">{{ item.rotulo }}</span></td>
+          <td class="numerico celula-estoque" data-rotulo="Tem">{{ item.estoque|quantidade }}
+            {% comment %}O alerta de 30% em cada produto: quanto do estoque ideal ele ainda tem,
+            contando o que está a caminho. Com nada na prateleira o selo "Está faltando" já diz
+            tudo, e "0% do ideal" em quase toda linha seria número que não muda a decisão.{% endcomment %}
+            {% if item.porcentagem_do_ideal is not None and item.estoque > 0 %}
+            <span class="linha-detalhe do-ideal{% if item.em_alerta %} em-alerta{% endif %}">{{ item.porcentagem_do_ideal }}% do ideal</span>
+            {% endif %}
+          </td>
+          <td class="numerico celula-comprar" data-rotulo="Comprar">
+            {% if pode_ajustar %}
+            {% comment %}A soma que ele pediu em 20/10/2026: "no campo de quantidade sugerida,
+            adicionar quantidade manual, com a soma dois campos gera a quantidade total de cada
+            produto por fornecedor". Aparece como a conta que é — sugerida + manual = total —,
+            com UM campo editável: o manual. A sugestão não se edita porque não é dela que a
+            pessoa discorda, é do total; e o que fica guardado é a parcela da mão, para que
+            "+5 porque um cliente encomendou" continue valendo depois da sincronização.{% endcomment %}
+            <form class="ajuste-quantidade soma-da-quantidade" method="post" action="{% url 'compras:ajustar_quantidade' %}">{% csrf_token %}
+              <input type="hidden" name="codigo" value="{{ item.codigo }}">
+              <input type="hidden" name="descricao" value="{{ item.descricao }}">
+              <input type="hidden" name="sugerida" value="{{ item.comprar|unlocalize }}">
+              <input type="hidden" name="fornecedor" value="{{ lista.filtro_fornecedor }}">
+              <input type="hidden" name="situacao" value="{{ lista.filtro_urgencia }}">
+              <input type="hidden" name="media" value="{{ lista.filtro_media }}">
+              <span class="parcela">
+                <span class="rotulo-da-parcela">sugerida</span>
+                <span class="valor-da-parcela">{{ item.comprar|quantidade }}</span>
+              </span>
+              <span class="sinal-da-soma" aria-hidden="true">+</span>
+              <span class="parcela">
+                <label class="rotulo-da-parcela" for="a-mais-{{ item.codigo }}">à mão</label>
+                <input type="text" inputmode="decimal" id="a-mais-{{ item.codigo }}"
+                       class="campo-a-mais" name="a_mais"
+                       value="{% if item.a_mais %}{{ item.a_mais|quantidade:"0" }}{% endif %}"
+                       placeholder="0"
+                       aria-describedby="ajuda-a-mais-{{ item.codigo }}">
+              </span>
+              <span class="sinal-da-soma" aria-hidden="true">=</span>
+              <span class="parcela">
+                <span class="rotulo-da-parcela">total</span>
+                <strong class="valor-do-total">{{ item.quantidade|quantidade }}</strong>
+              </span>
+              <button type="submit" class="botao secundario">Salvar</button>
+              <span id="ajuda-a-mais-{{ item.codigo }}" class="oculto-visualmente">Quantidade a
+                somar à sugestão do sistema para {{ item.descricao }}. Use número negativo para
+                comprar menos.</span>
+            </form>
+            {% else %}
+            <strong>{{ item.quantidade|quantidade }}</strong>
+            {% comment %}Quem não pode ajustar também precisa ver de onde veio o total: sem
+            isso o número da tela não se explica.{% endcomment %}
+            {% if item.foi_ajustada and not item.nao_comprar %}
+            <span class="linha-detalhe">sugerida {{ item.comprar|quantidade }},
+              {{ item.a_mais|com_sinal }} à mão</span>
+            {% endif %}
+            {% endif %}
+            {% comment %}Fora do pedido por decisão de alguém, não por falta de conta: a linha
+            fica na lista explicando o que o sistema pediu, que é a regra desde a 1.28.0. Antes
+            isto era "digitar 0"; com a soma, zero deixou de querer dizer isso.{% endcomment %}
+            {% if item.nao_comprar %}
+            <span class="linha-detalhe aviso-ajuste">Fora do pedido por agora. O sistema
+              compraria {{ item.comprar|quantidade }}.</span>
+            {% endif %}
+            {% comment %}Qual janela virou esta quantidade está dito uma vez embaixo do filtro.
+            Na linha fica só o que é DELA: este produto não vendeu nada no período escolhido e a
+            conta voltou para os doze meses, senão o número cairia sem explicação.{% endcomment %}
+            {% if item.janela_voltou_para_12m %}
+            <span class="linha-detalhe janela">não vendeu nada em {{ item.janela_rotulo|lower }};
+              a conta voltou para 12 meses</span>
+            {% endif %}
+            {% comment %}A MUDANÇA primeiro, o motivo depois: quantidade que muda sozinha, sem
+            dizer de quanto para quanto, ninguém segue.{% endcomment %}
+            {% if item.estacao_mexeu %}
+            <span class="linha-detalhe estacao">de {{ item.comprar_sem_estacao|quantidade }}
+              para {{ item.comprar|quantidade }}: no ano passado este período vendeu
+              {{ item.estacao_vezes|quantidade }}x a média do produto</span>
+            {% endif %}
+            {% if item.foi_ajustada %}
+            <span class="linha-detalhe">{% if item.ajustada_por %}mudado por {{ item.ajustada_por }}{% else %}mudado à mão{% endif %}{% if item.ajuste_observacao %}:
+              {{ item.ajuste_observacao }}{% endif %}
+              {% if pode_ajustar %}
+              <form class="ajuste-voltar" method="post" action="{% url 'compras:ajustar_quantidade' %}">{% csrf_token %}
+                <input type="hidden" name="codigo" value="{{ item.codigo }}">
+                <input type="hidden" name="descricao" value="{{ item.descricao }}">
+                <input type="hidden" name="fornecedor" value="{{ lista.filtro_fornecedor }}">
+                <input type="hidden" name="situacao" value="{{ lista.filtro_urgencia }}">
+                <input type="hidden" name="media" value="{{ lista.filtro_media }}">
+                <button type="submit" name="voltar_a_sugestao" value="1" class="como-link">voltar à sugestão</button>
+              </form>
+              {% endif %}
+            </span>
+            {% comment %}A sugestão andou desde que a parcela foi escolhida. Com a soma isso
+            deixou de ser alerta — o total acompanha a conta nova sozinho —, então a frase diz
+            de quanto para quanto a SUGESTÃO andou, em tom de informação.{% endcomment %}
+            {% if item.ajuste_desatualizado and item.sugerida_no_ajuste is not None %}
+            <span class="linha-detalhe">na hora do ajuste o sistema sugeria
+              {{ item.sugerida_no_ajuste|quantidade }}; o total já acompanhou a conta nova.</span>
+            {% endif %}
+            {% elif pode_ajustar %}
+            {% comment %}Tirar do pedido sem apagar a linha. Fica fora da soma, e só aparece em
+            linha que ninguém mexeu ainda, porque quem já mexeu tem o "voltar à sugestão".{% endcomment %}
+            <form class="ajuste-voltar" method="post" action="{% url 'compras:ajustar_quantidade' %}">{% csrf_token %}
+              <input type="hidden" name="codigo" value="{{ item.codigo }}">
+              <input type="hidden" name="descricao" value="{{ item.descricao }}">
+              <input type="hidden" name="sugerida" value="{{ item.comprar|unlocalize }}">
+              <input type="hidden" name="fornecedor" value="{{ lista.filtro_fornecedor }}">
+              <input type="hidden" name="situacao" value="{{ lista.filtro_urgencia }}">
+              <input type="hidden" name="media" value="{{ lista.filtro_media }}">
+              <button type="submit" name="nao_comprar" value="1" class="como-link">não comprar agora</button>
+            </form>
+            {% endif %}
+            {% comment %}A frase que JULGA o número, e por isso vem por último: quanto tempo
+            esta quantidade dura e quanto dinheiro ela prende. Fala da quantidade DO PEDIDO,
+            não da sugerida: quem digitou 70 no campo lê "cobre 5,8 anos e prende R$ 1.960"
+            e muda de ideia sozinho, sem o sistema travar nada. É o erro que a loja comete
+            — R$ 227 mil parados que não venderam uma unidade no ano.{% endcomment %}
+            {% if item.quanto_tempo_a_quantidade_dura %}
+            <span class="linha-detalhe duracao{% if item.quantidade_cobre_mais_de_um_ano %} demais{% endif %}">cobre {{ item.quanto_tempo_a_quantidade_dura }} de venda{% if item.custo %} e prende <span class="inteiro">{{ item.valor_do_pedido|reais }}</span>{% endif %}</span>
+            {% endif %}
+          </td>
+          <td class="numerico" data-rotulo="Custo">{{ item.valor_do_pedido|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if bloco.escondidos %}
+  <p class="ajuda">Mais {{ bloco.escondidos }} produto{{ bloco.escondidos|pluralize }} deste
+     fornecedor estão no arquivo{% if pode_ajustar %}; para mudar a quantidade deles, escolha
+     este fornecedor no filtro acima{% endif %}.</p>
+  {% endif %}
+  <p class="acoes-da-lista acoes-do-pedido">
+    <form method="post" action="{% url 'compras:pedido_ao_fornecedor' %}?fornecedor={{ bloco.nome|urlencode }}&amp;situacao={{ lista.filtro_urgencia|urlencode }}&amp;media={{ lista.filtro_media|urlencode }}"
+          target="_blank" class="formulario-em-linha">{% csrf_token %}
+      <button type="submit" class="botao secundario">Gerar o pedido de {{ bloco.nome }} em PDF</button>
+    </form>
+    <span class="ajuda">{{ bloco.quantos }} produto{{ bloco.quantos|pluralize }} e
+      {{ bloco.valor|reais }}{% if bloco.ajustados %}, com {{ bloco.ajustados }} quantidade{{ bloco.ajustados|pluralize }}
+      escolhida{{ bloco.ajustados|pluralize }} por você{% endif %}.</span>
+  </p>
+</section>
+{% endfor %}
+
+{% if lista.outros %}
+<section class="cartao">
+  <h2>Os outros fornecedores</h2>
+  <p class="ajuda">Uma linha para cada, do que pesa mais para o que pesa menos. Clique no nome
+     para ver os produtos daquele fornecedor, ou baixe o arquivo com a lista inteira.</p>
+  <div class="tabela-rolavel tabela-dez tabela-de-compra tabela-em-cartao">
+    <table class="tabela-compra">
+      <caption class="oculto-visualmente">Fornecedores fora do começo da lista</caption>
+      <thead>
+        <tr>
+          <th scope="col">Fornecedor</th>
+          <th scope="col" class="numerico">Produtos</th>
+          <th scope="col" class="numerico">Já faltando</th>
+          <th scope="col" class="numerico">Prazo</th>
+          <th scope="col" class="numerico">Custo da compra</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bloco in lista.outros %}
+        <tr>
+          <th scope="row"><a href="{% url 'compras:lista' %}?fornecedor={{ bloco.nome|urlencode }}">{{ bloco.nome }}</a></th>
+          <td class="numerico celula-estoque" data-rotulo="Produtos">{{ bloco.quantos }}</td>
+          <td class="numerico celula-estoque" data-rotulo="Já faltando">{{ bloco.faltando }}</td>
+          <td class="numerico celula-estoque" data-rotulo="Prazo">{{ bloco.prazo_dias }} dia{{ bloco.prazo_dias|pluralize }}{% if bloco.prazo_assumido %}*{% endif %}</td>
+          <td class="numerico celula-estoque" data-rotulo="Custo da compra">{{ bloco.valor|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="ajuda">* prazo assumido pelo sistema, porque o fornecedor não tem prazo informado.</p>
+</section>
+{% endif %}
+
+{% include "compras/_ano_passado.html" %}
+
+{% comment %}Desceu para o fim da tela e nasce FECHADA em 19/10/2026, a pedido do Edson:
+"o sistema está trazendo muitas informações, deixando os gestores confusos". Ela explica
+de onde sai cada linha e continua inteira aqui — o que mudou é que deixou de ficar ENTRE
+a decisão e a lista, que é o caminho de quem abre a tela para comprar. Quem quer entender
+a regra abre; quem quer comprar não tropeça nela.{% endcomment %}
+<details class="cartao explicacao-da-lista">
+  <summary>Como esta lista é feita<span class="ajuda">a conta, o prazo do fornecedor e o teto do mês</span></summary>
+  <p>Um produto entra aqui quando o que tem na loja, mais o que já está a caminho, fica abaixo
+     do <strong>ponto de pedido</strong>: o quanto ele vende por dia multiplicado pelo prazo do
+     fornecedor, com uma semana de folga. Quando a loja cadastrou um mínimo no SET, o ponto de
+     pedido nunca fica abaixo dele.</p>
+  <ul class="lista-simples">
+    <li><strong>{{ lista.faltando }}</strong> já estão zerados e continuam vendendo.</li>
+    <li><strong>{{ lista.abaixo_do_minimo }}</strong> estão abaixo do mínimo cadastrado no SET
+        ({{ lista.produtos_com_minimo }} produtos têm mínimo lá).</li>
+    <li><strong>{{ lista.vai_faltar }}</strong> acabam antes de o fornecedor entregar.</li>
+    {% if lista.sem_prazo_informado %}
+    <li><strong>{{ lista.sem_prazo_informado }}</strong>
+        linha{{ lista.sem_prazo_informado|pluralize }}
+        usa{{ lista.sem_prazo_informado|pluralize:"m" }} prazo de {{ prazo_padrao }} dias
+        assumido pelo sistema, porque o fornecedor não tem prazo informado. Informando o prazo em
+        <a href="{% url 'fornecedores:lista' %}">Fornecedores</a>, a data fica certa.</li>
+    {% endif %}
+    {% if lista.sem_fornecedor %}
+    <li><strong>{{ lista.sem_fornecedor }}</strong> produtos não têm fornecedor no SET, então não
+        entram no "comece por estes": não há para quem ligar.</li>
+    {% endif %}
+  </ul>
+  <p class="ajuda">O saldo vem do SET e a loja nunca fez contagem física, então ele é estimativa.
+     Produto zerado aqui pode estar na prateleira, e o contrário também. É para isso que existe
+     o <a href="{% url 'inventario:lista' %}">inventário</a>.</p>
+  {% comment %}Mudou em 14/10/2026: antes a conta somava o saldo negativo à compra, como se
+  fosse mercadoria a repor. Inflava a lista de R$ 95 mil para R$ 185 mil e mandava comprar
+  16 unidades de um prato que vende 1 por ano.{% endcomment %}
+  {% if lista.com_saldo_negativo %}
+  <p class="ajuda"><strong>{{ lista.com_saldo_negativo }}</strong>
+     linha{{ lista.com_saldo_negativo|pluralize }}
+     t{{ lista.com_saldo_negativo|pluralize:"em,êm" }} saldo abaixo de zero, que na prateleira
+     não existe: saíram unidades que nunca foram registradas entrando. Essas vendas já estão
+     na média, então somar o saldo à compra seria comprar a mesma venda duas vezes — a compra
+     conta esse saldo como <strong>zero</strong>. Quem diz o número de verdade é a
+     <a href="{% url 'inventario:lista' %}">contagem</a>.</p>
+  {% endif %}
+</details>
+
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Lista de compra",
+    "texto": "O que comprar antes de faltar. Um produto entra quando o que tem na loja, mais o que está a caminho, cai abaixo do ponto de pedido: o quanto ele vende por dia vezes o prazo do fornecedor, com uma semana de folga."
+  },
+  {
+    "seletor": ".cartao-destaque",
+    "titulo": "Comece por aqui",
+    "texto": "São os fornecedores que tapam o maior buraco dentro do que ainda cabe no mês. Compra se faz por fornecedor, com uma ligação e um frete, e não produto a produto."
+  },
+  {
+    "seletor": ".tabela-compra",
+    "titulo": "Quanto comprar",
+    "texto": "A coluna Comprar recompõe o estoque até a próxima compra, já descontando a mercadoria a caminho. O mínimo é o que a loja cadastrou no SET para o produto."
+  },
+  {
+    "seletor": ".ajuste-quantidade",
+    "titulo": "Mudar a quantidade",
+    "texto": "Dá para escrever outra quantidade e salvar. A sugestão do sistema fica escrita embaixo do campo, e o botão voltar à sugestão desfaz a mudança. Zero quer dizer não comprar este agora. Quando o mesmo período do ano passado vendeu bem mais ou bem menos que a média do produto, a sugestão sobe ou desce por isso, e a linha diz de quanto para quanto."
+  },
+  {
+    "seletor": "#ano-passado",
+    "titulo": "Comparar com o ano passado",
+    "texto": "O mesmo período de um ano atrás, lado a lado com o de agora. A loja vende por estação: o que o mês que vem vendeu no ano passado é a melhor pista do que ele vai vender agora. Filtrando um fornecedor acima, a comparação passa a ser dele."
+  },
+  {
+    "seletor": ".acoes-do-pedido .botao",
+    "titulo": "Gerar o pedido",
+    "texto": "O pedido sai em PDF com o nome da loja, a razão social e o endereço, já com as quantidades que estão na tela. Um fornecedor por folha."
+  }
+]
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Compras</h1>
+  <p><a href="{% url 'compras:antes_de_comprar' %}">Antes de comprar</a></p>
+</div>
+
+<section class="cartao">
+  <h2>Última compra de cada fornecedor</h2>
+  <p class="ajuda">Do fornecedor de quem a loja comprou mais recentemente para o que está parado há
+     mais tempo. A compra com situação <strong>Pendente</strong> no SET é mercadoria a caminho e não
+     conta como compra feita.</p>
+  {% if dados.fornecedores %}
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-compras">
+      <caption class="oculto-visualmente">Fornecedores e a data da última compra de cada um.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Fornecedor</th>
+          <th scope="col">Última compra</th>
+          <th scope="col" class="numerico">Valor dela</th>
+          <th scope="col" class="numerico">Compras</th>
+          <th scope="col" class="numerico">Total comprado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in dados.fornecedores %}
+        <tr>
+          <td>
+            <a href="{% url 'fornecedores:ficha' %}?nome={{ f.nome|urlencode }}">{{ f.nome }}</a>
+            {% if f.pendentes %}<br><span class="etiqueta-pendente">{{ f.pendentes }} a caminho</span>{% endif %}
+          </td>
+          <td>
+            {% if f.compra.data %}
+              <a href="{% url 'compras:compra' f.compra.id_set %}">{{ f.compra.data|date:"d/m/Y" }}</a>
+              <br><span class="ajuda">
+                {% if f.dias_sem_comprar == 0 %}hoje
+                {% elif f.dias_sem_comprar == 1 %}ontem
+                {% else %}há {{ f.dias_sem_comprar }} dias{% endif %}
+              </span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="numerico">{{ f.compra.valor_total|reais }}</td>
+          <td class="numerico">{{ f.compras }}</td>
+          <td class="numerico">{{ f.total|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nenhuma compra na última importação.</p>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>As compras, uma a uma</h2>
+  <form method="get" class="busca-produto" role="search">
+    <label for="busca">Procurar por fornecedor, número da compra ou nota</label>
+    <input type="search" id="busca" name="busca" value="{{ dados.procurado }}"
+           placeholder="Ex.: GENALDO CESTAS" autocomplete="off">
+    <button type="submit" class="botao">Procurar</button>
+  </form>
+
+  {% if dados.compras %}
+  <p class="ajuda">{{ dados.total_de_compras }} compra{{ dados.total_de_compras|pluralize }} encontrada{{ dados.total_de_compras|pluralize }}{% if dados.total_de_compras > mostradas %}; aqui estão as {{ mostradas }} mais novas{% endif %}.</p>
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-compras">
+      <caption class="oculto-visualmente">Compras da última importação, da mais nova para a mais velha.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Compra</th>
+          <th scope="col">Fornecedor</th>
+          <th scope="col">Data</th>
+          <th scope="col" class="numerico">Itens</th>
+          <th scope="col" class="numerico">Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in dados.compras %}
+        <tr {% if c.pendente %}class="linha-atencao"{% endif %}>
+          <td><a href="{% url 'compras:compra' c.id_set %}">{{ c.numero }}</a>
+            {% if c.pendente %}<br><span class="etiqueta-pendente">a caminho</span>{% endif %}</td>
+          <td>{{ c.fornecedor|default:"—" }}</td>
+          <td>{{ c.data|date:"d/m/Y"|default:"—" }}</td>
+          <td class="numerico">{{ c.itens }}</td>
+          <td class="numerico">{{ c.valor_total|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nenhuma compra casa com o que foi procurado.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

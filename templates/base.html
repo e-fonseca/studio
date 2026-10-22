@@ -1,0 +1,133 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ titulo|default:"Sistema" }} · Cabana do Jacarandá</title>
+  {% comment %}Ícone da aba, feito do logotipo oficial da loja: .ico com 16, 32, 48 e 64px
+  para a aba e os favoritos, e PNG de 180px para atalho em celular e tablet. Servido pelo
+  próprio sistema, para não depender da internet.{% endcomment %}
+  <link rel="icon" href="{% static 'img/icone.ico' %}" sizes="any">
+  <link rel="apple-touch-icon" href="{% static 'img/icone-180.png' %}">
+  <meta name="theme-color" content="#7a3b12">
+  {% comment %}Atalho na tela inicial do celular: com o manifesto e o operário abaixo, o
+  sistema abre em tela cheia, sem barra de endereço, como um aplicativo. Só funciona em
+  https, igual à câmera (apps/core/aplicativo.py e docs/https-e-camera.md).{% endcomment %}
+  <link rel="manifest" href="{% url 'core:manifesto' %}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cabana">
+  <meta name="application-name" content="Cabana">
+  <link rel="stylesheet" href="{% static 'css/sistema.css' %}">
+  {% block cabeca %}{% endblock %}
+</head>
+<body class="{% block classe_corpo %}{% endblock %}">
+  <a class="pular" href="#conteudo">Ir para o conteúdo</a>
+  {% block topo %}
+  <header class="topo">
+    <div class="topo-interno">
+      <div class="marca">
+        <img class="marca-simbolo" src="{% static 'img/logo.png' %}" alt="" width="112" height="112">
+        <div>
+          <a href="{% url 'core:inicio' %}">Cabana do Jacarandá</a>
+          <span class="subtitulo">Sistema auxiliar</span>
+        </div>
+      </div>
+      {% if user.is_authenticated %}
+      <div class="usuario">
+        {% comment %}
+          A versão fica à vista no topo para TODO MUNDO: é por ela que se relata
+          qualquer problema e é assim que se confere se a atualização entrou. Só o
+          histórico é que é link, e só para quem pode ver número da loja — ele cita
+          faturamento e lucro. Sem isto o vendedor clicava e levava um 403.
+        {% endcomment %}
+        {% if perms.importacao.ver_painel %}
+        <a class="versao-topo" href="{% url 'core:versoes' %}">versão {{ versao_sistema.numero }}</a>
+        {% else %}
+        <span class="versao-topo">versão {{ versao_sistema.numero }}</span>
+        {% endif %}
+        <span>Usuário: <strong>{{ user.get_full_name|default:user.get_username }}</strong></span>
+        <button type="button" class="botao secundario" id="abrir-ajuda" aria-haspopup="dialog">Ajuda (F1)</button>
+        <form method="post" action="{% url 'contas:sair' %}">{% csrf_token %}
+          <button type="submit" class="botao secundario">Sair</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% if user.is_authenticated %}
+    {% comment %}O menu tem dois níveis (pedido do Edson, 19/10/2026: "muitos menus, acaba
+    dificultando o acesso e a tomada de decisões rápidas"). Em cima, com a cor da marca, os
+    SEIS assuntos: Visão geral, Compras, Vendas, Estoque, Dinheiro e Sistema. Embaixo, só as
+    telas do assunto que está aberto — nunca as vinte e sete de uma vez. Quem decide o que é
+    de cada assunto é apps/core/menu.py, não este arquivo: assim a ordem do menu e a ordem
+    das setas no pé nunca saem de sincronia. No celular as duas fileiras ficam atrás do botão
+    Menu, que abre e fecha só com CSS.{% endcomment %}
+    <input type="checkbox" id="abrir-menu" class="oculto-visualmente">
+    <label for="abrir-menu" class="botao-menu">Menu</label>
+    <div class="topo-menu">
+      <nav class="menu menu-principal faixa-interna" aria-label="Assuntos do sistema">
+        {% for assunto in menu_assuntos %}
+        <a href="{{ assunto.endereco }}" title="{{ assunto.ajuda }}" {% if assunto.atual %}aria-current="page"{% endif %}>{{ assunto.rotulo }}</a>
+        {% endfor %}
+      </nav>
+      {% if menu_telas_do_assunto %}
+      <nav class="menu menu-apoio faixa-interna" aria-label="Telas deste assunto">
+        {% for item in menu_telas_do_assunto %}
+        <a href="{{ item.endereco }}" title="{{ item.ajuda }}" {% if item.atual %}aria-current="page"{% endif %}>{{ item.rotulo }}</a>
+        {% endfor %}
+      </nav>
+      {% endif %}
+    </div>
+    {% endif %}
+  </header>
+  {% endblock %}
+  {% if user.is_authenticated %}{% include "_aviso_dados.html" %}{% if endereco_seguro %}<div class="faixa-aviso faixa-sem-seguranca"><p>Você está no endereço <strong>sem</strong> segurança. No celular, a câmera e o atalho na tela inicial só funcionam no endereço com cadeado: <a href="{{ endereco_seguro }}">{{ endereco_seguro }}</a>. <a href="{% url 'core:certificado' %}">Como tirar o aviso do navegador</a>.</p></div>{% endif %}<div class="faixa-aviso"><p class="aviso-usuario">{{ aviso_usuario }}</p></div>{% endif %}
+  <main id="conteudo" tabindex="-1">
+    {% block migalhas %}{% endblock %}
+    {% if messages %}
+      <div class="mensagens" role="status">
+        {% for m in messages %}<p class="mensagem {{ m.tags }}">{{ m }}</p>{% endfor %}
+      </div>
+    {% endif %}
+    {% block conteudo %}{% endblock %}
+    {% include "_navegacao.html" %}
+  </main>
+  <footer class="rodape">
+    <p>Sistema auxiliar ao SET. Não substitui o ERP nem a emissão fiscal. Cores provisórias até receber a identidade visual completa.</p>
+    {% comment %}A versão não se repete aqui: o Edson pediu para ficar só no topo, onde ele
+    confere se a atualização entrou. Na tela de entrada, que não tem topo, ela saiu deste
+    rodapé em 08/10/2026 e foi para o lado do campo de senha, junto do endereço do servidor
+    e do IP de quem acessa, que é onde ele olha antes de entrar.{% endcomment %}
+  </footer>
+  {% if user.is_authenticated %}
+    {% include "_lembretes.html" %}
+    {% block ajuda %}{% endblock %}
+    <script src="{% static 'js/ajuda.js' %}" defer></script>
+    <script src="{% static 'js/lembretes.js' %}" defer></script>
+    <script src="{% static 'js/autocompletar.js' %}" defer></script>
+  {% endif %}
+  <script>
+    // Registra o operário do atalho na tela inicial. Só em https ou localhost: fora
+    // disso o navegador não aceita service worker, e tentar só encheria o console de
+    // erro vermelho (apps/core/aplicativo.py explica o porquê).
+    if ("serviceWorker" in navigator && window.isSecureContext) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("{% url 'core:operario' %}", { scope: "{% url 'core:inicio' %}" })
+          .catch(function () { /* sem atalho é só não ter atalho; o sistema segue igual. */ });
+      });
+    }
+  </script>
+  <script>
+    // Proteção contra duplo envio: desativa o botão depois do primeiro clique.
+    // Formulário com data-destino envia por fetch e fica na mesma página (é o caso da
+    // contagem pela câmera), então travar o botão deixaria a pessoa sem registrar a
+    // segunda leitura.
+    document.addEventListener("submit", function (e) {
+      if (e.target.hasAttribute("data-destino")) { return; }
+      var b = e.target.querySelector("button[type=submit]");
+      if (b) { setTimeout(function () { b.disabled = true; b.textContent = "Enviando…"; }, 0); }
+    });
+  </script>
+</body>
+</html>

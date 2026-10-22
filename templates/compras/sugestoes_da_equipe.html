@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% comment %}As sugestões que a equipe escreve, separadas das Sugestões que o sistema
+calcula. Aqui a informação vem de quem atende o cliente e não está em tabela nenhuma
+do SET: o cliente pediu e não tinha, acabou na prateleira, vai faltar.{% endcomment %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Sugestões da equipe</h1>
+  <p><a href="{% url 'compras:sugestoes' %}">Ver as sugestões do sistema</a></p>
+</div>
+
+<section class="cartao cartao-destaque">
+  <h2>Sugerir uma compra</h2>
+  <p class="ajuda">Use quando o cliente pedir o que não tem, quando acabar na prateleira
+     ou quando você vir que vai faltar. Fica registrado com a data, a hora e o seu nome,
+     e a gerência responde o que fez com a sugestão.</p>
+  <form method="post" action="{% url 'compras:registrar_sugestao' %}" class="formulario-sugestao">{% csrf_token %}
+    <div class="formulario-campo campo-largo">
+      <label for="produto">Produto <span class="obrigatorio">(obrigatório)</span></label>
+      <input type="text" id="produto" name="produto" required maxlength="200" autocomplete="off"
+             data-sugestoes="{% url 'importacao:sugestoes' %}"
+             placeholder="Ex.: vaso de cerâmica grande branco">
+    </div>
+    <div class="formulario-campo">
+      <label for="quantidade">Quantas unidades</label>
+      <input type="text" id="quantidade" name="quantidade" inputmode="decimal"
+             autocomplete="off" placeholder="Se souber">
+    </div>
+    <div class="formulario-campo">
+      <label for="motivo">Por quê</label>
+      <select id="motivo" name="motivo">
+        {% for valor, rotulo in motivos %}<option value="{{ valor }}">{{ rotulo }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="formulario-campo">
+      <label for="fornecedor">Fornecedor (se souber)</label>
+      <input type="text" id="fornecedor" name="fornecedor" maxlength="200" autocomplete="off">
+    </div>
+    <div class="formulario-campo campo-largo">
+      <label for="observacao">Observação</label>
+      <textarea id="observacao" name="observacao" rows="2"
+                placeholder="Ex.: três clientes pediram no mesmo sábado"></textarea>
+    </div>
+    <button type="submit" class="botao">Registrar sugestão</button>
+  </form>
+</section>
+
+<nav class="filtros-ficha" aria-label="Filtrar as sugestões">
+  <a class="filtro {% if not situacao %}filtro-ativo{% endif %}"
+     href="{% url 'compras:sugestoes_da_equipe' %}">
+    <span class="filtro-rotulo">Todas</span>
+    <span class="filtro-numero">{{ sugestoes|length }}</span>
+  </a>
+  {% for rotulo, valor, n in contagem %}
+  <a class="filtro {% if situacao == valor %}filtro-ativo{% endif %}"
+     href="?situacao={{ valor }}">
+    <span class="filtro-rotulo">{{ rotulo }}</span>
+    <span class="filtro-numero">{{ n }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+<section class="cartao">
+  <h2>O que já foi sugerido</h2>
+  {% if sugestoes %}
+  <ul class="lista-sugestoes">
+    {% for s in sugestoes %}
+    <li class="sugestao situacao-{{ s.situacao }}">
+      <div class="sugestao-cabeca">
+        <strong>{{ s.produto }}</strong>
+        <span class="sugestao-estado">{{ s.get_situacao_display }}</span>
+      </div>
+      <p class="sugestao-linha">
+        {{ s.get_motivo_display }}{% if s.quantidade %} · {{ s.quantidade|quantidade:"0" }} unidade{{ s.quantidade|pluralize }}{% endif %}{% if s.fornecedor %} · {{ s.fornecedor }}{% endif %}{% if s.codigo %} · código {{ s.codigo }}{% endif %}
+      </p>
+      {% if s.observacao %}<p class="sugestao-observacao">{{ s.observacao }}</p>{% endif %}
+      <p class="ajuda">Escrita por <strong>{{ s.quem_escreveu }}</strong> em
+         {{ s.criada_em|date:"d/m/Y" }} às {{ s.criada_em|date:"H:i" }}.</p>
+      {% if s.resposta or not s.aberta %}
+      <p class="sugestao-resposta">
+        <strong>Gerência:</strong> {{ s.resposta|default:"sem comentário" }}
+        <span class="ajuda">{{ s.respondida_por|nome_pessoa }}{% if s.respondida_em %},
+          {{ s.respondida_em|date:"d/m/Y H:i" }}{% endif %}</span>
+      </p>
+      {% endif %}
+      {% if perms.compras.responder_sugestao %}
+      <form method="post" action="{% url 'compras:responder_sugestao' s.pk %}" class="formulario-resposta">{% csrf_token %}
+        <label class="oculto-visualmente" for="situacao-{{ s.pk }}">O que foi feito</label>
+        <select id="situacao-{{ s.pk }}" name="situacao">
+          {% for valor, rotulo in situacoes %}
+          <option value="{{ valor }}" {% if valor == s.situacao %}selected{% endif %}>{{ rotulo }}</option>
+          {% endfor %}
+        </select>
+        <label class="oculto-visualmente" for="resposta-{{ s.pk }}">Resposta</label>
+        <input type="text" id="resposta-{{ s.pk }}" name="resposta" maxlength="500"
+               value="{{ s.resposta }}" placeholder="Resposta para quem sugeriu">
+        <button type="submit" class="botao secundario">Responder</button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Nenhuma sugestão {% if situacao %}neste estado{% else %}ainda{% endif %}.</p>
+  {% endif %}
+</section>
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Sugestões da equipe",
+    "texto": "Aqui quem está na loja escreve o que precisa ser comprado. É diferente da tela de Sugestões, que é o sistema calculando em cima do número do SET."
+  },
+  {
+    "seletor": ".formulario-sugestao",
+    "titulo": "O formulário",
+    "texto": "Só o produto é obrigatório. Data, hora e o seu nome entram sozinhos, para a gerência saber de quando é a informação e com quem falar."
+  }
+]
+</script>
+{% endblock %}

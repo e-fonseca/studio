@@ -1,0 +1,3 @@
+{% load cabana %}{% comment %}
+Um número da comparação, escrito do jeito que o `formato` da linha pede.
+{% endcomment %}{% if linha.formato == "reais" %}{{ valor|reais }}{% elif linha.formato == "quantidade" %}{{ valor|quantidade }}{% else %}{{ valor|contagem }}{% endif %}

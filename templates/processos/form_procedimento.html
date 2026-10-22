@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block migalhas %}{% include "processos/_migalhas.html" %}{% endblock %}
+{% block conteudo %}
+<h1>{{ titulo }}</h1>
+{% if versao_atual %}<p>Você está criando a versão {{ versao_atual.numero|add:1 }} a partir da versão {{ versao_atual.numero }}.
+{% if processo.estado != "em_documentacao" %} Salvar devolve o processo para “Em documentação”: a nova versão precisa ser testada e validada de novo.{% endif %}</p>
+{% else %}<p>Primeira versão do procedimento.</p>{% endif %}
+<p class="ajuda">Escreva como se a pessoa nunca tivesse feito o processo. Um passo por linha, começando com um verbo (ex.: “Abrir o relatório de vendas do dia no SET”). Não escreva senhas nem CPF; use exemplos anonimizados.</p>
+<form method="post" class="formulario">
+  {% csrf_token %}
+  {% include "_form.html" %}
+  <div class="acoes">
+    <button type="submit" class="botao">Salvar nova versão</button>
+    <a href="{% url 'processos:detalhe' processo.pk %}">Voltar sem salvar</a>
+  </div>
+</form>
+{% endblock %}

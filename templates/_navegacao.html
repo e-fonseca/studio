@@ -1,0 +1,17 @@
+{# Setas para ir à tela anterior e à próxima, na ordem em que o sistema é usado. #}
+{% if tela_anterior or tela_proxima %}
+<nav class="navegacao-telas" aria-label="Ir para outra tela">
+  {% if tela_anterior %}
+  <a class="navegacao-anterior" href="{{ tela_anterior.endereco }}" rel="prev">
+    <span aria-hidden="true">←</span>
+    <span><span class="ajuda">Anterior</span>{{ tela_anterior.rotulo }}</span>
+  </a>
+  {% else %}<span></span>{% endif %}
+  {% if tela_proxima %}
+  <a class="navegacao-proxima" href="{{ tela_proxima.endereco }}" rel="next">
+    <span><span class="ajuda">Próxima</span>{{ tela_proxima.rotulo }}</span>
+    <span aria-hidden="true">→</span>
+  </a>
+  {% endif %}
+</nav>
+{% endif %}

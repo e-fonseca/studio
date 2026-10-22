@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Vendas do dia</h1>
+  <p>Tudo o que saiu da loja no dia, com o custo daquele dia, o lucro em reais e a
+     margem de cada produto.</p>
+</div>
+
+{% if not v.dias %}
+<section class="cartao cartao-atencao">
+  <h2>Ainda não há venda importada</h2>
+  <p>A relação do dia sai das vendas da última importação. Assim que uma importação
+     concluir com vendas, os dias aparecem aqui para escolher.</p>
+</section>
+{% else %}
+
+<form method="get" class="filtros">
+  <label>Dia
+    <select name="dia">
+      {% for dia in v.dias %}
+      <option value="{{ dia|date:"Y-m-d" }}" {% if dia == v.dia %}selected{% endif %}>{{ dia|date:"d/m/Y" }}{% if dia == v.data_corte %} (último dia importado){% endif %}</option>
+      {% endfor %}
+    </select></label>
+  <button type="submit" class="botao secundario">Ver o dia</button>
+  {% if v.tem_dados %}
+  <a href="{% url 'painel:vendas_dia_arquivo' %}?dia={{ v.dia|date:"Y-m-d" }}">Baixar para o Excel</a>
+  {% endif %}
+</form>
+
+{% if not v.tem_dados %}
+<section class="cartao cartao-atencao">
+  <h2>Nenhuma venda em {{ v.dia|date:"d/m/Y" }}</h2>
+  <p>Este dia não tem venda nesta importação. Pode ser dia fechado, ou a importação
+     pode ser anterior a ele: os dados são de {{ v.data_corte|date:"d/m/Y" }}.</p>
+</section>
+{% else %}
+
+<div class="cartoes-numero">
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Vendido no dia</span>
+    <strong class="cartao-valor">{{ v.faturamento|reais }}</strong>
+    <span class="cartao-rodape">{{ v.itens|contagem }} produtos em {{ v.cupons|contagem }} vendas{% if v.ticket %}, {{ v.ticket|reais }} por venda{% endif %}.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Custo do que saiu</span>
+    <strong class="cartao-valor">{{ v.custo|reais }}</strong>
+    <span class="cartao-rodape">O que estes produtos custaram à loja{% if v.tem_estimativa %}. Parte vem do cadastro, porque o SET não gravou o custo na venda{% else %}, pelo preço do dia da venda{% endif %}.</span>
+  </div>
+  <div class="cartao-numero {% if v.lucro > 0 %}nivel-bom{% else %}nivel-ruim{% endif %}">
+    <span class="cartao-titulo">Sobrou no dia</span>
+    <strong class="cartao-valor">{{ v.lucro|reais }}</strong>
+    <span class="cartao-rodape">Venda menos custo. Ainda não desconta despesa da loja, só o produto.</span>
+  </div>
+  <div class="cartao-numero {% if v.margem >= 30 %}nivel-bom{% elif v.margem < 15 %}nivel-atencao{% endif %}">
+    <span class="cartao-titulo">Margem do dia</span>
+    <strong class="cartao-valor">{% if v.margem is None %}—{% else %}{{ v.margem|quantidade }}%{% endif %}</strong>
+    <span class="cartao-rodape">Quanto de cada R$ 100 vendidos ficou na loja.</span>
+  </div>
+</div>
+
+{% if v.tem_estimativa %}
+<section class="cartao cartao-atencao">
+  <h2>O SET não gravou o custo de {{ v.produtos_estimados|contagem }} dos {{ v.itens|contagem }} produtos deste dia</h2>
+  <p>Para esses, o sistema usou o <strong>custo do cadastro</strong> do produto, e eles
+     aparecem marcados como <em>estimado</em> na lista. São
+     {{ v.valor_estimado|reais }} de venda, {{ v.fatia_estimada|quantidade }}% do dia.</p>
+  <p class="ajuda">O custo gravado na venda é o que a loja pagou de verdade naquele dia;
+     o do cadastro é o preço de hoje. Enquanto o SET não voltar a gravar o custo na
+     venda, o lucro do dia é a melhor estimativa possível, e não o número exato.</p>
+</section>
+{% endif %}
+
+{% if not v.tudo_tem_custo %}
+<section class="cartao cartao-atencao">
+  <h2>{{ v.produtos_sem_custo|contagem }} de {{ v.itens|contagem }} produtos estão sem custo nenhum</h2>
+  <p>São {{ v.valor_sem_custo|reais }} de venda que <strong>não entram na conta do
+     lucro</strong>: o SET não gravou o custo na venda e o produto também não está mais
+     no cadastro. Eles aparecem na lista marcados como <em>sem custo</em>.</p>
+  <p class="ajuda">Contar custo vazio como zero daria margem de 100% e um lucro que a
+     loja não teve.</p>
+</section>
+{% endif %}
+
+{% if v.desconto_no_fechamento %}
+<p class="ajuda">A soma dos produtos ({{ v.faturamento|reais }}) e o total das vendas
+   ({{ v.total_dos_cupons|reais }}) diferem em {{ v.desconto_no_fechamento|reais }}:
+   é o desconto (ou o acréscimo) dado no fechamento do cupom, que não fica em produto
+   nenhum. A relação abaixo é por produto, então ela soma o primeiro número.</p>
+{% endif %}
+
+<section class="cartao">
+  <h2>Produtos vendidos em {{ v.dia|date:"d/m/Y" }}</h2>
+  <p class="ajuda">Do que mais vendeu para o que menos vendeu. O mesmo produto vendido
+     em cupons diferentes aparece numa linha só, somado.</p>
+  {% if v.cortou_linhas %}
+  <p class="ajuda">O dia teve mais produtos do que cabe na tela: aqui estão os maiores.
+     O arquivo para o Excel leva todos.</p>
+  {% endif %}
+  <div class="tabela-rolavel">
+    <table class="tabela-ticket tabela-vendas-dia">
+      <caption class="oculto-visualmente">Produtos vendidos no dia, com custo, lucro e margem.</caption>
+      <thead><tr>
+        <th scope="col">Produto</th>
+        <th scope="col" class="numerico">Qtd.</th>
+        <th scope="col" class="numerico">Vendido</th>
+        <th scope="col" class="numerico">Custo</th>
+        <th scope="col" class="numerico">Lucro</th>
+        <th scope="col" class="numerico">Margem</th>
+      </tr></thead>
+      <tbody>
+        {% for linha in v.linhas %}
+        <tr{% if linha.prejuizo_confirmado %} class="linha-prejuizo"{% endif %}>
+          <td>{{ linha.descricao }}
+            <span class="ajuda">{{ linha.codigo }}{% if linha.grupo %} · {{ linha.grupo }}{% endif %}{% if linha.vendas > 1 %} · em {{ linha.vendas }} vendas{% endif %}</span></td>
+          <td class="numerico">{{ linha.quantidade|quantidade }}</td>
+          <td class="numerico">{{ linha.valor|reais }}
+            <span class="ajuda">{{ linha.preco_medio|reais }} cada</span></td>
+          <td class="numerico">{% if linha.sem_custo %}<span class="etiqueta etiqueta-atencao">sem custo</span>{% else %}{{ linha.custo|reais }}
+            <span class="ajuda">{{ linha.custo_unitario_medio|reais }} cada{% if linha.custo_parcial %} · só parte das unidades{% endif %}</span>
+            {% if linha.estimado %}<span class="etiqueta etiqueta-atencao">{% if linha.so_estimado %}estimado{% else %}parte estimado{% endif %}</span>{% endif %}{% endif %}</td>
+          <td class="numerico">{% if linha.sem_custo %}—{% else %}<strong>{{ linha.lucro|reais }}</strong>{% endif %}</td>
+          <td class="numerico">{% if linha.margem is None %}—{% else %}<strong>{{ linha.margem|quantidade }}%</strong>{% if linha.prejuizo_confirmado %}
+            <span class="ajuda">vendeu abaixo do custo</span>{% elif linha.prejuizo %}
+            <span class="ajuda">o custo estimado ficou acima da venda</span>{% endif %}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Vendas do dia",
+    "texto": "A relação de tudo o que saiu da loja num dia, produto por produto, com o que custou e o que sobrou. É a conta do dia: venda menos custo do produto, antes das despesas da loja."
+  },
+  {
+    "seletor": ".filtros",
+    "titulo": "Escolher o dia",
+    "texto": "A lista traz os dias com venda na última importação, do mais novo para o mais velho. O botão ao lado baixa a relação inteira para abrir no Excel."
+  },
+  {
+    "seletor": ".cartoes-numero",
+    "titulo": "Os quatro números do dia",
+    "texto": "Vendido, custo, o que sobrou e a margem. A margem diz quanto de cada R$ 100 vendidos ficou na loja."
+  },
+  {
+    "seletor": ".tabela-vendas-dia",
+    "titulo": "Custo estimado e sem custo",
+    "texto": "Quando o SET não gravou o custo na hora da venda, o sistema usa o custo do cadastro do produto e marca a linha como estimado. Quando o produto também não está mais no cadastro, a linha fica marcada como sem custo e sai da conta do lucro: tratar custo vazio como zero mostraria um lucro que a loja não teve."
+  }
+]
+</script>
+{% endblock %}

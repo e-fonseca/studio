@@ -1,0 +1,25 @@
+{% load cabana %}
+{# Os números do caixa no alto de todas as telas do financeiro. #}
+<div class="resumo-painel">
+  <div>
+    <span class="numero">{{ resumo.compromisso_total|reais }}</span>
+    <span class="rotulo">Já comprometido do caixa</span>
+  </div>
+  <div>
+    <span class="numero">{{ resumo.vencidas.valor|reais }}</span>
+    <span class="rotulo">Vencido ({{ resumo.vencidas.quantidade }} conta{{ resumo.vencidas.quantidade|pluralize }})</span>
+  </div>
+  {% comment %}Só aparece quando existe: conta sem data no SET é exceção, e um cartão
+  zerado em toda tela do financeiro seria ruído. Quando existe, ela PRECISA aparecer,
+  senão o comprometido não fecha com "vencido mais a vencer".{% endcomment %}
+  {% if resumo.sem_data.quantidade %}
+  <div>
+    <span class="numero">{{ resumo.sem_data.valor|reais }}</span>
+    <span class="rotulo">Sem data no SET ({{ resumo.sem_data.quantidade }} conta{{ resumo.sem_data.quantidade|pluralize }})</span>
+  </div>
+  {% endif %}
+  <div>
+    <span class="numero">{{ resumo.despesa_media_mensal|reais }}</span>
+    <span class="rotulo">Despesa média por mês</span>
+  </div>
+</div>

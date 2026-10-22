@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Pagamentos a fornecedores</h1>
+  <p><a href="{% url 'fornecedores:lista' %}">Ver os prazos de entrega</a></p>
+</div>
+
+<section class="cartao estado-dados estado-{{ estado.nivel }}">
+  <h2>{{ estado.titulo }}</h2>
+  <p>{{ estado.detalhe }}</p>
+</section>
+
+{% if perms.financeiro.lancar_pagamento %}
+<section class="cartao cartao-destaque">
+  <h2>Registrar um pagamento previsto</h2>
+  <p>Para a projeção de caixa contar com o que a loja já combinou e ainda não foi lançado no
+     SET. Isto fica só aqui: o sistema não escreve no SET.</p>
+  <form method="post" action="{% url 'financeiro:salvar_previsto' %}" class="formulario-previsto">{% csrf_token %}
+    <p>
+      <label for="descricao">O que é</label>
+      <input type="text" id="descricao" name="descricao" maxlength="200" required
+             placeholder="Exemplo: entrada do pedido de vasos">
+    </p>
+    <p>
+      <label for="fornecedor">Fornecedor</label>
+      <input type="text" id="fornecedor" name="fornecedor" maxlength="200" placeholder="opcional">
+    </p>
+    <p>
+      <label for="valor">Valor em reais</label>
+      <input type="text" id="valor" name="valor" inputmode="decimal" required placeholder="1.200,00">
+    </p>
+    <p>
+      <label for="vencimento">Quando vence</label>
+      <input type="date" id="vencimento" name="vencimento" required>
+    </p>
+    <p class="acoes-formulario"><button type="submit" class="botao">Registrar</button></p>
+  </form>
+</section>
+{% endif %}
+
+{% if previstos %}
+<div class="tabela-rolavel">
+  <table class="tabela-previstos">
+    <caption>Pagamentos previstos registrados aqui.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Vencimento</th>
+        <th scope="col">O que é</th>
+        <th scope="col">Fornecedor</th>
+        <th scope="col" class="numerico">Valor</th>
+        <th scope="col">Situação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for previsto in previstos %}
+      <tr {% if previsto.lancado_no_set %}class="linha-apagada"{% endif %}>
+        <td>{{ previsto.vencimento|date:"d/m/Y" }}</td>
+        <td>{{ previsto.descricao }}</td>
+        <td>{{ previsto.fornecedor|default:"—" }}</td>
+        <td class="numerico">{{ previsto.valor|reais }}</td>
+        <td>
+          {% if previsto.lancado_no_set %}
+            Já lançado no SET
+          {% elif perms.financeiro.lancar_pagamento %}
+            <form method="post" action="{% url 'financeiro:marcar_lancado' previsto.pk %}">{% csrf_token %}
+              <button type="submit" class="botao secundario">Marcar como lançado</button>
+            </form>
+          {% else %}
+            Na projeção
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if fornecedores %}
+<div class="tabela-rolavel">
+  <table class="tabela-pagamentos">
+    <caption>Quanto a loja pagou a cada fornecedor nos últimos 12 meses, do maior para o menor.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Fornecedor</th>
+        <th scope="col" class="numerico">Pago em 12 meses</th>
+        <th scope="col" class="numerico">Pagamentos</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for linha in fornecedores %}
+      <tr>
+        <td>{{ linha.contraparte }}</td>
+        <td class="numerico">{{ linha.valor|reais }}</td>
+        <td class="numerico">{{ linha.quantidade }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if recentes %}
+<div class="tabela-rolavel">
+  <table class="tabela-contas">
+    <caption>Últimos pagamentos baixados no SET.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Pago em</th>
+        <th scope="col">Conta</th>
+        <th scope="col">Fornecedor</th>
+        <th scope="col" class="numerico">Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for conta in recentes %}
+      <tr>
+        <td>{{ conta.pagamento|date:"d/m/Y" }}</td>
+        <td>{{ conta.descricao|default:conta.grupo }}</td>
+        <td>{{ conta.contraparte|default:"—" }}</td>
+        <td class="numerico">{{ conta.valor_pago|reais }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Pagamentos a fornecedores",
+    "texto": "Quanto já foi pago a cada fornecedor e os últimos pagamentos, direto do financeiro do SET."
+  },
+  {
+    "seletor": ".formulario-previsto",
+    "titulo": "Pagamento previsto",
+    "texto": "Use quando a loja já combinou um pagamento que ainda não foi lançado no SET. Ele entra na projeção de caixa e sai quando você marcar como lançado, para não contar duas vezes."
+  }
+]
+</script>
+{% endblock %}

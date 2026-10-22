@@ -1,0 +1,1970 @@
+/*
+ * Visual do sistema da Cabana do Jacarandá.
+ *
+ * PALETA PROVISÓRIA. Estas cores NÃO são a identidade oficial da Cabana: são um
+ * conjunto quente (madeira e brasa) que combina com a loja até chegarem os
+ * tokens oficiais (briefing, seção 3). Só os tokens abaixo carregam cor; o resto
+ * do CSS usa as variáveis, então trocar a identidade é trocar este bloco.
+ *
+ * Regras que valem para a tela toda:
+ * - cor nunca é a única informação: o estado também aparece escrito;
+ * - alvo de toque com no mínimo 44px;
+ * - nenhuma fonte, ícone ou biblioteca vem da internet (o servidor não acessa).
+ */
+:root {
+  --cor-fundo: #f6f3ee;          /* fundo da página, creme */
+  --cor-superficie: #ffffff;     /* cartões */
+  --cor-superficie-2: #efe9e1;   /* faixas e cabeçalhos de tabela */
+  --cor-texto: #1b1813;
+  --cor-texto-suave: #5c5449;
+  --cor-borda: #e0d8cc;
+  --cor-borda-forte: #c9bcab;
+  --cor-primaria: #7a3b12;       /* madeira; contraste 8:1 no branco */
+  --cor-primaria-texto: #ffffff;
+  --cor-primaria-fraca: #f6e9dd;
+  --cor-brasa: #bf4e16;
+  --cor-escuro: #241f1a;         /* topo */
+  --cor-escuro-texto: #f4ece2;
+  --cor-foco: #0b5cab;
+  --cor-sucesso: #1d6b3a;
+  --cor-sucesso-fraca: #e4f2e8;
+  --cor-erro: #9d241a;
+  --cor-erro-fraca: #fbe7e4;
+  --cor-alerta: #845300;
+  --cor-alerta-fraca: #fcf0d9;
+  /* Fatias de gráfico (1.18.0). Cor de gráfico é cor de gráfico: reaproveitar
+     --cor-sucesso ou --cor-erro numa rosca faria o leitor achar que a fatia verde é
+     a boa e a vermelha a ruim, e numa participação por grupo não existe boa nem ruim. */
+  --cor-fatia-1: #7a3b12;
+  --cor-fatia-2: #bf4e16;
+  --cor-fatia-3: #1d6b3a;
+  --cor-fatia-4: #0b5cab;
+  --cor-fatia-5: #845300;
+  --cor-fatia-6: #6b4a8f;
+  --cor-fatia-7: #167a74;
+  --cor-fatia-8: #9d241a;
+  --cor-fatia-9: #c9bcab;
+  --raio: 10px;
+  --raio-pequeno: 6px;
+  --espaco: 1rem;
+  --sombra: 0 1px 2px rgba(36, 31, 26, .06), 0 2px 10px rgba(36, 31, 26, .05);
+  --faixa: .5rem;                /* largura da tarja colorida à esquerda dos cartões */
+  --largura: 82rem;              /* largura da coluna de conteúdo; o topo usa a mesma */
+  --sombra-forte: 0 .4rem 1.4rem rgba(36, 31, 26, .18);
+  /* Acabamento (1.15.0): o latão é o detalhe fino que dá o ar cuidado ao sistema.
+     Nunca carrega informação sozinho, só acabamento: fio de título, borda de cartão
+     em destaque, marca da tela aberta na fileira de apoio. */
+  --cor-latao: #a97e3a;
+  --cor-latao-fraca: #f0e4cd;
+  /* Título em serifa. São fontes que já existem no Windows e no celular: nada vem da
+     internet, então a tela abre igual mesmo se a loja ficar sem link. */
+  --fonte-titulo: Georgia, "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
+  --fonte-texto: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { font-size: 100%; }
+body {
+  margin: 0;
+  font-family: var(--fonte-texto);
+  line-height: 1.55;
+  color: var(--cor-texto);
+  /* Fundo de papel: um creme com um clarão quase imperceptível no alto, para a página
+     não ser uma chapa lisa de cor única atrás dos cartões brancos. */
+  background: var(--cor-fundo) radial-gradient(60rem 28rem at 50% 0, #fffdf9, transparent) no-repeat;
+  -webkit-font-smoothing: antialiased;
+}
+/* Título em serifa e texto em sem serifa: é o contraste que faz a tela parecer
+   cuidada sem depender de cor nem de enfeite. */
+h1, h2, h3 { font-family: var(--fonte-titulo); line-height: 1.2; letter-spacing: -.005em; font-weight: 700; }
+h1 { font-size: 1.85rem; margin: 0 0 .25rem; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.05rem; }
+a { color: var(--cor-primaria); text-underline-offset: .15em; }
+:focus-visible { outline: 3px solid var(--cor-foco); outline-offset: 2px; border-radius: var(--raio-pequeno); }
+.pular { position: absolute; left: -999px; }
+.pular:focus { left: var(--espaco); top: var(--espaco); background: var(--cor-superficie); padding: .5rem; z-index: 30; }
+
+/* ---------------------------------------------------------------- topo */
+/* As faixas (topo, aviso do usuário, aviso dos dados) ocupam a largura toda da tela, mas o
+   conteúdo delas fica na MESMA coluna do miolo da página: sem isso a marca do topo fica
+   encostada na borda e o título da página bem mais para dentro, o que deixa a tela torta. */
+/* position: relative prende aqui a caixa invisível que abre o menu no celular: solta,
+   ela é posicionada em relação à página e cria barra de rolagem horizontal. */
+.topo { position: relative; background: var(--cor-escuro); color: var(--cor-escuro-texto); }
+.topo-interno, .faixa-interna {
+  max-width: var(--largura); margin: 0 auto;
+}
+.topo-interno {
+  display: flex; flex-wrap: wrap; gap: var(--espaco); align-items: center; justify-content: space-between;
+  padding: .7rem 1.25rem;
+}
+.marca { display: flex; align-items: center; gap: .6rem; }
+/* O logotipo é redondo e já vem com o fundo recortado; o anel claro só o separa do
+   topo escuro, que é quase da cor da madeira da marca. */
+.marca-simbolo {
+  width: 2.4rem; height: 2.4rem; flex: none; border-radius: 50%;
+  object-fit: cover; background: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, .25);
+}
+.marca a { font-weight: 700; font-size: 1.1rem; text-decoration: none; color: var(--cor-escuro-texto); }
+.subtitulo { display: block; font-size: .8rem; color: #c8bcae; font-weight: 400; }
+/* O menu ocupa a segunda linha do topo, separado por um fio claro, para a marca,
+   a versão e o usuário caberem todos na primeira linha mesmo em tela larga.
+
+   São DUAS fileiras (pedido do Edson, 07/10/2026): em cima as telas da decisão do
+   dia, com a cor da marca e letra maior; embaixo as de consulta e administração, em
+   caixa alta menor e cinza claro. O peso visual é que diz o que é importante, então
+   a diferença entre as duas tem que ser evidente a um metro de distância. */
+.topo-menu { border-top: 1px solid rgba(255, 255, 255, .12); }
+.menu { display: flex; flex-wrap: wrap; gap: .2rem; padding: .25rem 1.25rem; }
+.menu a {
+  min-height: 44px; display: inline-flex; align-items: center;
+  color: var(--cor-escuro-texto); text-decoration: none;
+}
+.menu-principal { padding-top: .5rem; }
+.menu-principal a {
+  padding: .5rem 1rem; border-radius: 999px; font-weight: 600; font-size: 1rem;
+  background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1);
+}
+.menu-principal a:hover { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .28); }
+.menu-principal a[aria-current] {
+  background: var(--cor-brasa); border-color: var(--cor-brasa); color: #fff;
+  box-shadow: 0 .15rem .5rem rgba(191, 78, 22, .45);
+}
+/* A fileira de apoio: caixa alta menor, cinza, sem fundo. Fica abaixo de um fio
+   discreto para ler como "o resto", e não como uma continuação do menu de cima. */
+.menu-apoio {
+  padding-bottom: .5rem; gap: 0 .2rem;
+  border-top: 1px solid rgba(255, 255, 255, .07); margin-top: .25rem; padding-top: .3rem;
+}
+.menu-apoio a {
+  padding: .35rem .6rem; min-height: 38px; border-radius: var(--raio-pequeno);
+  font-size: .76rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: #b6a899;
+}
+.menu-apoio a:hover { color: var(--cor-escuro-texto); background: rgba(255, 255, 255, .08); }
+.menu-apoio a[aria-current] { color: #fff; box-shadow: inset 0 -2px 0 0 var(--cor-latao); }
+.usuario { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; font-size: .9rem; }
+.usuario form { margin: 0; }
+.versao-topo {
+  padding: .2rem .6rem; border-radius: 999px; font-size: .8rem; font-weight: 600;
+  color: var(--cor-escuro-texto); text-decoration: none; background: rgba(255, 255, 255, .1);
+}
+a.versao-topo:hover { background: rgba(255, 255, 255, .2); }
+.topo .botao.secundario { background: transparent; color: var(--cor-escuro-texto); border-color: #6b6056; }
+.topo .botao.secundario:hover { background: rgba(255, 255, 255, .12); }
+.faixa-aviso { background: var(--cor-superficie-2); border-bottom: 1px solid var(--cor-borda); }
+.aviso-usuario {
+  max-width: var(--largura); margin: 0 auto; padding: .45rem 1.25rem;
+  font-size: .88rem; color: var(--cor-texto-suave);
+}
+
+main { max-width: var(--largura); margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+/* Regra única: o acabamento de 1.15.0 acrescentava .rodape de novo 750 linhas abaixo e
+   o resultado na tela era a soma acidental das duas. Os valores aqui são o que o
+   navegador já calculava; o que mudou foi deixar de depender da ordem do arquivo. */
+.rodape {
+  max-width: var(--largura); margin: 2rem auto 0; padding: 1.4rem 1.25rem 1.25rem;
+  font-size: .82rem; color: var(--cor-texto-suave);
+  border-top: 1px solid var(--cor-borda);
+}
+.migalhas { font-size: .9rem; margin-bottom: .5rem; }
+.cabecalho-pagina {
+  display: flex; flex-wrap: wrap; gap: .5rem var(--espaco); align-items: baseline; justify-content: space-between;
+  margin-bottom: 1.25rem; padding-bottom: .6rem;
+  border-bottom: 1px solid var(--cor-borda);
+}
+.cabecalho-pagina p { margin: 0; }
+
+/* ------------------------------------------------------------- tela de entrada
+   Sem menu e sem usuário, o topo escuro não tem o que mostrar: ele vira o fundo da
+   página e a marca sobe para cima do cartão, que fica centrado na tela. */
+.entrada {
+  min-height: 100vh; display: flex; flex-direction: column;
+  background: radial-gradient(70rem 35rem at 50% -15%, #3d2e23, var(--cor-escuro));
+  color: var(--cor-escuro-texto);
+}
+.entrada main { margin: auto; width: 100%; max-width: 27rem; padding: 2.5rem 1.25rem; }
+.entrada .rodape { max-width: 34rem; text-align: center; border-top: 0; color: #a99c8e; }
+.entrada .rodape a { color: #d8ccbd; }
+.marca-entrada {
+  display: flex; flex-direction: column; align-items: center; gap: .35rem;
+  text-align: center; margin-bottom: 1.5rem;
+}
+.marca-entrada .marca-simbolo { width: 4.6rem; height: 4.6rem; box-shadow: var(--sombra-forte); }
+.marca-entrada strong { font-size: 1.3rem; }
+.marca-entrada span { font-size: .9rem; color: #c8bcae; }
+/* A classe dupla é de propósito: .cartao vem depois neste arquivo e, com a mesma
+   especificidade, venceria o recuo daqui. */
+.cartao.cartao-entrada { margin: 0; padding: 1.6rem; box-shadow: var(--sombra-forte); color: var(--cor-texto); }
+.cartao-entrada h1 { font-size: 1.4rem; }
+.formulario-entrada input { max-width: none; }
+.formulario-entrada button { width: 100%; margin-top: 1.25rem; }
+.ajuda-entrada { margin: 1.25rem 0 0; text-align: center; font-size: .9rem; color: #c8bcae; }
+/* Versão, servidor e IP logo abaixo do cartão de entrada (pedido de 08/10/2026).
+   Nome próprio de classe: .versao e .versao-topo já existem neste arquivo com outro
+   desenho, e reaproveitar um deles aqui somaria propriedades sem ninguém perceber.
+   Três grupos lado a lado que viram coluna quando não cabem, porque no celular a
+   linha de 390px não comporta os três sem quebrar no meio de um valor. */
+.identificacao-entrada {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.6rem;
+  margin: 1.25rem 0 0; padding: .9rem 0 0; border-top: 1px solid rgba(255, 255, 255, .12);
+}
+.identificacao-entrada > div { text-align: center; }
+.identificacao-entrada dt {
+  font-size: .68rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: #a99c8e;
+}
+.identificacao-entrada dd {
+  margin: .15rem 0 0; font-size: .88rem; font-weight: 600; color: #e4d8c7;
+  font-variant-numeric: tabular-nums;
+}
+/* No celular os três valores de verdade (1.22.0, 192.168.3.254:8443, 192.168.3.254)
+   são bem mais compridos que os da máquina de desenvolvimento e quebrariam numa
+   segunda linha com um item solto no meio. Espaço e letra menores cabem os três. */
+@media (max-width: 40rem) {
+  .identificacao-entrada { gap: .5rem .9rem; }
+  .identificacao-entrada dt { font-size: .62rem; letter-spacing: .06em; }
+  .identificacao-entrada dd { font-size: .8rem; }
+}
+
+/* ---------------------------------------------------------------- botões */
+.botao {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 44px;
+  padding: .5rem 1.1rem; border: 2px solid var(--cor-primaria); border-radius: 999px;
+  background: var(--cor-primaria); color: var(--cor-primaria-texto); font: inherit; font-weight: 600;
+  text-decoration: none; cursor: pointer; transition: background .12s ease, border-color .12s ease;
+}
+.botao:hover { background: #5f2d0c; border-color: #5f2d0c; }
+.botao.secundario { background: transparent; color: var(--cor-primaria); border-color: var(--cor-borda-forte); }
+.botao.secundario:hover { background: var(--cor-primaria-fraca); border-color: var(--cor-primaria); }
+.botao:disabled { opacity: .6; cursor: progress; }
+
+/* ---------------------------------------------------------------- cartões */
+/* A tarja colorida da esquerda é desenhada POR DENTRO (box-shadow), nunca como borda:
+   borda mais grossa num cartão e fina no outro empurra o texto para o lado e os títulos
+   param de ficar na mesma coluna -- era o que deixava a tela torta (visto em 06/10/2026).
+   Assim todo cartão tem a mesma borda de 1px e o mesmo recuo, com ou sem tarja. */
+.cartao {
+  --cor-faixa: transparent;
+  border: 1px solid var(--cor-borda); border-radius: var(--raio);
+  padding: 1.3rem 1.3rem 1.3rem calc(1.3rem + var(--faixa));
+  margin: 1.25rem 0; background: var(--cor-superficie);
+  box-shadow: var(--sombra), inset var(--faixa) 0 0 0 var(--cor-faixa);
+}
+/* O título do cartão ganha um fio de latão embaixo: separa o título do conteúdo
+   sem precisar de mais espaço nem de cor de fundo. */
+.cartao > h2 {
+  margin-bottom: .7rem; padding-bottom: .45rem;
+  border-bottom: 1px solid var(--cor-borda);
+  box-shadow: inset 0 -1px 0 0 transparent;
+}
+.cartao > h2::after {
+  content: ""; display: block; width: 2.2rem; height: 2px; margin-top: .45rem;
+  background: var(--cor-latao);
+}
+.cartao > :first-child { margin-top: 0; }
+.cartao > :last-child { margin-bottom: 0; }
+.cartao.estreito { max-width: 28rem; margin: 3rem auto; }
+.destaque { font-weight: 600; }
+.ajuda { color: var(--cor-texto-suave); font-size: .92rem; }
+
+.mensagens { margin-bottom: var(--espaco); }
+.mensagem {
+  --cor-faixa: var(--cor-primaria);
+  padding: .7rem 1.1rem .7rem calc(1.1rem + var(--faixa));
+  border-radius: var(--raio-pequeno); border: 1px solid var(--cor-borda);
+  box-shadow: inset var(--faixa) 0 0 0 var(--cor-faixa);
+  background: var(--cor-primaria-fraca); margin: .4rem 0;
+}
+.mensagem.success { --cor-faixa: var(--cor-sucesso); background: var(--cor-sucesso-fraca); }
+.mensagem.error { --cor-faixa: var(--cor-erro); background: var(--cor-erro-fraca); }
+.mensagem.warning { --cor-faixa: var(--cor-alerta); background: var(--cor-alerta-fraca); }
+.mensagem.success::before { content: "Feito: "; font-weight: 700; }
+.mensagem.error::before { content: "Atenção: "; font-weight: 700; }
+
+/* ---------------------------------------------------------------- formulários */
+form label, form legend { display: block; font-weight: 600; margin-top: .85rem; }
+/* A lista de tipos é por extenso, e não `input`, para não pegar caixa de marcar nem
+   botão. email e time entraram em 08/10/2026 com a tela de alertas: sem eles o campo
+   nascia do tamanho padrão do navegador, estreito no meio de campos largos. */
+input[type=text], input[type=password], input[type=search], input[type=date],
+input[type=number], input[type=email], input[type=time], input[type=tel], input[type=url],
+select, textarea {
+  width: 100%; max-width: 40rem; min-height: 44px; padding: .55rem .7rem; font: inherit;
+  border: 1px solid var(--cor-borda-forte); border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie); color: var(--cor-texto);
+}
+input:focus, select:focus, textarea:focus { border-color: var(--cor-primaria); }
+/* Hora não precisa de 40rem: o campo tem quatro dígitos e o relógio do navegador. */
+input[type=time] { max-width: 10rem; }
+input[type=checkbox], input[type=radio] { width: 1.25rem; height: 1.25rem; vertical-align: middle; }
+fieldset { border: 0; padding: 0; margin: 0; }
+fieldset label { font-weight: 400; }
+.formulario .acoes { display: flex; gap: var(--espaco); align-items: center; margin-top: var(--espaco); }
+.formulario button { margin-top: var(--espaco); }
+.campo.com-erro input, .campo.com-erro textarea, .campo.com-erro select { border: 2px solid var(--cor-erro); }
+.erro-campo { color: var(--cor-erro); font-weight: 600; margin: .25rem 0; }
+.filtros { display: flex; flex-wrap: wrap; gap: var(--espaco); align-items: end; }
+/* Coluna, e não o fluxo do texto: solto, o rótulo ficava ao lado do campo quando sobrava
+   espaço na linha e em cima dele quando não sobrava, na mesma fileira. Em coluna, rótulo e
+   campo andam juntos e todas as telas de filtro ficam iguais. */
+.filtros label { margin: 0; display: flex; flex-direction: column; gap: .15rem; }
+
+/* ---------------------------------------------------------------- kanban */
+.kanban { display: grid; grid-template-columns: repeat(4, minmax(15rem, 1fr)); gap: var(--espaco); overflow-x: auto; }
+@media (max-width: 64rem) { .kanban { grid-template-columns: 1fr; } }
+.coluna { background: var(--cor-superficie-2); border-radius: var(--raio); padding: .8rem; }
+.coluna h2 { font-size: 1rem; margin: 0 0 .6rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cor-texto-suave); }
+.contador { font-weight: 400; color: var(--cor-texto-suave); }
+.cartao-kanban {
+  background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-left-width: 6px;
+  border-radius: var(--raio-pequeno); padding: .7rem; margin-bottom: .6rem; box-shadow: var(--sombra);
+}
+.cartao-kanban h3 { font-size: 1rem; margin: 0 0 .25rem; }
+.cartao-kanban p { margin: .1rem 0; font-size: .9rem; }
+/* Criticidade também aparece em texto; a borda é só reforço. */
+.criticidade-alta { border-left-color: var(--cor-erro); }
+.criticidade-media { border-left-color: var(--cor-alerta); }
+.criticidade-baixa { border-left-color: var(--cor-borda-forte); }
+.vazio { color: var(--cor-texto-suave); font-style: italic; }
+
+/* ---------------------------------------------------------------- miudezas */
+.etiqueta {
+  display: inline-block; padding: .15rem .6rem; border: 1px solid var(--cor-borda-forte);
+  border-radius: 999px; font-size: .8rem; font-weight: 600; color: var(--cor-texto-suave);
+  background: var(--cor-superficie);
+}
+.etiqueta-atencao { border-color: var(--cor-alerta); color: var(--cor-alerta); background: var(--cor-alerta-fraca); }
+.lista-dados { display: grid; grid-template-columns: max-content 1fr; gap: .25rem 1rem; }
+@media (max-width: 40rem) { .lista-dados { grid-template-columns: 1fr; } .lista-dados dd { margin-left: 0; margin-bottom: .5rem; } }
+.procedimento dt { font-weight: 700; margin-top: .75rem; }
+.procedimento dd { margin-left: 0; }
+.passos li { margin-bottom: .35rem; }
+.afirmacao { border-top: 1px solid var(--cor-borda); padding-top: .5rem; }
+.contagem { list-style: none; padding: 0; display: grid; gap: var(--espaco); grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.contagem a {
+  display: block; padding: 1rem; border: 1px solid var(--cor-borda); border-radius: var(--raio);
+  background: var(--cor-superficie); box-shadow: var(--sombra); text-decoration: none; color: inherit;
+}
+.contagem a:hover { border-color: var(--cor-primaria); }
+.numero { display: block; font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- tabelas */
+.tabela-rolavel {
+  /* min-width: 0 e max-width: 100% impedem que a largura mínima da tabela estique o
+     invólucro: sem isso a página inteira rola de lado no celular em vez de só a tabela. */
+  /* position: relative prende aqui os rótulos invisíveis dos formulários da tabela: sem isso
+     eles são posicionados em relação à página, escapam do recorte e a página inteira rola
+     de lado no celular. max-width e min-width impedem que a tabela estique o invólucro. */
+  position: relative; overflow-x: auto; max-width: 100%; min-width: 0; background: var(--cor-superficie); border: 1px solid var(--cor-borda);
+  border-radius: var(--raio); box-shadow: var(--sombra);
+}
+table { border-collapse: collapse; width: 100%; }
+/* No celular a tabela rola de lado em vez de espremer as colunas até não dar para ler. */
+.tabela-rolavel table { min-width: 46rem; }
+caption { text-align: left; color: var(--cor-texto-suave); padding: .7rem .9rem 0; font-size: .9rem; }
+th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--cor-borda); vertical-align: top; }
+thead th {
+  background: var(--cor-superficie-2); font-size: .82rem; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--cor-texto-suave); border-bottom: 1px solid var(--cor-borda-forte);
+}
+tbody tr:nth-child(even) { background: #faf8f5; }
+tbody tr:hover { background: var(--cor-primaria-fraca); }
+tbody tr:last-child td { border-bottom: 0; }
+td.numerico, th.numerico { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.paginas { display: flex; gap: var(--espaco); margin-top: var(--espaco); }
+details { margin-top: var(--espaco); }
+summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+
+/* ---------------------------------------------------------------- estado dos dados
+   O nível aparece escrito; a cor é só reforço, para quem não distingue cor não
+   perder a informação. */
+.faixa-dados {
+  background: var(--cor-alerta-fraca); border-bottom: 1px solid var(--cor-borda);
+}
+.faixa-dados .faixa-interna { padding: .6rem 1.25rem; font-size: .93rem; }
+.faixa-dados a { margin-left: .5rem; }
+.faixa-vencido { background: var(--cor-erro-fraca); }
+.faixa-sem_dados { background: var(--cor-primaria-fraca); }
+
+.estado-dados { --cor-faixa: var(--cor-sucesso); background: var(--cor-sucesso-fraca); }
+.estado-dados h2 { margin-top: 0; display: flex; align-items: center; gap: .5rem; }
+.estado-dados h2::before {
+  content: ""; width: .85rem; height: .85rem; border-radius: 50%; flex: none; background: var(--cor-sucesso);
+}
+.estado-atencao { --cor-faixa: var(--cor-alerta); background: var(--cor-alerta-fraca); }
+.estado-atencao h2::before { background: var(--cor-alerta); }
+.estado-vencido, .estado-ruim { --cor-faixa: var(--cor-erro); background: var(--cor-erro-fraca); }
+.estado-vencido h2::before, .estado-ruim h2::before { background: var(--cor-erro); }
+/* "vencido" é o nível dos dados do SET e "ruim" o do diagnóstico do HTTPS: nomes
+   diferentes porque são assuntos diferentes, mesmo vermelho porque é a mesma gravidade. */
+.estado-sem_dados { --cor-faixa: var(--cor-primaria); background: var(--cor-primaria-fraca); }
+.estado-sem_dados h2::before { background: var(--cor-primaria); }
+.estado-dados form { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-top: .75rem; }
+.aviso-contagem, .aviso-prazo { --cor-faixa: var(--cor-alerta); background: var(--cor-alerta-fraca); }
+/* Um aviso de uma linha DENTRO de um cartão, para o caso em que o cartão inteiro já
+   tem outro assunto: a contagem geral vencida no cartão do plano de inventário. */
+.linha-de-alerta {
+  margin-top: .6rem; padding: .5rem .7rem; border-left: 3px solid var(--cor-alerta);
+  background: var(--cor-alerta-fraca); border-radius: 0 var(--raio) var(--raio) 0;
+}
+
+/* ---------------------------------------------------------------- painel */
+.resumo-painel {
+  display: grid; gap: var(--espaco); grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin: var(--espaco) 0;
+}
+.resumo-painel div {
+  background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio);
+  padding: .9rem 1rem; box-shadow: var(--sombra);
+}
+.resumo-painel .numero { font-size: 1.45rem; color: var(--cor-primaria); }
+.resumo-painel .rotulo { font-size: .88rem; color: var(--cor-texto-suave); }
+
+.secao-titulo { margin: 2rem 0 .25rem; }
+.secao-titulo + .ajuda { margin-top: 0; }
+
+.indicadores {
+  list-style: none; padding: 0; display: grid; gap: var(--espaco);
+  grid-template-columns: repeat(auto-fit, minmax(17.5rem, 1fr));
+}
+.indicador {
+  display: flex; flex-direction: column; gap: .5rem; background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda); border-top: 5px solid var(--cor-borda-forte);
+  border-radius: var(--raio); padding: 1rem; box-shadow: var(--sombra);
+  transition: border-color .12s ease, transform .12s ease;
+}
+.indicador:hover { transform: translateY(-2px); }
+.indicador-destaque { border-top-color: var(--cor-brasa); background: linear-gradient(180deg, #fff7f1, #fff); }
+.indicador a { display: block; text-decoration: none; color: inherit; }
+.indicador a:hover .rotulo { text-decoration: underline; }
+.indicador a[aria-current] { font-weight: 700; }
+.indicador a[aria-current] .rotulo { text-decoration: underline; }
+.indicador .numero { font-size: 1.65rem; line-height: 1.15; color: var(--cor-primaria); }
+.indicador-destaque .numero { color: var(--cor-brasa); }
+.indicador .rotulo { display: block; font-weight: 600; margin-top: .15rem; }
+.indicador p { margin: 0; }
+.indicador .ajuda { font-size: .88rem; }
+.indicador .etiqueta { align-self: flex-start; margin-top: auto; }
+.selo-destaque {
+  align-self: flex-start; background: var(--cor-brasa); color: #fff; border-radius: 999px;
+  padding: .1rem .6rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+}
+
+/* Compra x venda mês a mês: a barra mostra de relance quando a compra passou a venda. */
+.meses { list-style: none; padding: 0; margin: 0; display: grid; gap: .55rem; }
+.mes { display: grid; grid-template-columns: 4.5rem 1fr; gap: .75rem; align-items: center; }
+.mes-rotulo { font-weight: 600; font-size: .9rem; }
+.mes-barras { display: grid; gap: .25rem; }
+.barra { display: flex; align-items: center; gap: .5rem; }
+.barra-trilho { display: block; flex: 1; background: var(--cor-superficie-2); border-radius: 999px; height: .95rem; overflow: hidden; }
+.barra-preenchida { display: block; height: 100%; border-radius: 999px; min-width: 2px; }
+.barra-venda .barra-preenchida { background: var(--cor-sucesso); }
+.barra-compra .barra-preenchida { background: var(--cor-brasa); }
+.barra-valor { font-size: .82rem; font-variant-numeric: tabular-nums; color: var(--cor-texto-suave); min-width: 7.5rem; text-align: right; }
+.mes-alerta .mes-rotulo { color: var(--cor-erro); }
+.legenda { display: flex; flex-wrap: wrap; gap: 1rem; font-size: .88rem; color: var(--cor-texto-suave); margin: .25rem 0 .75rem; }
+.legenda span { display: inline-flex; align-items: center; gap: .4rem; }
+.legenda i { width: .8rem; height: .8rem; border-radius: 3px; display: inline-block; }
+.legenda .cor-venda { background: var(--cor-sucesso); }
+.legenda .cor-compra { background: var(--cor-brasa); }
+.linha-atencao td:last-child { color: var(--cor-erro); font-weight: 600; }
+.linha-erro td:nth-child(2) { color: var(--cor-erro); font-weight: 600; }
+
+/* ---------------------------------------------------------------- importação */
+.andamento { --cor-faixa: var(--cor-primaria); }
+.andamento progress {
+  width: 100%; height: 1.4rem; appearance: none; border: 0; border-radius: 999px;
+  background: var(--cor-superficie-2); overflow: hidden;
+}
+.andamento progress::-webkit-progress-bar { background: var(--cor-superficie-2); border-radius: 999px; }
+.andamento progress::-webkit-progress-value { background: var(--cor-brasa); border-radius: 999px; }
+.andamento progress::-moz-progress-bar { background: var(--cor-brasa); border-radius: 999px; }
+.andamento .etapa { font-weight: 600; margin-bottom: .35rem; }
+.resultado { --cor-faixa: var(--cor-sucesso); background: var(--cor-sucesso-fraca); }
+.resultado h2, .resultado h3 { margin-top: 0; }
+.resultado-erro { --cor-faixa: var(--cor-erro); background: var(--cor-erro-fraca); }
+.mensagem-tecnica { font-family: ui-monospace, Consolas, monospace; font-size: .85rem; word-break: break-word; }
+.log-importacao { margin-top: .4rem; }
+.log-importacao summary { cursor: pointer; color: var(--cor-primaria); min-height: 2rem; }
+.log-importacao pre {
+  margin: .5rem 0; padding: .7rem; max-height: 22rem; overflow: auto;
+  background: var(--cor-superficie-2); border: 1px solid var(--cor-borda); border-radius: var(--raio-pequeno);
+  font-size: .82rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+}
+.sincronizacao code {
+  background: var(--cor-superficie-2); padding: .1rem .35rem; border-radius: 4px; word-break: break-all;
+  font-size: .95em;
+}
+
+/* ---------------------------------------------------------------- ajuda guiada (F1) */
+.ajuda-caixa {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 1rem; z-index: 20;
+  width: min(36rem, calc(100% - 2rem)); background: var(--cor-superficie); color: var(--cor-texto);
+  border: 1px solid var(--cor-borda-forte); border-top: 5px solid var(--cor-brasa);
+  border-radius: var(--raio); padding: 1.1rem; box-shadow: var(--sombra-forte);
+}
+.ajuda-caixa h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
+.ajuda-caixa p { margin: 0 0 .9rem; }
+.ajuda-acoes { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.ajuda-contador { margin-right: auto; color: var(--cor-texto-suave); font-size: .9rem; }
+.ajuda-destaque { outline: 4px solid var(--cor-brasa); outline-offset: 4px; border-radius: var(--raio); }
+.com-ajuda { scroll-behavior: smooth; }
+@media print { .ajuda-caixa, .topo .usuario, .menu { display: none; } }
+
+/* ----------------------------------------------- organizar a prateleira (1.39.0)
+   A coluna que DECIDE é a última em todas estas tabelas (o que fazer com a peça, o que o
+   SET diz hoje, quando foi a última venda), e por isso elas são `.tabela-em-cartao`: no
+   celular cada linha vira um cartão e a decisão fecha o cartão, separada, onde o olho
+   para nela e o dedo alcança. É a mesma regra da coluna Comprar da lista de compra. */
+.celula-decide { white-space: normal; }
+.acoes-da-peca { display: flex; flex-wrap: wrap; gap: .35rem; }
+.acoes-da-peca + .acoes-da-peca { margin-top: .35rem; }
+.acoes-da-peca .botao { white-space: nowrap; }
+/* O botão do estado em que a peça JÁ está: fica aceso para a pessoa ver o que está
+   valendo sem ter que ler a coluna de novo. `aria-pressed` carrega o mesmo para quem
+   usa leitor de tela. */
+.botao-marcado, .acoes-da-peca [aria-pressed="true"] {
+  background: var(--cor-primaria); color: #fff; border-color: var(--cor-primaria);
+}
+/* A marca da peça na lista de leituras do celular: "sem etiqueta", "danificada". */
+.leitura-estado {
+  display: inline-block; margin-top: .2rem; padding: .1rem .45rem;
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--cor-alerta); background: var(--cor-alerta-fraca);
+  border: 1px solid var(--cor-alerta); border-radius: var(--raio-pequeno);
+}
+.leitura-estado:empty { display: none; }
+/* Os três números da peça são curtos e cabem lado a lado no cartão; a coluna que decide
+   fecha o cartão, separada por um risco, como na conferência da nota. */
+@media (max-width: 52rem) {
+  .tabela-de-organizar tbody td.numerico { display: inline-block; margin-right: 1.1rem; }
+  .tabela-de-organizar td.celula-decide {
+    display: block; margin-right: 0; margin-top: .45rem; padding-top: .5rem;
+    border-top: 1px dashed var(--cor-borda); white-space: normal;
+  }
+  /* O plano tem cinco números curtos por linha: todos lado a lado, menos o que está
+     esperando contagem, que é a razão da tabela. */
+  .tabela-do-plano tbody td.numerico { display: inline-block; margin-right: 1.1rem; }
+  .tabela-do-plano td.celula-esperando {
+    display: block; margin-right: 0; margin-top: .45rem; padding-top: .5rem;
+    border-top: 1px dashed var(--cor-borda); white-space: normal;
+  }
+}
+/* Os botões do plano numa fileira só: o formulário de abrir a contagem é um <form> e
+   quebraria a linha sozinho. */
+.acoes-do-plano { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.acoes-do-plano form { margin: 0; }
+
+/* ----------------------------------------------- folha de etiquetas (1.39.0)
+   A peça que perdeu a etiqueta precisa de uma nova, e o desenho do código de barras já
+   existe em apps/core/barras.py — o mesmo que a tela de consulta mostra e que o leitor
+   da loja já lê. Então a folha é uma página que o navegador imprime, e não um PDF com
+   um segundo desenho: dois desenhos seriam dois lugares onde a etiqueta pode sair
+   errada, e etiqueta errada o leitor lê como OUTRO produto.
+
+   A grade acompanha a largura do papel sozinha. Cada etiqueta tem altura fixa para a
+   tesoura ter linha reta, e `break-inside: avoid` para nenhuma ser cortada ao meio pela
+   quebra de página. */
+.folha-de-etiquetas {
+  display: grid; gap: .5rem; margin: var(--espaco) 0;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+}
+.etiqueta-produto {
+  display: flex; flex-direction: column; align-items: center; gap: .15rem;
+  padding: .6rem .5rem; border: 1px dashed var(--cor-borda-forte);
+  border-radius: var(--raio-pequeno); background: #fff; break-inside: avoid;
+}
+.etiqueta-nome {
+  font-size: .72rem; font-weight: 600; color: #000; text-align: center;
+  line-height: 1.15; min-height: 2.3em;
+  /* Nome de produto de artesanato é comprido ("VASO GARRAFA M JUNCO NATURAL G"): duas
+     linhas e o resto cortado, senão a etiqueta cresce e a grade perde o alinhamento. */
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.etiqueta-desenho svg { display: block; height: 2.6rem; width: auto; max-width: 100%; }
+.etiqueta-codigo {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .78rem; letter-spacing: .08em; color: #000;
+}
+.etiqueta-interno { font-size: .62rem; color: var(--cor-texto-suave); }
+@media print {
+  .nao-imprimir, .topo, .rodape, .mensagens { display: none !important; }
+  .folha-de-etiquetas { gap: .35rem; grid-template-columns: repeat(4, 1fr); }
+  .etiqueta-produto { border-color: #999; }
+  body { background: #fff; }
+}
+
+/* ------------------------------------------------------------ setas entre telas */
+.navegacao-telas {
+  display: flex; justify-content: space-between; gap: var(--espaco);
+  margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--cor-borda);
+}
+.navegacao-telas a {
+  display: inline-flex; align-items: center; gap: .6rem; min-height: 44px;
+  padding: .5rem .9rem; border-radius: var(--raio); text-decoration: none;
+  font-weight: 600; color: var(--cor-primaria); background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+}
+.navegacao-telas a:hover { background: var(--cor-primaria-fraca); border-color: var(--cor-primaria); }
+.navegacao-telas span[aria-hidden] { font-size: 1.2rem; line-height: 1; }
+.navegacao-telas .ajuda { display: block; font-weight: 400; font-size: .78rem; }
+.navegacao-proxima { margin-left: auto; text-align: right; }
+
+/* ------------------------------------------------------------- lembretes do dia */
+.lembretes {
+  position: fixed; inset: 0; z-index: 40; display: grid; place-items: center;
+  padding: var(--espaco); background: rgba(27, 24, 19, .55);
+}
+/* Sem esta linha o display: grid acima vence o hidden do navegador e o botão "Entendi"
+   não fecha o aviso. Vale para qualquer caixa que esconda pelo atributo hidden. */
+.lembretes[hidden] { display: none; }
+.lembretes-caixa {
+  width: 100%; max-width: 32rem; max-height: 85vh; overflow: auto;
+  background: var(--cor-superficie); border-radius: var(--raio);
+  padding: 1.4rem; box-shadow: var(--sombra-forte);
+}
+.lembretes-caixa h2 { margin-top: 0; }
+.lembretes-caixa ul { list-style: none; margin: 0 0 1rem; padding: 0; }
+.lembrete {
+  --cor-faixa: var(--cor-borda-forte);
+  padding: .7rem 1rem .7rem calc(1rem + var(--faixa));
+  box-shadow: inset var(--faixa) 0 0 0 var(--cor-faixa);
+  background: var(--cor-superficie-2); border-radius: var(--raio-pequeno); margin-bottom: .6rem;
+}
+.lembrete strong { display: block; }
+.lembrete span { display: block; font-size: .9rem; color: var(--cor-texto-suave); }
+.lembrete-urgente { --cor-faixa: var(--cor-erro); background: var(--cor-erro-fraca); }
+.lembrete-atencao { --cor-faixa: var(--cor-alerta); background: var(--cor-alerta-fraca); }
+.lembretes-caixa > .botao { width: 100%; }
+
+/* ------------------------------------------------------------------- miudezas 2 */
+.cartao-destaque .numero-grande {
+  font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 700; color: var(--cor-brasa);
+  margin: .2rem 0 .4rem; line-height: 1.1;
+}
+.indicadores-resumo { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+.formulario-prazo { display: flex; gap: .4rem; align-items: center; }
+.formulario-prazo input { width: 5.5rem; min-width: 5.5rem; margin: 0; }
+.formulario-prazo button { white-space: nowrap; }
+.oculto-visualmente {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ------------------------------------------------------------------- financeiro */
+/* Cartões coloridos por significado. A cor nunca é a única informação: o título diz o
+   mesmo por escrito, para quem não distingue as cores e para o que sai impresso. */
+.cartao-erro { --cor-faixa: var(--cor-erro); background: var(--cor-erro-fraca); }
+.cartao-atencao { --cor-faixa: var(--cor-alerta); background: var(--cor-alerta-fraca); }
+/* Faixa de brasa e borda de latão na mesma regra: estavam em dois pontos do arquivo,
+   a 380 linhas uma da outra, o que é como se perde uma delas numa edição futura. */
+.cartao-destaque { --cor-faixa: var(--cor-brasa); border-color: var(--cor-latao); }
+
+.faixas-caixa {
+  display: grid; gap: var(--espaco); margin-top: .75rem;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+.faixa-caixa {
+  border: 1px solid var(--cor-borda); border-radius: var(--raio-pequeno);
+  padding: .7rem .9rem; background: var(--cor-superficie-2);
+}
+.faixa-caixa .numero { font-size: 1.35rem; }
+.faixa-caixa .rotulo { display: block; font-size: .9rem; color: var(--cor-texto-suave); }
+
+.meses-caixa {
+  display: grid; gap: .6rem; margin-top: .75rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+.mes-caixa {
+  border: 1px solid var(--cor-borda); border-radius: var(--raio-pequeno);
+  padding: .6rem .8rem; background: var(--cor-superficie);
+}
+.mes-caixa span { display: block; font-size: .92rem; }
+.mes-caixa .mes-rotulo { font-weight: 700; font-variant-numeric: tabular-nums; }
+.mes-caixa .valor-entrou { color: var(--cor-sucesso); }
+.mes-caixa .valor-saiu { color: var(--cor-brasa); }
+.mes-caixa .valor-sobra { font-weight: 600; margin-top: .2rem; }
+.mes-caixa .valor-sobra.negativo { color: var(--cor-erro); }
+
+.etiqueta-erro { border-color: var(--cor-erro); color: var(--cor-erro); background: var(--cor-erro-fraca); }
+.linha-apagada td { color: var(--cor-texto-suave); }
+.lista-simples { list-style: none; padding: 0; margin: .5rem 0 0; }
+.lista-simples li { padding: .3rem 0; border-bottom: 1px solid var(--cor-borda); }
+.lista-simples li:last-child { border-bottom: 0; }
+
+.formulario-previsto { display: grid; gap: .25rem 1rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.formulario-previsto p { margin: .4rem 0; }
+.formulario-previsto label { display: block; font-weight: 600; font-size: .92rem; }
+.formulario-previsto input { width: 100%; max-width: none; }
+.formulario-previsto .acoes-formulario { grid-column: 1 / -1; align-self: end; }
+
+/* ------------------------------------------------------------------- visão geral */
+/* A tela de abrir e entender. Tudo aqui é feito com CSS e SVG escritos à mão: o servidor
+   da loja não acessa a internet, então não há biblioteca de gráfico para carregar. */
+.abertura {
+  --cor-faixa: var(--cor-sucesso);
+  display: flex; flex-wrap: wrap; gap: var(--espaco); align-items: center; justify-content: space-between;
+  background: var(--cor-escuro); color: var(--cor-escuro-texto);
+  border-radius: var(--raio); padding: 1.2rem 1.4rem;
+  box-shadow: var(--sombra), inset var(--faixa) 0 0 0 var(--cor-faixa);
+  margin-bottom: var(--espaco);
+}
+.abertura h1 { margin: 0; color: var(--cor-escuro-texto); }
+.abertura-sub { margin: .15rem 0 0; color: #c8bcae; font-size: .95rem; }
+.abertura-dados { text-align: right; max-width: 34rem; }
+.abertura-dados strong { display: block; }
+.abertura-dados span { font-size: .9rem; color: #c8bcae; }
+.abertura-atencao { --cor-faixa: var(--cor-alerta); }
+.abertura-vencido, .abertura-sem_dados { --cor-faixa: var(--cor-erro); }
+
+.cartoes-numero {
+  display: grid; gap: var(--espaco); margin-bottom: var(--espaco);
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+.cartao-numero {
+  --cor-faixa: var(--cor-primaria);
+  background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio);
+  padding: 1rem 1.1rem 1rem calc(1.1rem + var(--faixa));
+  box-shadow: var(--sombra), inset var(--faixa) 0 0 0 var(--cor-faixa);
+  display: flex; flex-direction: column; gap: .15rem;
+}
+.cartao-numero .cartao-titulo { font-size: .9rem; color: var(--cor-texto-suave); font-weight: 600; }
+.cartao-numero .cartao-valor {
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem); font-weight: 700; line-height: 1.1;
+  font-variant-numeric: tabular-nums; color: var(--cor-primaria);
+}
+/* O tamanho tem que sair da largura do CARTÃO, e não da largura da tela: com quatro
+   cartões lado a lado, "R$ 1.543.162,48" a 2,1rem não cabe e o navegador quebra a linha
+   entre o "R$" e o número, que é feio e parece defeito. `cqi` é a largura do cartão.
+   A linha de cima fica como estava para o navegador que não entender `cqi`: ele ignora
+   a de baixo e volta ao comportamento antigo, que quebra mas não vaza. */
+.cartao-numero { container-type: inline-size; }
+.cartao-numero .cartao-valor { font-size: clamp(1.25rem, 9.5cqi, 2.1rem); }
+.cartao-numero .cartao-rodape { font-size: .88rem; color: var(--cor-texto-suave); }
+.cartao-numero.nivel-bom { --cor-faixa: var(--cor-sucesso); }
+.cartao-numero.nivel-bom .cartao-valor { color: var(--cor-sucesso); }
+.cartao-numero.nivel-atencao { --cor-faixa: var(--cor-alerta); }
+.cartao-numero.nivel-ruim { --cor-faixa: var(--cor-erro); }
+.cartao-numero.nivel-ruim .cartao-valor { color: var(--cor-erro); }
+
+.grade-visao { display: grid; gap: var(--espaco); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grade-visao > .cartao { margin: 0; }
+/* Cartão sem conteúdo não deve esticar junto com o vizinho e deixar um vazio alto. */
+.grade-topo { align-items: start; }
+.grade-visao .bloco-largo { grid-column: 1 / -1; }
+/* O gráfico de meses vem de um include que já traz o próprio título e cartão. */
+.grade-visao .bloco-largo > .secao-titulo { margin-top: 0; }
+.grade-visao .bloco-largo > .cartao:last-child { margin-bottom: 0; }
+
+/* Rosca de participação: um círculo de circunferência 100, onde cada fatia é um traço do
+   tamanho da porcentagem. O serviço já entrega traço e giro prontos. */
+.rosca-area { display: flex; flex-wrap: wrap; gap: var(--espaco); align-items: center; }
+.rosca { width: 11rem; height: 11rem; flex: none; transform: rotate(-90deg); }
+.rosca circle { fill: none; stroke-width: 5; }
+.rosca-fundo { stroke: var(--cor-superficie-2); }
+.rosca-legenda { list-style: none; padding: 0; margin: 0; flex: 1 1 12rem; }
+.rosca-legenda li { display: flex; align-items: center; gap: .5rem; padding: .22rem 0; font-size: .92rem; }
+.rosca-legenda i { width: .8rem; height: .8rem; border-radius: 3px; flex: none; }
+.rosca-nome { flex: 1; }
+.rosca-valor { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.ranking { list-style: none; padding: 0; margin: .5rem 0 0; counter-reset: posicao; }
+.ranking li {
+  display: grid; grid-template-columns: 1fr 6rem; gap: .1rem .6rem; align-items: center;
+  padding: .35rem 0; border-bottom: 1px solid var(--cor-borda);
+}
+.ranking li:last-child { border-bottom: 0; }
+.ranking-nome { font-size: .92rem; }
+.ranking-valor { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; font-size: .92rem; }
+.ranking-barra { grid-column: 1 / -1; background: var(--cor-superficie-2); border-radius: 999px; height: .45rem; }
+.ranking-barra i { display: block; height: 100%; border-radius: 999px; background: var(--cor-sucesso); }
+.ranking-fraco .ranking-barra i { background: var(--cor-alerta); }
+
+.estrelas { white-space: nowrap; letter-spacing: .05em; }
+.estrela { color: var(--cor-borda-forte); }
+.estrela.cheia { color: var(--cor-alerta); }
+.etiqueta-parceiro { border-color: var(--cor-sucesso); color: var(--cor-sucesso); background: var(--cor-sucesso-fraca); }
+.etiqueta-flexivel { border-color: var(--cor-primaria); color: var(--cor-primaria); background: var(--cor-primaria-fraca); }
+.etiqueta-eventual { border-color: var(--cor-borda-forte); color: var(--cor-texto-suave); background: var(--cor-superficie-2); }
+
+/* Escolha das estrelas: são botões de rádio de verdade, para funcionar com teclado e com
+   leitor de tela; o CSS só troca o desenho. A ordem é invertida para o irmão seguinte (~)
+   poder pintar as estrelas à esquerda da que foi escolhida. */
+.formulario-avaliacao { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.estrelas-escolha { display: flex; flex-direction: row-reverse; border: 0; padding: 0; margin: 0; }
+.estrelas-escolha input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.estrelas-escolha label {
+  cursor: pointer; font-size: 1.3rem; line-height: 1; color: var(--cor-borda-forte);
+  padding: .1rem .05rem; min-width: 1.4rem; text-align: center;
+}
+.estrelas-escolha input:checked ~ label,
+.estrelas-escolha label:hover,
+.estrelas-escolha label:hover ~ label { color: var(--cor-alerta); }
+.estrelas-escolha input:focus-visible + label { outline: 3px solid var(--cor-foco); outline-offset: 2px; }
+.formulario-avaliacao select { margin: 0; max-width: 9rem; }
+
+/* ------------------------------------------------------- antes de comprar */
+/* O teto do mês: uma barra só, grande, porque é a única pergunta que decide a compra. */
+.teto { border-top: 4px solid var(--cor-sucesso); }
+.teto-atencao { border-top-color: var(--cor-alerta); }
+.teto-ruim { border-top-color: var(--cor-erro); }
+.teto-numeros {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem; margin: .8rem 0 .9rem;
+}
+.teto-rotulo { display: block; font-size: .82rem; color: var(--cor-texto-suave); }
+.teto-valor { display: block; font-size: 1.5rem; line-height: 1.2; }
+.teto-barra {
+  height: 1.1rem; border-radius: 999px; background: var(--cor-borda);
+  overflow: hidden; margin-bottom: .6rem;
+}
+.teto-barra i { display: block; height: 100%; background: var(--cor-sucesso); border-radius: 999px; }
+.teto-atencao .teto-barra i { background: var(--cor-alerta); }
+.teto-ruim .teto-barra i { background: var(--cor-erro); }
+.teto-frase { font-weight: 600; margin: 0 0 .5rem; }
+.teto-ruim .teto-frase { color: var(--cor-erro); }
+
+/* O botão que gera o PDF da lista, com a explicação ao lado. `align-items: center`
+   e não `baseline`: a frase quebra em duas linhas no celular e, alinhada pela primeira
+   linha dela, o botão sobe e fica pendurado. */
+.acoes-da-lista {
+  display: flex; gap: .6rem .9rem; align-items: center; flex-wrap: wrap; margin: .9rem 0;
+}
+/* flex: 1 1 16rem, e não um flex-basis solto: no celular a linha vira coluna e um
+   flex-basis vira ALTURA, que foi o que esticou a caixa de busca para 288 px. */
+.acoes-da-lista .ajuda { flex: 1 1 16rem; margin: 0; }
+.formulario-em-linha { display: inline; margin: 0; }
+
+/* A frase que abre a conferência da nota contra o pedido. Verde só quando tudo bate;
+   divergência não é erro vermelho de sistema, é "confira", daí a cor de alerta. */
+.resultado-da-conferencia {
+  font-size: 1.05rem; font-weight: 600; margin: .6rem 0;
+  padding: .6rem .8rem; border-radius: var(--raio); border-left: var(--faixa) solid var(--cor-borda);
+  background: var(--cor-superficie);
+}
+.resultado-da-conferencia.confere { border-left-color: var(--cor-sucesso); color: var(--cor-sucesso); }
+.resultado-da-conferencia.divergente { border-left-color: var(--cor-alerta); }
+/* O estado do backup (1.33.0) usa a mesma faixa: é a mesma pergunta de leitura, "está
+   tudo bem ou preciso agir?", e inventar um terceiro desenho para ela não ajudaria
+   ninguém. Erro aqui é vermelho de verdade: ficar sem cópia fora do servidor não é
+   "confira", é a loja descoberta. */
+.resultado-da-conferencia.erro { border-left-color: var(--cor-erro); color: var(--cor-erro); }
+
+/* O formulário de anexo é de campos empilhados: rótulo em cima, campo embaixo, como
+   nas outras telas de digitar. Em linha, o seletor de tipo fica do tamanho do nome mais
+   longo e o campo de arquivo não cabe no celular. */
+.formulario-anexo p { margin: .55rem 0; }
+.formulario-anexo label { display: block; font-size: .85rem; color: var(--cor-texto-suave); }
+.formulario-anexo input[type="text"], .formulario-anexo select { width: 100%; max-width: 28rem; }
+.formulario-anexo input[type="file"] { max-width: 100%; }
+
+.anexo-do-pedido h2 small { font-weight: 400; font-size: .85rem; color: var(--cor-texto-suave); }
+
+/* A situação do pedido. Aberto é neutro: esperar mercadoria não é problema nenhum, e
+   pintar de amarelo todo pedido do dia treinaria a loja a não olhar a cor. */
+.etiqueta-aberto { border-color: var(--cor-primaria); color: var(--cor-primaria); background: var(--cor-primaria-fraca); }
+.etiqueta-recebido { border-color: var(--cor-sucesso); color: var(--cor-sucesso); background: var(--cor-sucesso-fraca); }
+.etiqueta-cancelado { border-color: var(--cor-borda-forte); color: var(--cor-texto-suave); background: var(--cor-superficie-2); }
+/* Etiqueta dentro de cartão de número não herda o tamanho gigante do valor: ela é
+   uma palavra numa pílula, e a 2rem a pílula estoura o cartão. */
+.cartao-valor.etiqueta { font-size: .9rem; align-self: flex-start; }
+.acoes-da-lista .formulario-em-linha { display: contents; }
+
+.busca-produto { display: flex; gap: .6rem; align-items: flex-end; flex-wrap: wrap; margin: .8rem 0; }
+/* O rótulo ocupa a linha inteira: ao lado da caixa ele fica espremido e a caixa de
+   busca, que é o que a pessoa procura na tela, deixa de ser a coisa mais larga. */
+.busca-produto label { flex-basis: 100%; font-size: .85rem; color: var(--cor-texto-suave); }
+.busca-produto input { flex: 1 1 18rem; margin: 0; min-width: 18rem; max-width: 100%; }
+
+/* A resposta vem em letra grande e com cor: é para ser lida de longe, com o vendedor na frente. */
+.vereditos { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .8rem; }
+.veredito {
+  border: 1px solid var(--cor-borda); border-radius: var(--raio); padding: .9rem 1rem;
+  box-shadow: inset .5rem 0 0 0 var(--cor-borda-forte);
+}
+.veredito-pode { background: var(--cor-sucesso-fraca); box-shadow: inset .5rem 0 0 0 var(--cor-sucesso); }
+.veredito-espere { background: var(--cor-alerta-fraca); box-shadow: inset .5rem 0 0 0 var(--cor-alerta); }
+.veredito-nao { background: var(--cor-erro-fraca); box-shadow: inset .5rem 0 0 0 var(--cor-erro); }
+.veredito-cabeca { display: flex; flex-direction: column; gap: .1rem; }
+.veredito-titulo { font-size: 1.15rem; }
+.veredito-pode .veredito-titulo { color: var(--cor-sucesso); }
+.veredito-espere .veredito-titulo { color: var(--cor-alerta); }
+.veredito-nao .veredito-titulo { color: var(--cor-erro); }
+.veredito-nome { font-weight: 600; }
+.veredito-motivo { margin: .4rem 0; }
+.veredito-numeros {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: .5rem .9rem; margin: .6rem 0 0;
+}
+.veredito-numeros dt { font-size: .78rem; color: var(--cor-texto-suave); }
+.veredito-numeros dd { margin: 0; font-weight: 600; }
+/* O aviso de saldo negativo vem embaixo do número, não colado nele. */
+.veredito-numeros dd .ajuda { display: block; font-weight: 400; font-size: .75rem; }
+.veredito-conta { margin: .6rem 0 0; }
+
+.tabela-compra .ajuda { display: block; font-size: .78rem; }
+.barra-fina {
+  display: block; height: .35rem; border-radius: 999px; background: var(--cor-borda);
+  margin-top: .25rem; overflow: hidden;
+}
+.barra-fina i { display: block; height: 100%; background: var(--cor-primaria); }
+.valor-ruim { color: var(--cor-erro); }
+
+/* ------------------------------------------ usuários, ficha e consulta */
+.perfis, .ficha { display: grid; gap: .7rem; margin: .8rem 0 0; }
+.perfis { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+.perfis dt, .ficha dt { font-size: .8rem; color: var(--cor-texto-suave); text-transform: uppercase;
+  letter-spacing: .03em; }
+.perfis dd, .ficha dd { margin: .15rem 0 0; }
+.perfis dt { font-size: .95rem; color: var(--cor-texto); text-transform: none; letter-spacing: 0;
+  font-weight: 600; }
+.ficha { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+
+/* Cada coluna da tabela de usuários é um formulário de uma ação só: trocar perfil, definir
+   senha ou encerrar acesso. Separados para um envio nunca arrastar o outro junto. */
+.formulario-linha { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; margin: 0; }
+.formulario-linha input, .formulario-linha select { margin: 0; min-width: 0; }
+.formulario-linha input[type="password"], .formulario-linha input[type="text"] { width: 10rem; }
+.tabela-usuarios td { vertical-align: top; }
+.tabela-usuarios .ajuda { display: block; font-size: .78rem; }
+.linha-desligada td { opacity: .6; }
+.etiqueta-pendente {
+  display: inline-block; margin-top: .3rem; background: var(--cor-alerta-fraca);
+  color: var(--cor-alerta); border-radius: var(--raio-pequeno); padding: .1rem .45rem;
+  font-size: .75rem; font-weight: 600;
+}
+.formulario-usuario {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: .8rem; align-items: end; margin-top: .8rem;
+}
+.formulario-usuario input, .formulario-usuario select { margin: .2rem 0 0; width: 100%; }
+.formulario-usuario label { font-size: .85rem; color: var(--cor-texto-suave); }
+/* O botão fica do tamanho do texto dele: esticado na coluna inteira ele vira uma
+   barra do lado dos campos e desequilibra a linha. */
+.formulario-usuario button { align-self: end; justify-self: start; }
+
+.formulario-ficha {
+  display: flex; gap: .5rem; align-items: flex-end; flex-wrap: wrap;
+  padding: .7rem 0; border-top: 1px solid var(--cor-borda); margin: 0;
+}
+.formulario-ficha:first-of-type { border-top: 0; }
+.formulario-ficha label { font-size: .85rem; color: var(--cor-texto-suave); display: block; }
+.formulario-ficha input, .formulario-ficha select { margin: .2rem 0 0; }
+.formulario-ficha .estrelas-escolha legend { font-size: .85rem; color: var(--cor-texto-suave); }
+/* O valor que não é número não pode herdar o tamanhão do número. */
+.cartao-texto { font-size: 1.1rem; line-height: 1.3; }
+.tabela-consulta .ajuda { display: block; font-size: .78rem; }
+
+/* ------------------------------------------------------------------- tablet */
+@media (max-width: 64rem) {
+  .topo-interno { gap: .5rem; }
+  .menu { padding: .25rem .9rem; }
+  .menu a { padding: .5rem .7rem; font-size: .9rem; }
+  .resumo-painel { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+  .indicadores { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+  /* minmax(0, 1fr), e não 1fr: com 1fr o conteúdo largo estica a coluna e a página rola de lado. */
+  .grade-visao { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ------------------------------------------------------------------- celular */
+@media (max-width: 48rem) {
+  h1 { font-size: 1.45rem; }
+  main { padding: 1rem .9rem 2.5rem; }
+  .topo-interno { padding: .6rem .9rem; }
+  .mes { grid-template-columns: 1fr; gap: .2rem; }
+  .barra-valor { min-width: 6rem; }
+  .indicadores, .indicadores-resumo, .resumo-painel { grid-template-columns: 1fr; }
+  /* minmax(0, 1fr), e não 1fr: com 1fr o conteúdo largo estica a coluna e a página rola de lado. */
+  .grade-visao { grid-template-columns: minmax(0, 1fr); }
+  .abertura { flex-direction: column; align-items: flex-start; }
+  .abertura-dados { text-align: left; }
+  .cabecalho-pagina { gap: .4rem; }
+  .navegacao-telas { flex-direction: column; }
+  .navegacao-telas a { justify-content: space-between; }
+  .navegacao-proxima { margin-left: 0; }
+  .formulario-prazo { flex-wrap: wrap; }
+  .perfis, .ficha, .formulario-usuario { grid-template-columns: minmax(0, 1fr); }
+  .formulario-usuario button { justify-self: stretch; }
+  .formulario-linha input[type="password"], .formulario-linha input[type="text"] { width: 100%; }
+  .teto-numeros { grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+  /* No celular a busca vira coluna, e aí o `flex-basis: 18rem` do computador passa a
+     valer para a ALTURA: a caixa de procurar virava um quadrado de 18rem de alto, com o
+     texto no meio. `flex: 0 0 auto` devolve a altura normal de um campo. */
+  .busca-produto input { flex: 0 0 auto; min-width: 0; width: 100%; }
+  .busca-produto { flex-direction: column; align-items: stretch; }
+}
+
+/* O botão Menu só existe no celular; no computador o menu fica sempre aberto. */
+.botao-menu { display: none; }
+
+/* ------------------------------- compras, inventário, sugestões e barras */
+/* Dez linhas à vista e o resto na rolagem: lista comprida empurrava o resto da tela
+   para baixo e ninguém chegava ao que vinha depois. A altura é fixa, e não calculada
+   pela linha, porque a linha muda de altura conforme o nome do produto quebra; a linha
+   cortada no pé é de propósito, é ela que diz que tem mais coisa embaixo. */
+.tabela-dez { max-height: 31rem; overflow-y: auto; }
+.tabela-dez thead th { position: sticky; top: 0; z-index: 1; }
+
+/* Filtros em forma de ficha: rótulo, quantidade e valor, um ao lado do outro.
+   Nome próprio (e não .filtros) porque .filtros já é a barra de busca das outras telas:
+   as duas juntas esticavam o botão Filtrar e ele virava uma bola. */
+.filtros-ficha { display: flex; flex-wrap: wrap; gap: .5rem; align-items: stretch; margin: 0 0 .8rem; }
+.filtro {
+  display: flex; flex-direction: column; gap: .1rem; text-decoration: none; color: inherit;
+  background: var(--cor-superficie); border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno); padding: .5rem .8rem; min-width: 8.5rem;
+}
+.filtro:hover { border-color: var(--cor-borda-forte); }
+.filtro-ativo { background: var(--cor-primaria); border-color: var(--cor-primaria); color: var(--cor-primaria-texto); }
+.filtro-rotulo { font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+.filtro-numero { font-size: 1.3rem; font-weight: 700; line-height: 1.1; }
+.filtro-valor { font-size: .85rem; color: var(--cor-texto-suave); }
+.filtro-ativo .filtro-valor { color: var(--cor-primaria-fraca); }
+
+/* Autopreenchimento: a lista fica presa à caixa de busca e por cima do resto. */
+.campo-com-sugestoes { position: relative; display: block; }
+.sugestoes {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 20; margin: .2rem 0 0; padding: 0;
+  list-style: none; background: var(--cor-superficie); border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-pequeno); box-shadow: var(--sombra); max-height: 17rem; overflow-y: auto;
+}
+.sugestoes li { padding: .5rem .7rem; cursor: pointer; border-bottom: 1px solid var(--cor-borda); }
+.sugestoes li:last-child { border-bottom: 0; }
+.sugestao-ativa, .sugestoes li:hover { background: var(--cor-primaria-fraca); }
+.sugestao-nome { display: block; }
+.sugestao-ajuda { display: block; font-size: .78rem; color: var(--cor-texto-suave); }
+
+/* Código de barras desenhado: preto no branco, que é o que o leitor enxerga. */
+.codigo-de-barras { max-width: 100%; height: auto; display: block; }
+.codigo-de-barras .fundo { fill: #ffffff; }
+.codigo-de-barras .barras rect { fill: #000000; }
+.codigo-de-barras .numeros text { fill: #000000; }
+.celula-barras { width: 13rem; }
+.celula-barras .codigo-de-barras { width: 12rem; }
+
+.tabela-compras .ajuda, .tabela-contagens .ajuda, .tabela-sugestoes .ajuda { display: block; font-size: .78rem; }
+.tabela-auditoria td { font-size: .9rem; }
+.destaque-aberto { border-left: var(--faixa) solid var(--cor-sucesso); }
+
+/* Contagem: o campo do produto é o largo, porque é onde o leitor escreve. */
+.formulario-contagem { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) auto;
+  gap: .7rem; align-items: end; margin: .8rem 0 0; }
+.formulario-contagem .formulario-campo { display: flex; flex-direction: column; gap: .2rem; }
+.formulario-contagem label { font-size: .85rem; color: var(--cor-texto-suave); }
+.formulario-contagem input { width: 100%; }
+
+.bloco-sugestao { border-left: var(--faixa) solid var(--cor-borda-forte); }
+.bloco-repor { border-left-color: var(--cor-erro); }
+.bloco-parar { border-left-color: var(--cor-alerta); }
+.bloco-destravar { border-left-color: var(--cor-brasa); }
+.bloco-empurrar { border-left-color: var(--cor-sucesso); }
+.bloco-renegociar { border-left-color: var(--cor-primaria); }
+.pergunta-sugestao { font-size: 1.05rem; color: var(--cor-texto-suave); margin: .2rem 0 .6rem; }
+
+@media (max-width: 48rem) {
+  .formulario-contagem { grid-template-columns: minmax(0, 1fr); }
+  .filtro { min-width: 0; flex: 1 1 8rem; }
+  .celula-barras, .celula-barras .codigo-de-barras { width: 10rem; }
+}
+
+@media (max-width: 48rem) {
+  /* Catorze telas no menu tomavam a primeira tela inteira do celular antes de a pessoa
+     ler qualquer coisa. Agora o menu abre no botão e começa fechado. */
+  .botao-menu {
+    display: block; margin: 0 .9rem .6rem; padding: .5rem .9rem; cursor: pointer;
+    background: rgba(255, 255, 255, .12); color: var(--cor-escuro-texto);
+    border: 1px solid rgba(255, 255, 255, .3); border-radius: var(--raio-pequeno);
+    font-weight: 700; text-align: center;
+  }
+  .botao-menu::before { content: "☰ "; }
+  #abrir-menu:not(:checked) ~ .topo-menu { display: none; }
+  #abrir-menu:focus-visible ~ .botao-menu { outline: 3px solid var(--cor-foco); outline-offset: 2px; }
+  .menu { flex-direction: column; align-items: stretch; }
+  .menu a { text-align: left; }
+  /* A fileira de apoio continua menor e em caixa alta, mas aqui ela entra no mesmo
+     menu recolhido, abaixo de um fio, para a ordem de importância se manter. */
+  .menu-apoio { margin-top: .4rem; padding-top: .5rem; }
+  .menu-apoio a { min-height: 44px; }
+}
+
+/* ------------------------------------------- acabamento geral (1.15.0)
+   O Edson pediu um padrão sofisticado valendo para todas as páginas. O que faz isso
+   não é enfeite: é o título em serifa, o fio de latão, o espaço respirando igual em
+   toda tela e o rodapé discreto. Tudo sai dos tokens do :root, então muda num lugar. */
+.rodape p { margin: 0; }
+
+/* Barra de progresso (transferência de conhecimento). A porcentagem também está
+   escrita ao lado: a barra sozinha não informa quem não vê bem a cor. */
+.barra-progresso { margin: .9rem 0 .6rem; }
+.barra-progresso-trilha {
+  height: .8rem; border-radius: 999px; background: var(--cor-superficie-2);
+  border: 1px solid var(--cor-borda); overflow: hidden;
+}
+.barra-progresso-feita {
+  height: 100%; min-width: .2rem;
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-latao));
+}
+.barra-progresso-legenda { margin: .5rem 0 0; font-size: .92rem; color: var(--cor-texto-suave); }
+
+/* ---------------------------------------- contagem pela câmera (celular)
+   A moldura mantém a proporção do vídeo e o alvo no meio mostra onde mirar: sem ele a
+   pessoa aponta para o produto inteiro e a etiqueta sai de foco. */
+.camera-moldura {
+  position: relative; background: #000; border-radius: var(--raio); overflow: hidden;
+  aspect-ratio: 4 / 3;
+}
+.camera-moldura video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* A faixa branca NÃO é decoração: é exatamente o pedaço da imagem que o leitor
+   analisa. Os quatro números são os mesmos do ALVO em static/js/camera-codigo.js, e
+   mudar um sem o outro faz a pessoa mirar onde o sistema não está olhando — que foi
+   metade do motivo de o S24 FE não ler nada (21/10/2026). */
+.camera-alvo {
+  position: absolute; left: 4%; right: 4%; top: 26%; height: 48%;
+  border: 3px solid rgba(255, 255, 255, .9); border-radius: var(--raio-pequeno);
+  box-shadow: 0 0 0 100rem rgba(0, 0, 0, .3);
+}
+.camera-recado { margin: .7rem 0 0; font-weight: 600; }
+.camera-recado-ruim { color: var(--cor-erro); }
+
+/* As leituras aparecem de cima para baixo, a mais nova primeiro, com a cor dizendo se
+   bate com o SET. A cor não vem sozinha: o texto diz o que falta ou sobra. */
+.lista-leituras { list-style: none; padding: 0; margin: 0; display: grid; gap: .4rem; }
+.lista-leituras li {
+  padding: .6rem .8rem; border: 1px solid var(--cor-borda); border-radius: var(--raio-pequeno);
+  border-left: var(--faixa) solid var(--cor-borda-forte); background: var(--cor-superficie);
+}
+.lista-leituras strong { display: block; }
+.lista-leituras span { font-size: .88rem; color: var(--cor-texto-suave); }
+.leitura-bate { border-left-color: var(--cor-sucesso); }
+.leitura-difere { border-left-color: var(--cor-alerta); background: var(--cor-alerta-fraca); }
+.leitura-vazia { border-left-color: var(--cor-borda); color: var(--cor-texto-suave); }
+
+/* ------------------------------------- sugestões da equipe e ticket médio (1.16.0) */
+.formulario-sugestao {
+  display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  align-items: end;
+}
+.formulario-sugestao .campo-largo { grid-column: 1 / -1; }
+.formulario-sugestao textarea { width: 100%; }
+.formulario-sugestao button { justify-self: start; }
+.obrigatorio { font-weight: 400; color: var(--cor-texto-suave); font-size: .85em; }
+
+.lista-sugestoes { list-style: none; padding: 0; margin: 0; display: grid; gap: .7rem; }
+.sugestao {
+  padding: .8rem 1rem; background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda); border-left: var(--faixa) solid var(--cor-borda-forte);
+  border-radius: var(--raio-pequeno);
+}
+.sugestao-cabeca { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: space-between; align-items: baseline; }
+.sugestao-estado {
+  font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--cor-texto-suave);
+}
+.sugestao-linha { margin: .2rem 0; font-size: .92rem; color: var(--cor-texto-suave); }
+.sugestao-observacao { margin: .3rem 0; }
+.sugestao-resposta {
+  margin: .5rem 0 0; padding: .5rem .7rem; background: var(--cor-superficie-2);
+  border-radius: var(--raio-pequeno); font-size: .92rem;
+}
+/* A cor repete o que está escrito na etiqueta de estado, nunca informa sozinha. */
+.situacao-aberta { border-left-color: var(--cor-alerta); }
+.situacao-comprar { border-left-color: var(--cor-primaria); }
+.situacao-comprada { border-left-color: var(--cor-sucesso); }
+.situacao-descartada { border-left-color: var(--cor-borda-forte); }
+.formulario-resposta { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; align-items: center; }
+.formulario-resposta input[type="text"] { flex: 1 1 14rem; min-width: 0; }
+
+.tabela-ticket td.numerico strong { font-size: 1.02rem; }
+.tabela-ticket .ajuda { display: block; font-size: .76rem; }
+
+@media (max-width: 48rem) {
+  .formulario-sugestao { grid-template-columns: minmax(0, 1fr); }
+  .formulario-sugestao button { justify-self: stretch; }
+  .formulario-resposta { flex-direction: column; align-items: stretch; }
+}
+
+/* A foto da prateleira aparece pequena na lista de leituras: ela é lembrete, não
+   galeria. Quem precisa ver grande abre pelo endereço dela. */
+.leitura-foto {
+  display: block; margin-top: .4rem; width: 7rem; height: 7rem; object-fit: cover;
+  border-radius: var(--raio-pequeno); border: 1px solid var(--cor-borda);
+}
+.camera-acoes { display: flex; flex-wrap: wrap; gap: .5rem; }
+.camera-qual-leitor:empty { display: none; }
+/* Lanterna acesa é estado, e botão que não muda de cara quando é ligado faz a pessoa
+   tocar duas vezes e apagar o que acabou de acender. */
+.camera-acoes [aria-pressed="true"] {
+  background: var(--cor-brasa); border-color: var(--cor-brasa); color: #fff;
+}
+
+/* Lista de compra (1.17.0): o começo da lista vem em cartões de fornecedor, porque a
+   decisão é "para quem eu ligo primeiro", e só depois vem a tabela produto a produto. */
+.cartoes-fornecedor {
+  display: grid; gap: 1rem; margin-top: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+}
+.cartao-fornecedor {
+  border: 1px solid var(--cor-borda); border-left: 4px solid var(--cor-brasa);
+  border-radius: var(--raio); padding: 1rem; background: #fff;
+}
+.cartao-fornecedor h3 { margin: 0 0 .25rem; font-size: 1rem; line-height: 1.3; }
+.cartao-fornecedor-valor { margin: 0 0 .5rem; font-size: 1.5rem; font-weight: 700; color: var(--cor-brasa); }
+.aviso-parado {
+  margin: .75rem 0 0; padding: .5rem .6rem; border-radius: var(--raio);
+  background: #fdf3e7; border: 1px solid var(--cor-alerta); font-size: .9rem;
+}
+
+/* Alertas por e-mail (1.22.0): os três relatórios são três itens com dois botões cada.
+   Nome próprio, e não .cartao-fornecedor: as duas telas se parecem hoje e não têm por
+   que mudar juntas amanhã. */
+.cartoes-relatorio {
+  display: grid; gap: 1rem; margin-top: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+}
+.cartao-relatorio {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--cor-borda); border-left: 4px solid var(--cor-brasa);
+  border-radius: var(--raio); padding: 1rem; background: var(--cor-superficie);
+}
+.cartao-relatorio h3 { margin: 0; font-size: 1.05rem; line-height: 1.3; }
+.cartao-relatorio-quando {
+  margin: .15rem 0 .5rem; font-size: .72rem; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--cor-texto-suave);
+}
+.cartao-relatorio .ajuda { margin: 0 0 .75rem; }
+/* margin-top: auto encosta o rodapé do cartão embaixo: com textos de tamanhos
+   diferentes, os botões dos três cartões ficam na mesma linha. */
+.cartao-relatorio-ultimo { margin: auto 0 .75rem; font-size: .9rem; }
+.cartao-relatorio-acoes { display: flex; flex-wrap: wrap; gap: .5rem; }
+.cartao-relatorio-acoes form { margin: 0; }
+/* white-space: normal porque a linha de detalhe é FRASE, e ela mora dentro de
+   td.numerico, que é nowrap para os números não quebrarem. Sem isto a explicação da
+   estação ("de 36 para 35: no ano passado...") saía numa linha só, esticava a tabela
+   para 557 px num visor de 390 e sumia atrás da rolagem lateral. */
+.tabela-compra .linha-detalhe { display: block; font-weight: 400; font-size: .85rem; color: var(--cor-texto-suave); white-space: normal; }
+/* O ano passado explicando a quantidade (1.32.0). É motivo, não alerta: cor da casa,
+   sem fundo e sem ícone, para não competir com o selo da situação na mesma linha. */
+.tabela-compra .linha-detalhe.estacao { color: var(--cor-primaria); }
+/* A conta do estoque e a janela de venda são EXPLICAÇÃO, não aviso: ficam no tom
+   suave da linha de detalhe e não disputam com a situação em vermelho. */
+.tabela-compra .linha-detalhe.movimento,
+.tabela-compra .linha-detalhe.janela { color: var(--cor-texto-suave); }
+/* O saldo negativo corrige um número visível ao lado dele: a coluna TEM mostra -69 e a
+   quantidade ignora isso. Mesmo assim fica no tom suave das outras explicações, porque
+   são 952 das 2.234 linhas: âmbar em metade da tela deixa de chamar atenção, e a
+   explicação inteira (com a contagem) está no cartão "Como esta lista é feita". */
+.tabela-compra .linha-detalhe.saldo-negativo { color: var(--cor-texto-suave); }
+/* Valor em reais não parte no meio: "prende R$" numa linha e "130,00" na outra lê como
+   defeito. A célula COMPRAR é estreita, e é onde isso acontece. */
+.tabela-compra .linha-detalhe .inteiro { white-space: nowrap; }
+/* Quanto tempo a quantidade dura e quanto dinheiro ela prende. Tom suave no caso normal;
+   acima de um ano de venda numa compra só, âmbar — é o erro que custou R$ 227 mil parados
+   na prateleira, e quem está digitando a quantidade tem que ver a frase mudar. */
+.tabela-compra .linha-detalhe.duracao { color: var(--cor-texto-suave); }
+.tabela-compra .linha-detalhe.duracao.demais { color: var(--cor-alerta); font-weight: 600; }
+.selo {
+  display: inline-block; padding: .15rem .5rem; border-radius: 999px;
+  font-size: .8rem; font-weight: 600; white-space: nowrap;
+}
+.selo-faltando { background: var(--cor-erro); color: #fff; }
+.selo-abaixo_do_minimo { background: var(--cor-alerta); color: #3a2a12; }
+.selo-vai_faltar { background: var(--cor-borda-forte); color: #fff; }
+
+/* Carro-chefe e alerta de 30% (1.40.0, pedido de 22/10/2026). O carro-chefe ganha selo e
+   um fio de latão na linha, sem pintar a linha inteira: a cor forte fica para o alerta,
+   que é o que pede ação. "% do ideal" é texto suave no caso comum; em vermelho só quando
+   cai ao alerta. */
+.cartao-carro-chefe { border-left: 4px solid var(--cor-erro); }
+.selo-carro-chefe {
+  background: var(--cor-primaria-fraca); color: var(--cor-primaria);
+  border: 1px solid var(--cor-latao); margin-left: .3rem; vertical-align: middle;
+}
+.selo-alerta { background: var(--cor-erro-fraca); color: var(--cor-erro); margin-left: .3rem; }
+.tabela-compra tr.linha-carro-chefe > th { box-shadow: inset 4px 0 0 var(--cor-latao); }
+.tabela-compra .linha-detalhe.do-ideal { color: var(--cor-texto-suave); white-space: nowrap; }
+.tabela-compra .linha-detalhe.do-ideal.em-alerta { color: var(--cor-erro); font-weight: 600; }
+/* O porquê da linha, recolhido. Sem display: flex no summary: ele perde o triângulo
+   (armadilha da 1.35.0) e o bloco fechado vira texto que ninguém clica. */
+.por-que-da-linha { margin-top: .25rem; }
+.por-que-da-linha > summary {
+  display: list-item; min-height: 0; /* o summary global é flex, e flex apaga o triângulo */
+  cursor: pointer; font-size: .85rem; color: var(--cor-primaria); font-weight: 400;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.por-que-da-linha[open] > summary { margin-bottom: .2rem; }
+.regra-do-alerta { margin-top: 1rem; }
+/* As telas que saíram do menu de Compras (1.40.1): uma fileira curta abaixo do título. */
+.mais-em-compras {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem 1.1rem;
+  margin: .9rem 0 0; font-size: .95rem;
+}
+.mais-em-compras .ajuda { margin: 0; }
+
+/* "O que fazer agora" (1.17.0): a primeira coisa da tela de abertura. Cada tarefa é uma
+   linha com o motivo à esquerda e o caminho à direita, com um fio de cor dizendo a
+   urgência. No celular o botão passa para baixo do texto. */
+.cartao-agenda { border-left: 4px solid var(--cor-brasa); }
+.agenda { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: .6rem; }
+.tarefa {
+  display: flex; gap: 1rem; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; padding: .7rem .9rem; border-radius: var(--raio);
+  border: 1px solid var(--cor-borda); border-left: 4px solid var(--cor-borda-forte);
+  background: #fff;
+}
+.tarefa div { min-width: min(18rem, 100%); flex: 1; }
+.tarefa strong { display: block; }
+.tarefa span { color: var(--cor-texto-suave); font-size: .92rem; }
+.tarefa-ruim { border-left-color: var(--cor-erro); background: var(--cor-erro-fraca); }
+.tarefa-atencao { border-left-color: var(--cor-alerta); background: #fdf6ea; }
+@media (max-width: 40rem) {
+  .tarefa .botao { width: 100%; text-align: center; }
+}
+.ticket-na-abertura {
+  font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 700; color: var(--cor-brasa);
+  margin: .2rem 0 .6rem; line-height: 1.1;
+}
+
+/* Com cinco cartões na primeira fileira (o ticket médio entrou na 1.17.0), o número de
+   sete dígitos não cabia na largura de cada cartão e quebrava em duas linhas. Classe
+   própria em vez de mexer na regra geral, que vale para as telas de quatro cartões.
+   Em 1.28.0 a conta passou a ser a largura do cartão (`cqi`) e não a da tela: a régua
+   de `vw` acertava no monitor do servidor e continuava quebrando "R$ 1.576.325,86" na
+   Visão geral, que é justamente a tela que o Edson mostra para o sogro. */
+.cartoes-cinco .cartao-valor { font-size: clamp(1.2rem, 2vw, 1.55rem); }
+.cartoes-cinco .cartao-valor { font-size: clamp(1.2rem, 10cqi, 1.55rem); }
+
+
+/* ======================================================================
+   Dashboard (1.18.0)
+   Gráficos desenhados aqui, sem biblioteca. Grade de uma coluna no celular com
+   minmax(0, 1fr): item de grid tem min-width auto e 1fr estoura a tela.
+   ====================================================================== */
+.cartoes-quatro { grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); }
+/* O faturamento do ano tem nove caracteres e quebrava o "R$" numa linha só dele. */
+.cartoes-quatro .cartao-valor { font-size: clamp(1.2rem, 2vw, 1.6rem); }
+.cartao-variacao {
+  display: inline-flex; align-items: baseline; gap: .3rem; margin-top: .2rem;
+  font-size: .85rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.cartao-variacao small { font-weight: 400; color: var(--cor-texto-suave); }
+.cartao-variacao.variacao-bom { color: var(--cor-sucesso); }
+.cartao-variacao.variacao-ruim { color: var(--cor-erro); }
+.cartao-variacao.variacao-neutro { color: var(--cor-texto-suave); }
+
+.duas-colunas, .tres-colunas {
+  display: grid; gap: var(--espaco); align-items: start; margin-top: var(--espaco);
+}
+.duas-colunas { grid-template-columns: minmax(0, 1fr); }
+.tres-colunas { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 60rem) {
+  .duas-colunas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tres-colunas { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Colunas do faturamento mês a mês: duas barras por mês, este ano e o mesmo mês do ano
+   passado, na mesma escala. Era um risco tracejado atravessando a coluna, e aí a escala
+   do gráfico contava um número que não era barra nenhuma: nada encostava no topo e o
+   gráfico parecia cortado (o "continua truncado" de 08/10/2026). Com as duas como barra,
+   a mais alta das duas sempre fecha o trilho. */
+.grafico-colunas .legenda .marca-ano-passado { background: var(--cor-borda-forte); }
+/* A coluna tem largura mínima porque o rótulo ("set/26") não encolhe: com treze meses
+   numa tela de celular a coluna ficava com 26px e o rótulo com 37px, e os 11px de sobra
+   de cada uma criavam barra horizontal na página inteira. Com o mínimo de pé, quem não
+   cabe fica atrás de rolagem dentro do próprio gráfico, que é contida e não vaza. */
+.colunas {
+  list-style: none; padding: 0 0 .3rem; margin: 0; display: flex; gap: .35rem;
+  align-items: end; overflow-x: auto; overscroll-behavior-x: contain;
+}
+/* Nome próprio, e não .coluna: a coluna do quadro de processos (lá em cima neste
+   arquivo) tem fundo e padding de cartão, e vinha junto sem ninguém pedir — cada mês
+   virava uma caixa cinza do tamanho do trilho, o trilho sumia dentro dela e a barra
+   parecia flutuando no meio do nada. Foi o que o Edson chamou de gráfico bugado. */
+.coluna-mes {
+  flex: 1 0 2.6rem; min-width: 2.6rem;
+  display: flex; flex-direction: column; align-items: center; gap: .25rem;
+}
+.coluna-valor { font-size: .62rem; color: var(--cor-texto-suave); font-variant-numeric: tabular-nums; }
+.coluna-trilho {
+  position: relative; width: 100%; height: 9rem;
+  background: var(--cor-superficie-2); border-radius: var(--raio-pequeno);
+  display: flex; align-items: end; gap: 2px; padding: 0 2px;
+}
+/* Duas barras por mês, este ano e o ano passado, na mesma escala. Cada uma é metade da
+   coluna; min-width 0 porque item de flex não encolhe abaixo do conteúdo sem isso. */
+.coluna-barra {
+  flex: 1 1 0; min-width: 0; border-radius: var(--raio-pequeno); min-height: 2px;
+}
+.coluna-barra-agora { background: var(--cor-sucesso); }
+.coluna-mes-abaixo .coluna-barra-agora { background: var(--cor-brasa); }
+.coluna-barra-antes { background: var(--cor-borda-forte); }
+/* Mês sem número do ano passado: o lugar da barra fica lá, vazio, para a barra deste
+   ano não dobrar de largura e parecer outra coisa. */
+.coluna-barra-sem { background: none; min-height: 0; }
+/* Mês que ainda não fechou: listrado, para ninguém comparar de igual para igual com os
+   meses inteiros do lado. */
+.coluna-mes-parcial .coluna-barra-agora {
+  background-image: repeating-linear-gradient(
+    45deg, rgba(255, 255, 255, .45) 0 4px, rgba(255, 255, 255, 0) 4px 9px);
+}
+.coluna-parcial {
+  font-size: .62rem; color: var(--cor-texto-suave); line-height: 1.1; text-align: center;
+  min-height: 1.1em;  /* reservado em toda coluna, para o trilho não subir no mês parcial */
+}
+.coluna-rotulo { font-size: .72rem; font-weight: 700; }
+.coluna-extra { font-size: .68rem; color: var(--cor-texto-suave); font-variant-numeric: tabular-nums; }
+@media (max-width: 40rem) {
+  .coluna-valor { display: none; }
+  .coluna-trilho { height: 7rem; }
+  .coluna-rotulo { font-size: .66rem; }
+  .coluna-extra, .coluna-parcial { font-size: .62rem; }
+  /* No celular a coluna tem 2,6rem e "até dia 20" ocupa duas linhas: o espaço
+     reservado tem que ser o de duas, senão o trilho do mês parcial sobe. */
+  .coluna-parcial { min-height: 2.2em; }
+}
+
+/* Curva ABC: só a frase que resume, acima da lista de barras comum da tela. O desenho
+   próprio que havia aqui (duas faixas repartidas em A, B e C) saiu na 1.20.2: o Edson
+   leu as duas versões anteriores como confusas, e a lista de barras ele já lê sem
+   explicação nenhuma. */
+.abc-frase { margin: .2rem 0 .8rem; font-size: 1.02rem; }
+
+/* Lista de barras horizontais: campeões, dia da semana, pagamento, hora. */
+.barras-lista { list-style: none; padding: 0; margin: 0; }
+.barras-lista li {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem .6rem;
+  align-items: baseline; padding: .4rem 0; border-bottom: 1px solid var(--cor-borda);
+}
+.barras-lista li:last-child { border-bottom: 0; }
+.barras-nome { min-width: 0; overflow-wrap: anywhere; }
+.barras-nome small { display: block; color: var(--cor-texto-suave); font-size: .78rem; }
+.barras-valor { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.barras-lista-grafico .barras-trilho {
+  grid-column: 1 / -1; height: .5rem; background: var(--cor-superficie-2);
+  border-radius: 999px; overflow: hidden; display: block;
+}
+.barras-preenchida { display: block; height: 100%; background: var(--cor-primaria); }
+
+/* Tela do certificado (1.18.0). Tabela de rótulo e valor, e a impressão digital, que é
+   um texto longo de pares e tem que poder quebrar em qualquer ponto no celular. */
+.tabela-ficha { width: 100%; border-collapse: collapse; }
+.tabela-ficha th, .tabela-ficha td {
+  text-align: left; vertical-align: top; padding: .45rem .6rem .45rem 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+.tabela-ficha tr:last-child th, .tabela-ficha tr:last-child td { border-bottom: 0; }
+.tabela-ficha th { width: 16rem; color: var(--cor-texto-suave); font-weight: 600; }
+@media (max-width: 40rem) {
+  .tabela-ficha th, .tabela-ficha td { display: block; width: auto; border-bottom: 0; }
+  .tabela-ficha td { padding-top: 0; padding-bottom: .7rem; }
+}
+.impressao { overflow-wrap: anywhere; font-size: .82rem; line-height: 1.5; }
+
+/* Faixa do endereço sem segurança (1.19.0). Cor de atenção e não de erro: o sistema
+   funciona por HTTP; o que não funciona é a câmera do celular. */
+.faixa-sem-seguranca { background: var(--cor-alerta-fraca); border-bottom-color: var(--cor-alerta); }
+.faixa-sem-seguranca p { margin: 0 auto; padding: .45rem 1rem; max-width: var(--largura); font-size: .9rem; }
+/* O endereço inteiro vai escrito como link, e endereço não tem espaço onde quebrar: num
+   visor de 390 px ele empurrava TODA página do sistema 9 px para o lado, porque a faixa
+   é da base. Achado medindo a tela da câmera em 21/10/2026. Vale para o aviso da tela da
+   câmera pelo mesmo motivo: aviso que precisa ser lido inteiro não pode esconder a borda. */
+.faixa-sem-seguranca a, #aviso-sem-https a { overflow-wrap: anywhere; }
+
+/* Caixa (1.19.0). A tabela de turnos tem dez colunas e precisa rolar no celular; os
+   selos da coluna Confere têm nome próprio em vez de reaproveitar .selo-faltando, que é
+   de estoque — duas regras com o mesmo nome em pontos diferentes do arquivo já
+   estragaram o botão Filtrar uma vez. */
+/* Dez colunas: a largura é do conteúdo, não do nowrap na tabela inteira. Com nowrap em
+   tudo, a última coluna (Confere, a que diz se o caixa fechou) saía da área visível no
+   computador — a informação mais importante da linha ficava escondida. */
+.tabela-caixas { width: 100%; }
+.tabela-caixas th, .tabela-caixas td { padding-left: .5rem; padding-right: .5rem; }
+.tabela-caixas td small { color: var(--cor-texto-suave); white-space: nowrap; }
+.tabela-caixas td.numerico strong { font-size: 1.02rem; }
+.selo-caixa-aberto { background: var(--cor-alerta); color: #3a2a12; }
+.selo-caixa-confere { background: var(--cor-sucesso); color: #fff; }
+.selo-caixa-difere { background: var(--cor-erro); color: #fff; }
+.lista-caixas-esquecidos { margin: .5rem 0 0; padding-left: 1.1rem; display: grid; gap: .3rem; }
+/* A conferência do turno tem duas colunas e fica dentro do cartão, sem rolagem: por
+   isso NÃO herda o nowrap da tabela de turnos, que estourava 7 px no celular. */
+.tabela-conferencia { width: 100%; }
+.tabela-conferencia td.numerico { white-space: nowrap; }
+
+/* Margem e markup (1.20.0). A tabela de produtos é larga (nove colunas), então só os
+   números levam nowrap: a lição da tela de caixa, onde o nowrap na tabela inteira
+   empurrou a última coluna para fora da área visível no computador. */
+.tabela-margem, .tabela-grupos-margem { width: 100%; }
+.tabela-margem td.numerico, .tabela-grupos-margem td.numerico { white-space: nowrap; }
+.tabela-margem .linha-detalhe {
+  display: block; font-weight: 400; font-size: .78rem; color: var(--cor-texto-suave);
+}
+.tabela-margem .selo { margin-top: .2rem; }
+.selo-abaixo { background: var(--cor-erro); color: #fff; }
+.selo-no_custo { background: var(--cor-alerta); color: #3a2a12; }
+.selo-sem_custo { background: var(--cor-borda-forte); color: #2a2319; }
+.selo-markup_errado { background: var(--cor-latao-fraca); color: #4a3516; border: 1px solid var(--cor-latao); }
+/* O ! da coluna "% no SET": o campo do SET está diferente do que o preço de hoje dá. */
+.marca-divergente {
+  display: inline-block; margin-left: .2rem; width: 1.1rem; height: 1.1rem; line-height: 1.1rem;
+  text-align: center; border-radius: 999px; font-weight: 700; font-size: .78rem;
+  background: var(--cor-alerta); color: #fff;
+}
+/* As duas contas lado a lado, no cartão que explica a diferença. Uma coluna no celular
+   é minmax(0, 1fr), nunca 1fr: item de grid tem min-width auto e estoura a tela. */
+.conta-markup {
+  display: grid; gap: var(--espaco); margin: 1rem 0 .5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+.conta-markup > div {
+  background: var(--cor-superficie-2); border-radius: var(--raio); padding: .7rem .9rem;
+}
+.conta-markup dt { font-weight: 700; color: var(--cor-primaria); }
+.conta-markup dd { margin: .2rem 0 0; }
+.conta-markup dd strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.conta-markup dd .ajuda { display: block; font-size: .82rem; }
+.alertas-margem { margin: .5rem 0 0; padding-left: 1.1rem; display: grid; gap: .45rem; }
+/* Valor de seis dígitos não cabe no tamanho normal do cartão e quebrava o "R$" numa
+   linha e o número na outra. Aqui ele encolhe um pouco e fica inteiro. */
+.cartao-numero .cartao-valor.valor-longo {
+  font-size: clamp(1.3rem, 2.3vw, 1.65rem); white-space: nowrap;
+}
+
+/* ------------------------------------------- conferência do backup do SET */
+/* O quadro usa a família .estado-dados só pela cor e pela bolinha de nível (é a mesma
+   gravidade: verde passa, amarelo ressalva, vermelho não importa). O desenho de dentro
+   é próprio, e a regra de form vem DEPOIS da de .estado-dados de propósito, para os
+   dois botões ficarem lado a lado em vez de um por linha. */
+.ficha-backup { display: flex; flex-wrap: wrap; gap: .6rem 2rem; margin: .9rem 0 0; }
+.ficha-backup dt {
+  font-size: .7rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+.ficha-backup dd {
+  margin: .15rem 0 0; font-weight: 600; font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.motivos-backup { margin: .9rem 0 0; padding-left: 1.1rem; display: grid; gap: .4rem; }
+.motivos-backup .motivo-impede { color: var(--cor-erro); font-weight: 600; }
+.motivos-backup .motivo-avisa { color: var(--cor-alerta); font-weight: 600; }
+.acoes-backup { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin: .9rem 0 0; }
+.conferencia-backup .acoes-backup form { margin: 0; }
+
+/* Endereço de e-mail é uma palavra só, sem espaço: "naoresponder@cabanadojacaranda.com.br"
+   não cabe numa linha de 390 px, vaza para fora do cartão e faz a PÁGINA rolar de lado.
+   O vazamento não muda a largura do elemento, então só aparece medindo scrollWidth. */
+.cartao-destaque p { overflow-wrap: anywhere; }
+
+/* Vendas do dia: a relação do que saiu, com custo e lucro. A tabela é a mesma do
+   ticket médio; o que muda é a linha de prejuízo, que precisa saltar aos olhos, e a
+   coluna de custo, que tem etiqueta quando o SET não gravou o custo. */
+.tabela-vendas-dia td { vertical-align: top; }
+.tabela-vendas-dia .ajuda { display: block; font-size: .76rem; }
+.tabela-vendas-dia .etiqueta { white-space: nowrap; }
+.tabela-vendas-dia .linha-prejuizo { background: var(--cor-erro-fraca); }
+.tabela-vendas-dia .linha-prejuizo td.numerico strong { color: var(--cor-erro); }
+
+/* Telegram na tela de alertas: a lista de conversas que o robô já conhece, cada uma com
+   o botão que a grava. Dois botões soltos abaixo do formulário (descobrir e testar)
+   precisam ficar lado a lado, e cada um é um form por causa do POST com csrf. */
+.lista-chats { list-style: none; margin: .9rem 0 0; padding: 0; display: grid; gap: .5rem; }
+.lista-chats li {
+  display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center;
+  justify-content: space-between; padding: .55rem .7rem;
+  border: 1px solid var(--cor-borda); border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+}
+.lista-chats form { margin: 0; }
+.lista-chats button { margin: 0; }
+.acoes-telegram { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-top: .6rem; }
+.acoes-telegram form { margin: 0; }
+.acoes-telegram button { margin: 0; }
+
+/* Conta do dinheiro vivo do turno (1.25.0). Nome próprio: nenhuma outra tela usa
+   .tabela-gaveta, e reaproveitar .tabela-ticket aqui quebraria as duas na primeira
+   mudança de qualquer uma. Duas colunas só, para caber nos 390 px do celular. */
+.tabela-gaveta { width: 100%; border-collapse: collapse; margin-top: .75rem; }
+.tabela-gaveta th, .tabela-gaveta td { padding: .5rem .25rem; border-bottom: 1px solid var(--cor-borda); }
+.tabela-gaveta th { text-align: left; font-weight: 500; color: var(--cor-texto-suave); }
+.tabela-gaveta td { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tabela-gaveta .saida td { color: var(--cor-brasa); }
+.tabela-gaveta .total th, .tabela-gaveta .total td {
+  border-top: 2px solid var(--cor-borda-forte); border-bottom: none;
+  font-weight: 700; font-size: 1.05rem; color: var(--cor-texto); padding-top: .65rem;
+}
+
+/* ------------------------------- conciliação bancária (1.25.0) */
+/* O extrato não é tabela: cada linha abre uma resposta embaixo (as contas candidatas, o
+   campo de anotar), e tabela com conteúdo de altura variável dentro da célula fica
+   ilegível no celular. Então é lista, e cada linha é um cartão. */
+.formulario-extrato { display: grid; gap: .75rem; margin: .8rem 0; max-width: 32rem; }
+.formulario-extrato label { display: grid; gap: .25rem; font-weight: 500; }
+.formulario-extrato small { font-weight: 400; color: var(--cor-texto-suave); }
+.formulario-extrato button { justify-self: start; }
+
+.linhas-extrato { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .75rem; }
+.linha-extrato {
+  border: 1px solid var(--cor-borda); border-radius: var(--raio); padding: .75rem .9rem;
+  background: var(--cor-superficie); box-shadow: inset .35rem 0 0 0 var(--cor-borda);
+}
+/* A cor da faixa diz, de longe, o que falta olhar. */
+.linha-extrato.linha-conferida { box-shadow: inset .35rem 0 0 0 var(--cor-sucesso); }
+.linha-extrato.linha-sem_conta { box-shadow: inset .35rem 0 0 0 var(--cor-borda-forte); }
+.linha-extrato.linha-nenhuma { box-shadow: inset .35rem 0 0 0 var(--cor-erro); }
+.linha-extrato.linha-varias { box-shadow: inset .35rem 0 0 0 var(--cor-alerta); }
+.linha-extrato.linha-entrada { opacity: .75; }
+
+.linha-topo { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: baseline; }
+.linha-data { font-variant-numeric: tabular-nums; color: var(--cor-texto-suave); white-space: nowrap; }
+.linha-descricao { flex: 1 1 14rem; font-weight: 500; overflow-wrap: anywhere; }
+.linha-descricao small { font-weight: 400; color: var(--cor-texto-suave); }
+.linha-valor { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: auto; }
+.linha-valor.valor-saida { color: var(--cor-brasa); }
+.linha-valor.valor-entrada { color: var(--cor-sucesso); }
+
+.linha-resposta { margin-top: .6rem; padding-top: .6rem; border-top: 1px solid var(--cor-borda); }
+.linha-resposta p { margin: 0 0 .5rem; }
+.linha-resposta form { margin: 0; }
+.resposta-ok { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; justify-content: space-between; }
+.resposta-ok p { margin: 0; }
+
+.candidatas { list-style: none; padding: 0; margin: 0 0 .75rem; display: grid; gap: .4rem; }
+.candidatas form {
+  display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: center;
+  background: var(--cor-superficie-2); border-radius: var(--raio); padding: .5rem .65rem;
+}
+.candidata-texto { flex: 1 1 18rem; }
+.candidata-texto .ajuda { display: block; }
+
+.formulario-sem-conta { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.formulario-sem-conta label { flex-basis: 100%; font-size: .85rem; color: var(--cor-texto-suave); }
+/* Mesma armadilha da busca: em coluna, `flex-basis` vira altura. Aqui o campo nasce com
+   `flex: 1 1 14rem` e, no celular, com altura automática. */
+.formulario-sem-conta input { flex: 1 1 14rem; min-width: 0; margin: 0; }
+
+@media (max-width: 40rem) {
+  .formulario-sem-conta input { flex: 0 0 auto; width: 100%; }
+  .candidatas form button, .formulario-sem-conta button { width: 100%; }
+  .linha-valor { margin-left: 0; }
+}
+
+/* Quantidade a comprar editável na lista de compra (1.28.0). O campo mora DENTRO da
+   célula da tabela, e não num formulário de página: a pessoa está lendo a linha do
+   produto e é ali que ela decide. Nome próprio, porque é a única tabela do sistema
+   em que se digita. */
+.celula-comprar { min-width: 11rem; }
+.ajuste-quantidade { display: flex; gap: .35rem; align-items: center; justify-content: flex-end; }
+/* Sem isto o campo herda o width: 100% de todo input de formulário e empurra a tabela
+   para fora da tela. Cinco caracteres é o que cabe de quantidade nesta loja. */
+.ajuste-quantidade input[type=text] {
+  width: 5rem; min-width: 0; text-align: right; padding: .35rem .45rem; min-height: 38px;
+}
+/* A soma que ele pediu em 20/10/2026: sugerida + à mão = total, escrita como conta.
+   Cada parcela é uma coluninha com o nome em cima do número, porque três números
+   seguidos sem rótulo não dizem qual é qual — e é o total que vai ao fornecedor. */
+.soma-da-quantidade { flex-wrap: wrap; gap: .25rem .4rem; }
+.soma-da-quantidade .parcela {
+  display: flex; flex-direction: column; align-items: flex-end; gap: .1rem; min-width: 0;
+}
+.soma-da-quantidade .rotulo-da-parcela {
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--cor-texto-suave); line-height: 1;
+}
+.soma-da-quantidade .valor-da-parcela { color: var(--cor-texto-suave); }
+/* O total é o número da decisão: é ele que vai no pedido, então é ele que tem peso. */
+.soma-da-quantidade .valor-do-total { font-size: 1.05rem; }
+.soma-da-quantidade .sinal-da-soma {
+  color: var(--cor-texto-suave); align-self: flex-end; padding-bottom: .1rem;
+}
+/* O campo da mão é o ÚNICO editável da conta, e mais estreito que o antigo total:
+   quem acrescenta digita 5, não 19. Escrito com `input[type=text].classe` porque a
+   regra genérica `input[type=text] { width: 100% }` tem a mesma especificidade da
+   classe sozinha e venceria por vir depois — foi assim que o campo da tela de pedidos
+   virou 279px e trouxe de volta a rolagem lateral da 1.30.0. */
+.soma-da-quantidade input[type=text].campo-a-mais {
+  width: 4.2rem; min-width: 0; max-width: none; text-align: right;
+  padding: .35rem .45rem; min-height: 38px;
+}
+.ajuste-quantidade button { padding: .35rem .6rem; font-size: .85rem; min-height: 38px; }
+.ajuste-voltar { display: inline; }
+/* Botão que age como link: desfazer não é uma ação de peso e um segundo botão marrom
+   ao lado do Salvar disputaria a atenção com ele. */
+.como-link {
+  background: none; border: 0; padding: 0; font: inherit; font-size: .85rem;
+  color: var(--cor-primaria); text-decoration: underline; cursor: pointer;
+}
+.como-link:hover { color: var(--cor-brasa); }
+.aviso-ajuste { color: var(--cor-erro); }
+/* O botão de gerar o pedido mora numa coluna estreita e quebrava em duas linhas, o que
+   fazia cada fornecedor ocupar o dobro da altura. Quem olha esta tela está escolhendo
+   entre cinco fornecedores: eles têm que caber na mesma tela. */
+.tabela-de-pedidos td .botao { white-space: nowrap; }
+
+@media (max-width: 40rem) {
+  /* Em coluna o campo e o botão empilham; sem isto o `flex` deixaria os dois com a
+     largura do texto e o dedo erraria o alvo. */
+  .ajuste-quantidade { flex-wrap: wrap; justify-content: flex-start; }
+  .ajuste-quantidade input[type=text] { flex: 0 0 auto; }
+}
+
+/* A prévia do timbre do pedido (1.28.0): ver no formulário como vai sair no papel,
+   porque o PDF só existe depois de salvar e ninguém salva para conferir vírgula. */
+.papel-timbrado {
+  display: flex; flex-direction: column; gap: .1rem; margin: 0;
+  padding: .9rem 1rem; border-left: 4px solid var(--cor-brasa);
+  background: var(--cor-superficie-2); border-radius: var(--raio);
+  font-size: .92rem; color: var(--cor-texto-suave);
+}
+.papel-nome { font-size: 1.15rem; color: var(--cor-texto); }
+
+/* ======================================================================
+   O tempo como indicador da Visão geral (1.29.0)
+   Fileira dos próximos dias, com o fim de semana marcado. Nome próprio para as classes
+   em vez de reaproveitar .cartoes-* ou .barras-*: aqui cada item é um dia, não um
+   número, e regra de outra tela mudando por cima desta já custou duas versões.
+   Grade de uma coluna no celular com minmax(0, 1fr): item de grid tem min-width auto
+   e 1fr estoura a tela de lado.
+   ====================================================================== */
+.cartao-tempo { --cor-faixa: var(--cor-primaria); }
+.cartao-tempo.nivel-ruim { --cor-faixa: var(--cor-erro); }
+.cartao-tempo.nivel-atencao { --cor-faixa: var(--cor-alerta); }
+.cartao-tempo.nivel-bom { --cor-faixa: var(--cor-sucesso); }
+
+.tempo-proximos {
+  list-style: none; padding: 0; margin: .2rem 0 .6rem;
+  display: grid; gap: .5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+}
+.tempo-dia {
+  display: flex; flex-direction: column; gap: .15rem; min-width: 0;
+  padding: .55rem .7rem; border: 1px solid var(--cor-borda); border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+}
+/* O fim de semana é o que importa nesta fileira: é quando a loja fatura. */
+.tempo-dia-fds { border-color: var(--cor-borda-forte); background: var(--cor-superficie); }
+.tempo-dia-fds .tempo-quando { color: var(--cor-texto); }
+.tempo-dia-chuva { border-left: 4px solid var(--cor-erro); }
+.tempo-quando { font-weight: 700; font-size: .95rem; }
+.tempo-quando small {
+  display: block; font-weight: 400; font-size: .76rem; color: var(--cor-texto-suave);
+}
+.tempo-como { font-size: .86rem; color: var(--cor-texto-suave); overflow-wrap: anywhere; }
+
+/* ------------------------------------------- lista de compra no celular (1.30.0)
+   A tabela de compra rolava de lado no celular (min-width: 46rem) e a coluna "Comprar",
+   que é a razão desta tela, ficava fora do visor atrás de uma rolagem lateral que
+   ninguém descobre: para quem abria pelo telefone a quantidade simplesmente não
+   aparecia. No estreito cada linha vira um cartão, com o rótulo de cada número escrito
+   ao lado dele e o campo da quantidade no fim, onde o dedo alcança.
+
+   A mesma regra vale para toda tabela em que a coluna que DECIDE é a última: a
+   conferência da nota (a coluna "O que diz"), a lista de pedidos e, desde a 1.39.0, as
+   três listas da tela Organizar. Basta a tabela ter data-rotulo em cada célula e
+   `tabela-em-cartao` no quadro.
+
+   A classe é UMA de propósito. Até a 1.38.0 cada regra listava os três nomes de tabela,
+   quinze seletores ao todo, e a tabela nova que esquecesse um deles voltava a rolar de
+   lado — calada, porque rolagem lateral não quebra teste nenhum. As regras específicas
+   de cada tabela (quais números cabem lado a lado, qual célula fecha o cartão) seguem
+   com o nome dela, que é onde a diferença realmente existe. */
+@media (max-width: 52rem) {
+  .tabela-em-cartao {
+    /* overflow nos DOIS eixos. Estas tabelas também são .tabela-dez, que tem
+       overflow-y: auto; e pelo CSS "visível de um lado e recortado do outro" não
+       existe: overflow-x: visible sozinho voltava a computar como auto. A rolagem
+       lateral que o cartão existe para não ter continuava lá, só escondida enquanto
+       o conteúdo coubesse. */
+    overflow: visible; max-height: none;
+  }
+  .tabela-em-cartao table {
+    min-width: 0;
+  }
+  /* A tabela deixa de ser TABELA, e não só as linhas e as células.
+     A linha e a célula já viravam bloco desde a 1.30.0, mas o <table> continuava com
+     `display: table`: o navegador então embrulha as células-bloco numa célula anônima,
+     e uma tabela nunca encolhe abaixo da largura mínima dessa célula — 356px numa tela
+     de 390, com `width: 100%` e tudo. A página voltava a rolar de lado e o campo da
+     quantidade saía da tela, que é o defeito da 1.30.0 de novo. Com a tabela, o corpo e
+     a legenda em bloco não há algoritmo de tabela nenhum para esticar nada. */
+  .tabela-em-cartao table,
+  .tabela-em-cartao tbody,
+  .tabela-em-cartao caption {
+    display: block;
+  }
+  .tabela-em-cartao caption {
+    padding: .7rem .9rem .35rem;
+  }
+  /* O cabeçalho não tem lugar num cartão: o rótulo de cada número vem do data-rotulo. */
+  .tabela-em-cartao thead {
+    display: none;
+  }
+  .tabela-em-cartao tbody tr {
+    display: block; padding: .75rem .9rem; border-bottom: 1px solid var(--cor-borda);
+  }
+  .tabela-em-cartao tbody tr:last-child { border-bottom: 0; }
+  .tabela-em-cartao tbody th, .tabela-em-cartao tbody td {
+    display: block; border: 0; padding: .1rem 0; text-align: left;
+  }
+  .tabela-em-cartao td[data-rotulo]::before {
+    content: attr(data-rotulo) ": "; color: var(--cor-texto-suave);
+    font-size: .78rem; text-transform: uppercase; letter-spacing: .04em;
+  }
+  /* Tem, a caminho e mínimo são números curtos: um por linha esticaria o cartão à toa. */
+  .tabela-de-compra .celula-estoque { display: inline-block; margin-right: 1.1rem; }
+  .tabela-de-compra .celula-comprar {
+    margin-top: .45rem; padding-top: .5rem; border-top: 1px dashed var(--cor-borda);
+  }
+  .tabela-de-compra .ajuste-quantidade { justify-content: flex-start; }
+  /* No cartão o fio do carro-chefe sai do nome (encostava no texto) e vai para a borda do
+     cartão inteiro. */
+  .tabela-de-compra tbody tr.linha-carro-chefe { box-shadow: inset 4px 0 0 var(--cor-latao); }
+  .tabela-compra tr.linha-carro-chefe > th { box-shadow: none; }
+  /* Os quatro números da conferência são curtos: cabem lado a lado no cartão. */
+  .tabela-de-conferencia tbody td.numerico { display: inline-block; margin-right: 1.1rem; }
+  /* A coluna que decide fecha o cartão, separada, para o olho parar nela. */
+  .tabela-de-conferencia td[data-rotulo="O que diz"] {
+    margin-top: .45rem; padding-top: .5rem; border-top: 1px dashed var(--cor-borda);
+  }
+  /* Custo e total do pedido são curtos: lado a lado. A QUANTIDADE, que é o campo que
+     se edita, fecha o cartão separada — a mesma regra da coluna Comprar da lista.
+     A segunda regra repete `td.celula-quantidade` de propósito: escrita só com a
+     classe ela PERDIA de `td.numerico` acima e a quantidade virava inline-block, o
+     que jogava o campo para fora da tela de 390px — o defeito da 1.30.0 de volta. */
+  .tabela-de-pedidos tbody td.numerico { display: inline-block; margin-right: 1.1rem; }
+  .tabela-de-pedidos tbody td.celula-quantidade {
+    display: block; margin-right: 0; margin-top: .45rem; padding-top: .5rem;
+    border-top: 1px dashed var(--cor-borda);
+    /* `td.numerico` é nowrap para número não quebrar no meio, e a quantidade herdava
+       isso: o rótulo do cartão, o campo e o "escolhida pela loja" ficavam numa linha só
+       de 328px dentro de um quadro de 308. Aqui a célula tem texto, então quebra. */
+    white-space: normal;
+  }
+  .tabela-de-pedidos tbody td.celula-quantidade .ajuda { display: block; }
+}
+
+/* O filtro da comparação (1.30.0): período pronto de um lado, meses escolhidos do outro,
+   cada caminho com o seu botão. Os dois meses andam num grupo só, senão o "De" termina
+   uma fileira e o "Até" começa a seguinte. O seletor tem largura máxima porque nome de
+   grupo de produto é comprido e espremia o resto da fileira. */
+.filtros-meses { display: flex; flex-wrap: wrap; gap: var(--espaco); align-items: end; }
+.filtros-comparar select { max-width: 15rem; }
+.filtros-ou { color: var(--cor-texto-suave); font-size: .9rem; padding-bottom: .5rem; }
+@media (max-width: 52rem) {
+  .filtros-ou { flex-basis: 100%; padding: 0; }
+}
+
+/* Dados da empresa (1.35.0). O timbre desenhado igual ao papel: logotipo à esquerda,
+   nome da loja grande, razão social e os dados embaixo. O Edson pediu para evidenciar o
+   nome fantasia — é por ele que o fornecedor conhece a loja —, e a razão social fica em
+   segundo plano, que é o papel dela: aparecer na nota.
+   O logotipo tem largura fixa em rem (não em %) para não encolher junto com o texto; no
+   celular ele desce para cima do nome, em vez de espremer a coluna de texto. */
+.empresa-timbre { display: flex; gap: 1.25rem; align-items: flex-start; }
+.empresa-logo { width: 6.5rem; height: 6.5rem; flex: 0 0 auto; }
+.empresa-identificacao { flex: 1 1 18rem; min-width: 0; }
+.empresa-nome {
+  margin: 0; font-size: 1.6rem; font-weight: 700; line-height: 1.15;
+  color: var(--cor-primaria);
+}
+.empresa-razao {
+  margin: .15rem 0 0; font-size: .95rem; color: var(--cor-texto-suave);
+  text-transform: uppercase; letter-spacing: .02em;
+}
+.empresa-dados { margin: .9rem 0 0; display: grid; gap: .35rem; }
+.empresa-dados > div { display: flex; flex-wrap: wrap; gap: .4rem; }
+.empresa-dados dt {
+  flex: 0 0 9.5rem; font-size: .82rem; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--cor-texto-suave);
+}
+.empresa-dados dd { margin: 0; flex: 1 1 12rem; min-width: 0; }
+.empresa-secao h2 { margin-top: 0; }
+
+/* Os campos do bloco em DUAS colunas a partir de 60rem. Em monitor de 1600 px uma
+   coluna de doze caixas de 640 px deixa dois terços da tela vazios, e foi essa tela
+   que ele mandou desenhar. `minmax(0, 1fr)` e não `1fr`: campo largo não estoura a
+   coluna. Abaixo de 60rem fica uma coluna só, que é o padrão aqui embaixo. */
+.campos-em-grade { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 1.75rem; }
+
+@media (min-width: 60rem) {
+  .campos-em-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Endereço, razão social, e-mail e recado leem melhor na largura inteira. */
+  .campos-em-grade .campo-largo { grid-column: 1 / -1; }
+}
+
+@media (max-width: 40rem) {
+  /* No celular o título da explicação e a linha do que tem dentro não cabem lado a
+     lado: a linha desce inteira, com largura declarada (nunca flex-basis). */
+  .bloco-recolhido, .explicacao-da-lista > summary { flex-wrap: wrap; }
+  .bloco-recolhido, .explicacao-da-lista > summary .ajuda { width: 100%; }
+  /* Em coluna, flex-basis viraria ALTURA: a largura volta a ser declarada à mão. */
+  .empresa-timbre { flex-direction: column; align-items: center; text-align: center; }
+  .empresa-identificacao { flex: 0 0 auto; width: 100%; }
+  .empresa-dados > div { flex-direction: column; gap: .1rem; }
+  .empresa-dados dt { flex: 0 0 auto; }
+  .empresa-dados dd { flex: 0 0 auto; }
+}
+
+/* A explicação da lista de compra (1.35.0). Desceu para o fim e nasce fechada: o Edson
+   disse que o sistema traz informação demais e confunde quem precisa decidir rápido.
+   O resumo se lê como um título de cartão, para não parecer um link solto no fim da
+   página; o conteúdo é o mesmo de antes. */
+.bloco-recolhido, .explicacao-da-lista > summary {
+  font-size: 1.05rem; font-weight: 700; color: var(--cor-primaria);
+  cursor: pointer; display: flex; align-items: baseline; gap: .5rem;
+  list-style: none;  /* o triângulo de fábrica some quando o summary vira flex */
+}
+.bloco-recolhido, .explicacao-da-lista > summary::-webkit-details-marker { display: none; }
+/* Seta desenhada à mão, porque sem nenhuma marca o título parece texto e ninguém
+   descobre que abre. Aponta para o lado quando fechado e para baixo quando aberto. */
+.bloco-recolhido, .explicacao-da-lista > summary::before {
+  content: "\25B8"; color: var(--cor-texto-suave); font-size: 1.1rem; line-height: 1;
+}
+.bloco-recolhido, .explicacao-da-lista[open] > summary::before { content: "\25BE"; }
+.bloco-recolhido, .explicacao-da-lista > summary .ajuda { font-weight: 400; margin: 0; }
+.bloco-recolhido, .explicacao-da-lista > summary::marker { color: var(--cor-texto-suave); }
+.bloco-recolhido, .explicacao-da-lista > :not(summary):first-of-type { margin-top: .6rem; }
+
+
+/* ---------------------------------------------------------------------------
+   Pedido ao fornecedor: gerar a folha, editar e cancelar (1.36.0)
+
+   Pedido do Edson em 20/10/2026: *"permitir editar pedido ou descartar/cancelar
+   (informar motivo)"* e *"nessa tela gerar pedido de compra de mercadorias"*.
+   --------------------------------------------------------------------------- */
+
+/* As ações do pedido inteiro, lado a lado, acima da tabela: é sobre o pedido que elas
+   agem, e não sobre uma linha. Em pé no celular, porque dois botões lado a lado em
+   390px cortam o texto do segundo. */
+.acoes-do-pedido {
+  display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin: 1rem 0 .35rem;
+}
+.acoes-do-pedido form { margin: 0; }
+
+/* O campo da quantidade dentro da tabela, com a mesma largura do da lista de compra.
+   Escrito com `input[type=text]` junto da classe, e não com a classe sozinha: a regra
+   base dos campos é `input[type=text] { width: 100% }`, que tem especificidade MAIOR
+   que uma classe e ganhava — o campo ficava com 279px no celular e saía da tela, que é
+   exatamente o defeito da 1.30.0. É a mesma armadilha que o .ajuste-quantidade já tinha. */
+input[type=text].campo-quantidade {
+  width: 5.5rem; min-width: 0; max-width: none; text-align: right;
+  padding: .35rem .45rem; min-height: 38px;
+}
+.celula-quantidade { min-width: 8rem; }
+
+/* Pedido cancelado precisa gritar antes de alguém conferir nota contra ele. */
+.aviso-cancelado {
+  margin: .75rem 0 0; padding: .7rem .9rem; border-radius: var(--raio);
+  background: var(--cor-erro-fraca); border-left: 4px solid var(--cor-erro);
+  color: var(--cor-erro);
+}
+
+@media (max-width: 40rem) {
+  .acoes-do-pedido { flex-direction: column; align-items: stretch; }
+  .acoes-do-pedido .botao, .acoes-do-pedido form, .acoes-do-pedido button { width: 100%; }
+  /* No cartão a tabela já alinha à esquerda; o campo acompanha. */
+  input[type=text].campo-quantidade { text-align: left; }
+}
+
+/* A conta da reposição por extenso (1.36.0, seção 4 do pedido de 20/10/2026): são os
+   números de apoio, não a decisão, então ficam no tom mais suave da linha. */
+.conta-da-reposicao { color: var(--cor-texto-suave); font-size: .78rem; }

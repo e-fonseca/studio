@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Contas a receber</h1>
+  <p><a href="{% url 'financeiro:contas_a_pagar' %}">Ver contas a pagar</a></p>
+</div>
+
+<section class="cartao estado-dados estado-{{ estado.nivel }}">
+  <h2>{{ estado.titulo }}</h2>
+  <p>{{ estado.detalhe }}</p>
+</section>
+
+<section class="cartao">
+  <h2>{{ resumo.a_receber.valor|reais }} a receber</h2>
+  <p>{{ resumo.a_receber.quantidade }} lançamento{{ resumo.a_receber.quantidade|pluralize }} em aberto no SET.
+     A loja vende quase tudo à vista, no cartão ou no PIX, então o que fica a receber é pouco:
+     o grosso do dinheiro entra no mesmo dia e aparece na tabela de meses abaixo.</p>
+</section>
+
+{% if contas %}
+<div class="tabela-rolavel">
+  <table class="tabela-contas">
+    <caption>Em aberto, do vencimento mais antigo para o mais novo.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Vencimento</th>
+        <th scope="col">Lançamento</th>
+        <th scope="col">Cliente</th>
+        <th scope="col" class="numerico">Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for conta in contas %}
+      <tr>
+        <td>{{ conta.vencimento|date:"d/m/Y"|default:"sem data" }}</td>
+        <td>{{ conta.descricao|default:"—" }}
+          {% if conta.documento %}<br><span class="ajuda">doc. {{ conta.documento }}</span>{% endif %}</td>
+        <td>{{ conta.contraparte|default:"—" }}</td>
+        <td class="numerico">{{ conta.valor|reais }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if meses %}
+<section class="cartao">
+  <h2>Quanto entrou por mês</h2>
+  <div class="meses-caixa">
+    {% for mes in meses %}
+    <div class="mes-caixa">
+      <span class="mes-rotulo">{{ mes.mes }}/{{ mes.ano }}</span>
+      <span class="valor-entrou">Entrou {{ mes.recebido|reais }}</span>
+      <span class="valor-saiu">Saiu {{ mes.pago|reais }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Contas a receber",
+    "texto": "O que ainda está para entrar e, abaixo, quanto entrou em cada mês. Como a loja vende à vista, quase tudo já aparece como recebido."
+  }
+]
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Caixa {{ caixa.id_set }}</h1>
+  <p>{{ caixa.dia|date:"d/m/Y" }}, aberto às {{ caixa.aberto_em|date:"H:i" }}
+     por {{ caixa.operador|default:"operador não informado" }}.
+     {% if caixa.fechado_em %}Fechado às {{ caixa.fechado_em|date:"H:i" }}
+       ({{ caixa.tempo_aberto }} aberto){% if caixa.operador_fechamento %}
+       por {{ caixa.operador_fechamento }}{% endif %}.{% else %}Ainda aberto.{% endif %}</p>
+  <p><a href="{% url 'caixa:lista' %}">Voltar para a lista de caixas</a></p>
+</div>
+
+{% if esquecido %}
+<section class="cartao cartao-atencao">
+  <h2>Este caixa ficou aberto</h2>
+  <p>Ficou aberto de um dia para o outro. Enquanto ele não é fechado no SET,
+     a venda do dia seguinte entra neste turno.</p>
+</section>
+{% endif %}
+
+<div class="cartoes-numero">
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Saldo inicial</span>
+    <strong class="cartao-valor">{{ caixa.saldo_inicial|reais }}</strong>
+    <span class="cartao-rodape">O que estava na gaveta quando o turno abriu.</span>
+  </div>
+  <div class="cartao-numero nivel-bom">
+    <span class="cartao-titulo">Entrou</span>
+    <strong class="cartao-valor">{{ caixa.recebido|reais }}</strong>
+    <span class="cartao-rodape">Recebimentos de venda. O turno teve
+      {{ caixa.movimentos|contagem }} movimento{{ caixa.movimentos|pluralize:"s" }} ao todo.
+      {% if caixa.entradas %}Mais {{ caixa.entradas|reais }} colocados dentro do caixa.{% endif %}</span>
+  </div>
+  <div class="cartao-numero {% if caixa.sangrias or caixa.pagamentos %}nivel-atencao{% endif %}">
+    <span class="cartao-titulo">Saiu</span>
+    <strong class="cartao-valor">{{ caixa.sangrias|reais }}</strong>
+    <span class="cartao-rodape">Retirado do caixa. Mais {{ caixa.pagamentos|reais }} em contas
+      pagas por ele.{% if caixa.estornado %} {{ caixa.estornado|reais }} em movimentos estornados,
+      que não entram na conta.{% endif %}</span>
+  </div>
+  {% if caixa.esta_aberto %}
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Saldo até agora</span>
+    <strong class="cartao-valor">{{ caixa.saldo_calculado|reais }}</strong>
+    <span class="cartao-rodape">O turno não foi fechado, então não há saldo final gravado
+      no SET para comparar.</span>
+  </div>
+  {% else %}
+  <div class="cartao-numero {% if caixa.confere %}nivel-bom{% else %}nivel-ruim{% endif %}">
+    <span class="cartao-titulo">Saldo final</span>
+    <strong class="cartao-valor">{{ caixa.saldo_final|reais }}</strong>
+    <span class="cartao-rodape">
+      {% if caixa.confere %}Igual à conta do turno: o caixa fecha.
+      {% else %}A conta do turno dá {{ caixa.saldo_calculado|reais }},
+        uma diferença de {{ caixa.diferenca|reais }}.{% endif %}</span>
+  </div>
+  {% endif %}
+</div>
+
+<section class="cartao" id="dinheiro">
+  <h2>Dinheiro na gaveta deste turno</h2>
+  <p>Só o papel: PIX e cartão ficam de fora porque não entram na gaveta. É este o valor a
+     conferir com o que foi contado no fechamento.</p>
+  <table class="tabela-gaveta">
+    <caption class="oculto-visualmente">Conta do dinheiro vivo do turno.</caption>
+    <tbody>
+      <tr><th scope="row">Saldo de abertura</th><td>{{ gaveta.inicio|reais }}</td></tr>
+      <tr><th scope="row">Vendas pagas em dinheiro</th><td>{{ gaveta.recebido|reais }}</td></tr>
+      <tr><th scope="row">Entradas de dinheiro</th><td>{{ gaveta.entradas|reais }}</td></tr>
+      <tr class="saida"><th scope="row">Sangrias</th><td>− {{ gaveta.sangrias|reais }}</td></tr>
+      <tr class="saida"><th scope="row">Contas pagas pelo caixa</th><td>− {{ gaveta.pagamentos|reais }}</td></tr>
+      <tr class="total"><th scope="row">Deveria ter na gaveta</th><td>{{ gaveta.saldo|reais }}</td></tr>
+    </tbody>
+  </table>
+  {% if gaveta.outras_formas %}
+  <p class="ajuda">Outros {{ gaveta.outras_formas|reais }} entraram por PIX ou cartão e vão
+     para a conta do banco, não para a gaveta.</p>
+  {% endif %}
+  {% if gaveta.tem_duvida %}
+  <p class="ajuda"><strong>Atenção:</strong> {{ gaveta.nao_classificado|reais }} entraram por
+     forma{{ gaveta.formas_desconhecidas|length|pluralize:"s" }} que o sistema não conhece
+     ({% for nome in gaveta.formas_desconhecidas %}{{ nome }}{% if not forloop.last %}, {% endif %}{% endfor %})
+     e ficaram fora desta conta.</p>
+  {% endif %}
+</section>
+
+<div class="grade-visao">
+  <section class="cartao">
+    <h2>O que entrou, por forma de pagamento</h2>
+    {% if formas %}
+    <ul class="barras-lista barras-lista-grafico">
+      {% for f in formas %}
+      <li>
+        <span class="barras-nome">{{ f.nome }} <small>{{ f.fatia }}% do turno</small></span>
+        <span class="barras-trilho"><span class="barras-preenchida" style="width: {{ f.largura }}%"></span></span>
+        <span class="barras-valor">{{ f.valor|reais }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>Este turno não teve recebimento registrado no caixa.</p>
+    {% endif %}
+  </section>
+
+  <section class="cartao">
+    <h2>Conferência do turno</h2>
+    <p class="ajuda">A mesma conta que o fechamento do caixa faz, linha por linha.</p>
+    <table class="tabela-conferencia">
+      <caption class="oculto-visualmente">Conta do turno, do saldo inicial ao saldo final.</caption>
+      <tbody>
+        <tr><td>Saldo inicial</td><td class="numerico">{{ caixa.saldo_inicial|reais }}</td></tr>
+        <tr><td>Recebimentos</td><td class="numerico">{{ caixa.recebido|reais }}</td></tr>
+        <tr><td>Entradas de dinheiro</td><td class="numerico">{{ caixa.entradas|reais }}</td></tr>
+        <tr><td>Retiradas (sangria)</td><td class="numerico">- {{ caixa.sangrias|reais }}</td></tr>
+        <tr><td>Pagamentos pelo caixa</td><td class="numerico">- {{ caixa.pagamentos|reais }}</td></tr>
+        <tr><td><strong>Deveria fechar com</strong></td>
+            <td class="numerico"><strong>{{ caixa.saldo_calculado|reais }}</strong></td></tr>
+        {% if not caixa.esta_aberto %}
+        <tr><td>Fechou no SET com</td><td class="numerico">{{ caixa.saldo_final|reais }}</td></tr>
+        <tr><td><strong>Diferença</strong></td>
+            <td class="numerico"><strong>{{ caixa.diferenca|reais }}</strong></td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+    {% if caixa.observacao %}<p class="ajuda">Observação no SET: {{ caixa.observacao }}</p>{% endif %}
+  </section>
+</div>
+
+<section class="cartao">
+  <h2>Retiradas, pagamentos e entradas</h2>
+  <p class="ajuda">Os movimentos que não são venda. É aqui que se descobre por que um caixa
+     não fechou.</p>
+  {% if movimentos %}
+  <div class="tabela-rolavel tabela-dez">
+    <table class="tabela-caixas">
+      <caption class="oculto-visualmente">Movimentos do turno que não são recebimento de venda.</caption>
+      <thead><tr>
+        <th scope="col">Hora</th><th scope="col">Tipo</th><th scope="col">Descrição</th>
+        <th scope="col">Quem</th><th scope="col" class="numerico">Valor</th>
+      </tr></thead>
+      <tbody>
+        {% for m in movimentos %}
+        <tr>
+          <td>{{ m.quando|date:"d/m H:i" }}</td>
+          <td>{{ m.get_tipo_display }}</td>
+          <td>{{ m.descricao|default:"—" }}{% if m.grupo %} <small>({{ m.grupo }})</small>{% endif %}</td>
+          <td>{{ m.operador|default:"—" }}</td>
+          <td class="numerico">{{ m.valor|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nenhuma retirada, pagamento ou entrada neste turno: só venda.</p>
+  {% endif %}
+</section>
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Um turno de caixa",
+    "texto": "Tudo o que passou por este caixa, do momento em que foi aberto até o fechamento, como o SET registrou."
+  },
+  {
+    "seletor": ".grade-visao",
+    "titulo": "Por que o caixa não fechou",
+    "texto": "A conferência refaz a conta do turno. Quando a diferença não é zero, a resposta quase sempre está na tabela de retiradas e pagamentos, logo abaixo."
+  }
+]
+</script>
+{% endblock %}

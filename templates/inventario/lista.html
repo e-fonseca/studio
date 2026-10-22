@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Inventário</h1>
+  <p>{% if pode_organizar %}<a href="{% url 'inventario:organizar' %}">Organizar a prateleira</a> ·
+     {% endif %}<a href="{% url 'importacao:consulta' %}">Consulta de produtos</a></p>
+</div>
+
+{% comment %}A decisão vem antes da explicação (lição da 1.35.0): quem abre esta tela
+quer saber o que contar hoje. O texto sobre para que serve contar desceu para o fim,
+recolhido.{% endcomment %}
+<div class="cartoes-numero">
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Com peça na prateleira</span>
+    <strong class="cartao-valor">{{ plano.produtos }}</strong>
+    <span class="cartao-rodape">Produtos com saldo diferente de zero no SET.</span>
+  </div>
+  <div class="cartao-numero {% if plano.a_contar %}cartao-atencao{% endif %}">
+    <span class="cartao-titulo">Esperando contagem</span>
+    <strong class="cartao-valor">{{ plano.a_contar }}</strong>
+    <span class="cartao-rodape">{% if plano.a_contar == plano.produtos %}A loja nunca contou:
+      todos esperam a primeira contagem.{% else %}{{ plano.nunca_contados }} nunca passaram
+      pelo leitor.{% endif %}</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Valor do que falta contar</span>
+    <strong class="cartao-valor">{{ plano.valor_a_contar|reais }}</strong>
+    <span class="cartao-rodape">Ao custo, do que está vencido no plano.</span>
+  </div>
+</div>
+
+<section class="cartao">
+  <h2>Plano de contagem</h2>
+  {% if plano.classes %}
+  <p>Conta-se um pedaço por vez, sempre, e o pedaço sai da curva ABC: o produto que
+     sustenta a loja é contado todo mês, o que quase não vende, duas vezes por ano. É o
+     padrão do varejo, e é o que evita parar a loja um dia inteiro uma vez por ano.</p>
+  <div class="tabela-rolavel tabela-em-cartao tabela-do-plano">
+    <table class="tabela-contagens">
+      <caption class="oculto-visualmente">Classes da curva ABC, o prazo de cada uma e o que está vencido.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Classe</th>
+          <th scope="col" class="numerico">Contar a cada</th>
+          <th scope="col" class="numerico">Produtos</th>
+          <th scope="col" class="numerico">Em dia</th>
+          <th scope="col" class="numerico">Esperando</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for classe in plano.classes %}
+        <tr>
+          <td data-rotulo="Classe"><strong>{{ classe.rotulo }}</strong><br>
+            <span class="ajuda">{{ classe.explicacao }}</span></td>
+          <td data-rotulo="Contar a cada" class="numerico">{{ classe.cada_dias }} dias</td>
+          <td data-rotulo="Produtos" class="numerico">{{ classe.produtos }}</td>
+          <td data-rotulo="Em dia" class="numerico">{{ classe.em_dia }}</td>
+          <td data-rotulo="Esperando" class="numerico celula-esperando {% if classe.em_falta %}valor-ruim{% endif %}">
+            {{ classe.a_contar }}
+            {% if classe.valor_vencido %}<br><span class="ajuda">{{ classe.valor_vencido|reais }} ao custo</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if plano.geral_vencida %}
+  <p class="linha-de-alerta">A contagem geral, a de uma vez por ano, está em aberto:
+     {% if plano.nunca_contados %}{{ plano.nunca_contados }} produtos com peça na prateleira
+     nunca passaram pelo leitor.{% else %}a última passou de um ano.{% endif %}</p>
+  {% endif %}
+  <p class="acoes-do-plano">
+    {% if plano.sugeridos %}
+    <form method="post" action="{% url 'inventario:abrir_sugerida' %}">{% csrf_token %}
+      <button type="submit" class="botao">Abrir a contagem sugerida</button>
+    </form>
+    {% endif %}
+    <a class="botao secundario" href="{% url 'inventario:folha_de_contagem' %}">Folha de contagem em PDF</a>
+    <a class="botao secundario" href="{% url 'inventario:folha_de_contagem' %}?formato=planilha">em planilha</a>
+  </p>
+  <p class="ajuda">A folha traz os {{ plano.sugeridos|length }} produtos da frente, classe
+     mais urgente primeiro e, dentro dela, o maior dinheiro na prateleira. É com ela que
+     se anda pela loja.</p>
+  {% else %}
+  <p>O plano aparece depois da primeira importação: é dela que saem os produtos, o saldo e
+     a curva ABC que decide o prazo de cada um.</p>
+  {% endif %}
+</section>
+
+{% if aberta %}
+<section class="cartao destaque-aberto">
+  <h2>Contagem em andamento</h2>
+  <p><a href="{% url 'inventario:contagem' aberta.pk %}"><strong>{{ aberta.nome }}</strong></a>,
+     aberta em {{ aberta.aberta_em|date:"d/m/Y H:i" }}
+     {% if aberta.aberta_por %}por {{ aberta.aberta_por.get_username }}{% endif %}.</p>
+  <p><a class="botao" href="{% url 'inventario:contagem' aberta.pk %}">Continuar a contagem</a>
+     <a class="botao secundario" href="{% url 'inventario:camera' aberta.pk %}">Contar pela câmera</a></p>
+</section>
+{% endif %}
+
+{% if pode_organizar and pendencias %}
+{% with sem_etiqueta=pendencias.sem_etiqueta danificados=pendencias.danificado conserto=pendencias.conserto descarte=pendencias.descarte %}
+{% if sem_etiqueta or danificados or conserto or descarte %}
+<section class="cartao">
+  <h2>Peças esperando providência</h2>
+  <p>A contagem achou peça que não é só uma questão de quantidade:
+    {% if sem_etiqueta %}{{ sem_etiqueta }} sem etiqueta{% endif %}{% if sem_etiqueta and danificados %},
+    {% endif %}{% if danificados %}{{ danificados }} danificada{{ danificados|pluralize:"s" }} a classificar{% endif %}{% if conserto %},
+    {{ conserto }} para conserto{% endif %}{% if descarte %},
+    {{ descarte }} para descarte{% endif %}.</p>
+  <p><a class="botao" href="{% url 'inventario:organizar' %}">Organizar a prateleira</a></p>
+</section>
+{% endif %}
+{% endwith %}
+{% endif %}
+
+<section class="cartao">
+  <h2>Abrir uma contagem</h2>
+  <p class="ajuda">Conte um pedaço de cada vez. Contagem pequena termina no mesmo dia e a
+     lista de ajustes sai curta, que é a que alguém realmente digita no SET.</p>
+  <form method="post" action="{% url 'inventario:abrir' %}" class="formulario-usuario">{% csrf_token %}
+    <div class="formulario-campo">
+      <label for="nome">O que vai ser contado</label>
+      <input type="text" id="nome" name="nome" maxlength="120" required
+             placeholder="Ex.: prateleira dos tapetes">
+    </div>
+    <div class="formulario-campo">
+      <label for="observacao">Observação (opcional)</label>
+      <input type="text" id="observacao" name="observacao" maxlength="200"
+             placeholder="Ex.: contagem do sábado, com a Henriett">
+    </div>
+    <button type="submit" class="botao">Abrir contagem</button>
+  </form>
+</section>
+
+<section class="cartao">
+  <h2>Contagens já feitas</h2>
+  {% if contagens %}
+  <div class="tabela-rolavel tabela-dez tabela-em-cartao tabela-de-organizar">
+    <table class="tabela-contagens">
+      <caption class="oculto-visualmente">Contagens, da mais nova para a mais velha.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Contagem</th>
+          <th scope="col">Situação</th>
+          <th scope="col">Aberta em</th>
+          <th scope="col">Quem abriu</th>
+          <th scope="col" class="numerico">Produtos contados</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contagens %}
+        <tr>
+          <td data-rotulo="Contagem"><a href="{% url 'inventario:contagem' c.pk %}">{{ c.nome }}</a></td>
+          <td data-rotulo="Situação">{{ c.get_situacao_display }}</td>
+          <td data-rotulo="Aberta em">{{ c.aberta_em|date:"d/m/Y H:i" }}</td>
+          <td data-rotulo="Quem abriu">{{ c.aberta_por.get_username|default:"—" }}</td>
+          <td data-rotulo="Produtos contados" class="numerico">{{ c.itens.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nenhuma contagem ainda. A primeira pode ser pequena, só para pegar o jeito.</p>
+  {% endif %}
+</section>
+
+<details class="cartao bloco-recolhido">
+  <summary><strong>Como a contagem funciona, e por que ela existe</strong></summary>
+  <h3>Por que contar</h3>
+  <p>A loja nunca fez contagem física, e por isso o saldo do SET é estimativa: na última
+     importação havia produto com saldo negativo, que só acontece quando se vende o que o
+     sistema acha que não existe.</p>
+  <p>A contagem aqui <strong>não mexe no SET</strong>. Ela compara o que você conta na
+     prateleira com o que o SET diz e, no fim, entrega a lista do que está diferente. O
+     acerto do saldo é digitado no SET por alguém da loja, que é onde o estoque vale.
+     Depois de digitado, a importação seguinte confere sozinha se o ajuste entrou.</p>
+  <h3>Os prazos, e de onde eles vêm</h3>
+  <p>Contagem cíclica é o padrão do varejo: cada produto tem um prazo, que sai da curva
+     ABC. Classe A a cada 30 dias, classe B a cada 90, classe C e produto sem venda a
+     cada 180, e a contagem geral uma vez por ano.</p>
+  <h3>Contando com o celular na mão</h3>
+  <p>Dá para andar pela loja com o celular ou o tablet e ler a etiqueta de código de barras
+     com a própria câmera. Basta o aparelho estar no wi-fi da loja; não precisa de VPN.</p>
+  <p>A câmera só liga no endereço seguro do sistema, <code>{{ endereco_seguro_base }}</code>.
+     Na primeira vez em cada aparelho o navegador avisa que a conexão não é privada, porque
+     o certificado é do próprio servidor da loja: toque em <strong>Avançado</strong> e em
+     <strong>Continuar</strong>, e esse aviso não volta.</p>
+  <p class="ajuda">Produto sem etiqueta não trava a contagem: na mesma tela dá para digitar o
+     código ou o nome, e ele entra na contagem igual — e dá para marcar que ele está sem
+     etiqueta, para a etiqueta ser refeita depois.</p>
+</details>
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Inventário",
+    "texto": "Aqui a loja conta o que tem na prateleira de verdade e compara com o saldo do SET. Nada é alterado no SET: no fim sai a lista do que está diferente."
+  },
+  {
+    "seletor": ".tabela-do-plano",
+    "titulo": "O plano diz o que contar hoje",
+    "texto": "Cada classe tem o seu prazo: a que sustenta a loja é contada todo mês, a que quase não vende, duas vezes por ano. A coluna Esperando é o que está vencido."
+  },
+  {
+    "seletor": ".acoes-do-plano",
+    "titulo": "A folha com que se anda pela loja",
+    "texto": "Abrir a contagem sugerida já dá nome a ela. A folha em PDF traz os produtos da frente, do maior dinheiro para o menor."
+  },
+  {
+    "seletor": ".formulario-usuario",
+    "titulo": "Ou conte o que você quiser",
+    "texto": "Fora do plano, dê um nome que diga o que foi contado, porque é por ele que você vai achar a contagem depois."
+  }
+]
+</script>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina nao-imprimir">
+  <h1>Etiquetas para reimprimir</h1>
+  <p><a href="{% url 'inventario:organizar' %}">Voltar a organizar</a></p>
+</div>
+
+<section class="cartao nao-imprimir">
+  <h2>Como imprimir</h2>
+  <p>Use a impressão do navegador (Ctrl+P, ou o menu de três pontos no celular). Só as
+     etiquetas saem no papel: o resto desta tela não é impresso.</p>
+  <p class="ajuda">O desenho é o mesmo código de barras que a tela de consulta mostra, e o
+     mesmo que o leitor já lê na loja. Confira uma etiqueta no leitor antes de colar as
+     trinta: etiqueta errada o leitor lê como outro produto.</p>
+  <p><button type="button" class="botao" onclick="window.print()">Imprimir</button></p>
+</section>
+
+{% if itens %}
+<div class="folha-de-etiquetas">
+  {% for item in itens %}
+  <div class="etiqueta-produto">
+    <span class="etiqueta-nome">{{ item.descricao }}</span>
+    <span class="etiqueta-desenho">{{ item.codigo_barras|codigo_de_barras }}</span>
+    <span class="etiqueta-codigo">{{ item.codigo_barras }}</span>
+    <span class="etiqueta-interno">código {{ item.codigo }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<section class="cartao nao-imprimir">
+  <h2>Nenhuma etiqueta para refazer</h2>
+  <p>Nenhuma peça marcada como “sem etiqueta” tem código de barras no cadastro do SET.</p>
+</section>
+{% endif %}
+
+{% if sem_codigo %}
+<section class="cartao nao-imprimir">
+  <h2>Sem código de barras no SET</h2>
+  <p>Estas peças estão marcadas como sem etiqueta, mas o cadastro do SET não tem código de
+     barras para elas: não há etiqueta para refazer. O número precisa nascer no SET
+     primeiro, e isso não é coisa que este sistema faça.</p>
+  <ul class="lista-simples">
+    {% for item in sem_codigo %}
+    <li>{{ item.descricao }} <span class="ajuda">· código {{ item.codigo }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% endblock %}

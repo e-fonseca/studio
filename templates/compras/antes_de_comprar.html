@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block classe_corpo %}pagina-compra{% endblock %}
+{% block cabeca %}{% if em_andamento %}<meta http-equiv="refresh" content="5">{% endif %}{% endblock %}
+{% block conteudo %}
+
+<section class="abertura abertura-{{ estado.nivel }}">
+  <div>
+    <h1>Antes de comprar</h1>
+    <p class="abertura-sub">A conferência de cinco minutos antes de fechar o pedido</p>
+  </div>
+  <div class="abertura-dados">
+    <strong>{{ estado.titulo }}</strong>
+    <span>{{ estado.detalhe }}</span>
+  </div>
+</section>
+
+{% include "importacao/_andamento.html" %}
+
+{% if dados.importacao %}
+
+{% comment %}O teto do mês vem primeiro porque é a única pergunta que decide se a compra
+sai ou não sai. O resto da tela é a justificativa dele.{% endcomment %}
+<section class="cartao teto teto-{{ dados.teto.nivel }}">
+  <h2>Quanto cabe de compra em {{ dados.teto.rotulo_mes }}</h2>
+  <div class="teto-numeros">
+    <div>
+      <span class="teto-rotulo">Já comprado no mês</span>
+      <strong class="teto-valor">{{ dados.teto.comprado|reais }}</strong>
+    </div>
+    <div>
+      <span class="teto-rotulo">Limite do mês</span>
+      <strong class="teto-valor">{{ dados.teto.mensal|reais }}</strong>
+    </div>
+    <div>
+      <span class="teto-rotulo">{% if dados.teto.estourou %}Passou do limite em{% else %}Distância do limite{% endif %}</span>
+      <strong class="teto-valor">{{ dados.teto.diferenca|reais }}</strong>
+    </div>
+  </div>
+  <div class="teto-barra" role="img"
+       aria-label="{{ dados.teto.usado }} por cento do que cabe no mês já foi comprado">
+    <i style="width: {{ dados.teto.largura }}%"></i>
+  </div>
+  <p class="teto-frase">
+    {% if dados.teto.estourou %}
+    A compra de {{ dados.teto.rotulo_mes }} já passou do que a loja costuma vender num mês.
+    Cada real daqui para frente entra na prateleira e fica.
+    {% else %}
+    Usado {{ dados.teto.usado }}% do limite de {{ dados.teto.rotulo_mes }}, com dados até
+    {{ dados.teto.dia_do_corte|date:"d/m/Y" }}. Estar abaixo do limite não é motivo para comprar:
+    o limite diz até onde não passar, não quanto gastar.
+    {% endif %}
+  </p>
+  <p class="ajuda">
+    De onde sai esse limite: em 12 meses saíram da prateleira {{ dados.teto.custo_vendido_12m|reais }}
+    em mercadoria, avaliada pelo custo. Dividido por 12, é o que a loja repõe num mês médio.
+    Comprar acima disso, mês após mês, aumenta o estoque em vez do faturamento.
+    {% if dados.comprou_mais_do_que_saiu %}
+    Em 12 meses entrou {{ dados.diferenca_do_ano|reais }} a mais do que saiu da prateleira: é
+    exatamente esse dinheiro que virou mercadoria parada.
+    {% else %}
+    Nos últimos 12 meses saiu mais do que entrou, então o problema não é o tamanho da compra e
+    sim a escolha do que comprar. A tabela abaixo mostra onde.
+    {% endif %}
+    {% if dados.teto.comprometido %}Além disso, já há {{ dados.teto.comprometido|reais }}
+    comprometidos para sair do caixa. <a href="{% url 'financeiro:contas_a_pagar' %}">Ver as contas</a>.{% endif %}
+  </p>
+</section>
+
+<section class="cartao">
+  <h2>Posso comprar este produto?</h2>
+  <p class="ajuda">Digite o nome ou o código do produto e o sistema responde com o que está na
+     prateleira hoje, o que vendeu e o que já foi comprado no ano.</p>
+  <form class="busca-produto" method="get" action="">
+    <label for="produto">Produto</label>
+    <input type="search" id="produto" name="produto" value="{{ procurado }}"
+           placeholder="Ex.: tapete, 1042, mesa de jantar" autocomplete="off">
+    <button type="submit" class="botao">Conferir</button>
+  </form>
+
+  {% if procurado %}
+  {% if vereditos %}
+  <ul class="vereditos">
+    {% for item in vereditos %}
+    <li class="veredito veredito-{{ item.resposta }}">
+      <div class="veredito-cabeca">
+        <strong class="veredito-titulo">{{ item.titulo }}</strong>
+        <span class="veredito-nome">{{ item.descricao }}</span>
+        <span class="ajuda">código {{ item.codigo }}{% if item.fornecedor %} · {{ item.fornecedor }}{% endif %}</span>
+      </div>
+      <p class="veredito-motivo">{{ item.motivo }}</p>
+      <dl class="veredito-numeros">
+        <div><dt>Na prateleira</dt><dd>{{ item.estoque|floatformat:"-2" }}{% if item.estoque_negativo %}<span class="ajuda">saldo negativo no SET, confira na loja</span>{% endif %}</dd></div>
+        <div><dt>Isso cobre</dt><dd>{{ item.cobertura }}</dd></div>
+        <div><dt>Vendeu em 12m</dt><dd>{{ item.vendas_12m|floatformat:"-2" }}</dd></div>
+        <div><dt>Comprou em 12m</dt><dd>{{ item.compras_12m|floatformat:"-2" }}</dd></div>
+        <div><dt>Última venda</dt><dd>{% if item.ultima_venda %}{{ item.ultima_venda|date:"d/m/Y" }}{% else %}nunca{% endif %}</dd></div>
+        <div><dt>Última compra</dt><dd>{% if item.ultima_compra %}{{ item.ultima_compra|date:"d/m/Y" }}{% else %}—{% endif %}</dd></div>
+      </dl>
+      {% if item.resposta == "pode" and item.sugerida %}
+      <p class="veredito-conta">Dá para levar <strong>{{ item.sugerida|floatformat:"-2" }} unidade{{ item.sugerida|pluralize }}</strong>{% if item.custo_compra %}, cerca de {{ item.custo_compra|reais }}{% endif %}.</p>
+      {% elif item.resposta == "nao" and item.valor_parado %}
+      <p class="veredito-conta">Já há <strong>{{ item.valor_parado|reais }}</strong> parados neste produto.</p>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% if encontrados > mostrados %}
+  <p class="ajuda">{{ encontrados }} produtos casam com &ldquo;{{ procurado }}&rdquo;; aqui estão
+     {{ mostrados }}, começando pelos que não se deve comprar. Escreva o nome mais completo para
+     chegar ao produto certo.</p>
+  {% endif %}
+  {% else %}
+  <p class="destaque">Nenhum produto encontrado com &ldquo;{{ procurado }}&rdquo;. Tente parte do nome,
+     como &ldquo;tapete&rdquo;, ou o código exato.</p>
+  {% endif %}
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>O que a compra do ano virou</h2>
+  <p class="ajuda">Por fornecedor, nos últimos 12 meses: quanto a loja comprou, quanto disso já
+     saiu em venda e quanto continua na prateleira. Avaliado sempre pelo custo, para comparar
+     com a compra. Os piores primeiro.</p>
+  {% if dados.fornecedores %}
+  <p class="destaque">No total, <strong>{{ dados.total_prateleira|reais }}</strong> em mercadoria
+     na prateleira hoje, dos quais <strong>{{ dados.total_sem_giro|reais }}</strong> não venderam
+     nenhuma unidade em 12 meses.</p>
+  <div class="tabela-rolavel">
+    <table class="tabela-compra">
+      <thead>
+        <tr>
+          <th scope="col">Fornecedor</th>
+          <th scope="col" class="numerico">Comprado em 12m</th>
+          <th scope="col" class="numerico">Saiu em venda</th>
+          <th scope="col" class="numerico">Na prateleira hoje</th>
+          <th scope="col" class="numerico">Parado sem nenhuma venda</th>
+          <th scope="col">Reputação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in dados.fornecedores %}
+        <tr>
+          <td>
+            <a href="{% url 'fornecedores:ficha' %}?nome={{ f.nome|urlencode }}">{{ f.nome }}</a>
+            {% if f.relacao_rotulo %}<span class="etiqueta etiqueta-{{ f.relacao }}">{{ f.relacao_rotulo }}</span>{% endif %}
+            <span class="ajuda">{{ f.itens }} produto{{ f.itens|pluralize }}</span>
+          </td>
+          <td class="numerico">{% if f.sem_compra_no_periodo %}—<span class="ajuda">sem compra em 12 meses</span>{% else %}{{ f.comprado|reais }}{% endif %}</td>
+          <td class="numerico">{{ f.vendido|reais }}{% if f.aproveitamento %}<span class="ajuda">só {{ f.aproveitamento }}% do que foi comprado</span>{% endif %}</td>
+          <td class="numerico">
+            {{ f.na_prateleira|reais }}
+            <span class="barra-fina" aria-hidden="true"><i style="width: {{ f.largura }}%"></i></span>
+          </td>
+          <td class="numerico {% if f.sem_giro %}valor-ruim{% endif %}">
+            {{ f.sem_giro|reais }}
+            {% if f.itens_sem_giro %}<span class="ajuda">{{ f.itens_sem_giro }} produto{{ f.itens_sem_giro|pluralize }}</span>{% endif %}
+          </td>
+          <td>
+            {% if f.reputacao %}
+            <span class="estrelas" title="{{ f.reputacao }} de 5">
+              {% for n in "12345" %}<span class="estrela {% if forloop.counter <= f.reputacao %}cheia{% endif %}" aria-hidden="true">★</span>{% endfor %}
+              <span class="oculto-visualmente">{{ f.reputacao }} de 5 estrelas</span>
+            </span>
+            {% else %}<span class="ajuda">sem avaliação</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="ajuda">A coluna da direita é a conversa a ter com o fornecedor: mercadoria que entrou
+     e não saiu em um ano inteiro. <a href="{% url 'fornecedores:lista' %}">Avaliar fornecedores</a>.</p>
+  {% else %}
+  <p>Sem compra registrada no período.</p>
+  {% endif %}
+</section>
+
+<p class="ajuda">Para o detalhe produto a produto,
+  <a href="{% url 'painel:completo' %}">abra o painel completo</a>.</p>
+{% else %}
+<section class="cartao">
+  <h2>Ainda não há números para mostrar</h2>
+  <p>Esta tela sai da primeira importação concluída do backup do SET.</p>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Antes de comprar",
+    "texto": "Abra esta tela com o vendedor na frente, antes de fechar o pedido. Ela responde se a compra cabe no mês e se o produto vale a pena."
+  },
+  {
+    "seletor": ".teto",
+    "titulo": "Quanto cabe no mês",
+    "texto": "A barra mostra quanto do mês já foi comprado. O limite é quanto saiu da prateleira num mês médio, pelo custo: comprar acima disso aumenta o estoque, não o faturamento."
+  },
+  {
+    "seletor": ".busca-produto",
+    "titulo": "Posso comprar este produto?",
+    "texto": "Digite o nome ou o código. O sistema responde pode comprar, não precisa agora ou não compre, sempre com os números que levaram à resposta."
+  },
+  {
+    "seletor": ".tabela-compra",
+    "titulo": "O que a compra do ano virou",
+    "texto": "Por fornecedor: o que foi comprado, o que já saiu em venda e o que continua parado. A última coluna é mercadoria que entrou e não vendeu nenhuma unidade no ano."
+  }
+]
+</script>
+{% endblock %}

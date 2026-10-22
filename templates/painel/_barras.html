@@ -1,0 +1,17 @@
+{% load cabana %}{% comment %}
+Lista de barras horizontais: dia da semana, forma de pagamento, hora do dia. A largura
+vem pronta da view em porcentagem do maior; a porcentagem ao lado é a fatia do total.
+{% endcomment %}
+{% if barras %}
+<ul class="barras-lista barras-lista-grafico">
+  {% for b in barras %}
+  <li>
+    <span class="barras-nome">{{ b.nome }} <small>{{ b.fatia }}% do período</small></span>
+    <span class="barras-trilho"><span class="barras-preenchida" style="width: {{ b.largura }}%"></span></span>
+    <span class="barras-valor">{{ b.valor|reais }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>{{ vazio }}</p>
+{% endif %}

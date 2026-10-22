@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block cabeca %}{% if em_andamento %}<meta http-equiv="refresh" content="5">{% endif %}{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Painel</h1>
+  <p><a class="botao secundario" href="{% url 'painel:completo' %}">Ver o painel completo</a></p>
+</div>
+
+{% include "importacao/_andamento.html" %}
+
+{# Estado dos dados: é a primeira coisa que a pessoa precisa saber antes de decidir compra. #}
+<section class="cartao estado-dados estado-{{ estado.nivel }}">
+  <h2>{{ estado.titulo }}</h2>
+  <p>{{ estado.detalhe }}</p>
+  {% if em_andamento %}
+    <p class="ajuda">O andamento aparece no quadro acima.</p>
+  {% elif perms.importacao.executar_importacao %}
+    <form method="post" action="{% url 'importacao:importar' %}">{% csrf_token %}
+      <button type="submit" class="botao">Importar agora</button>
+      <span class="ajuda">Lê uma cópia do backup do SET. Não mexe no SET nem na venda.</span>
+    </form>
+    <p class="ajuda"><a href="{% url 'importacao:historico' %}">Conferir o backup e forçar a atualização</a>,
+      para ver o tamanho e a data do arquivo antes de importar.</p>
+  {% endif %}
+</section>
+
+{% if painel %}
+<div class="resumo-painel">
+  <div>
+    <span class="numero">{{ painel.resumo.valor_estoque|reais }}</span>
+    <span class="rotulo">Valor parado em estoque hoje</span>
+  </div>
+  <div>
+    <span class="numero">{{ painel.resumo.itens }}</span>
+    <span class="rotulo">Produtos cadastrados no SET</span>
+  </div>
+  <div>
+    <span class="numero">{{ painel.importacao.dias_abertos_12m }}</span>
+    <span class="rotulo">Dias com venda nos últimos 12 meses</span>
+  </div>
+</div>
+
+{% if destaque %}
+<section class="cartao indicador-destaque cartao-destaque">
+  <span class="selo-destaque">O número mais firme</span>
+  <h2>{{ destaque.titulo }}</h2>
+  <p class="numero-grande">{{ destaque.valor|reais }}</p>
+  <p>{{ destaque.itens }} produto{{ destaque.itens|pluralize:"s" }}. {{ destaque.explicacao }}</p>
+  <p><a href="{% url 'painel:completo' %}?lista=comprou_mais">Ver a lista desses produtos</a></p>
+</section>
+{% endif %}
+
+<ul class="indicadores indicadores-resumo">
+  {% if repor %}
+  <li class="indicador">
+    <a href="{% url 'painel:completo' %}?lista=comprar">
+      <span class="numero">{{ repor.valor|reais }}</span>
+      <span class="rotulo">{{ repor.titulo }}</span>
+      <span class="ajuda">{{ repor.itens }} produto{{ repor.itens|pluralize:"s" }}</span>
+    </a>
+  </li>
+  {% endif %}
+  {% if falta %}
+  <li class="indicador">
+    <a href="{% url 'painel:completo' %}?lista=falta">
+      <span class="numero">{{ falta.valor|reais }}</span>
+      <span class="rotulo">{{ falta.titulo }}</span>
+      <span class="ajuda">{{ falta.itens }} produto{{ falta.itens|pluralize:"s" }}</span>
+    </a>
+  </li>
+  {% endif %}
+</ul>
+
+{% if melhores %}
+<h2 class="secao-titulo">Melhores produtos para comprar agora</h2>
+<p class="ajuda">Entre os produtos que chegaram ao ponto de reposição, estes são os que mais deram margem nos
+  últimos 12 meses: preço de venda menos custo, vezes o que saiu. É por onde o dinheiro da compra rende mais.</p>
+<div class="tabela-rolavel">
+  <table>
+    <caption>Os {{ melhores|length }} primeiros, do que mais deu margem para o que menos.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Produto</th><th scope="col">Fornecedor</th>
+        <th scope="col" class="numerico">Margem em 12m</th>
+        <th scope="col" class="numerico">Custo da reposição</th>
+        <th scope="col">Situação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for linha in melhores %}
+      <tr>
+        <td>{{ linha.descricao|default:linha.codigo }}<br><span class="ajuda">{{ linha.cobertura }}</span></td>
+        <td>{{ linha.fornecedor|default:"—" }}</td>
+        <td class="numerico">{{ linha.lucro_12m|reais }}</td>
+        <td class="numerico">{{ linha.valor|reais }}</td>
+        <td>{{ linha.situacao }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% include "painel/_meses.html" %}
+
+<p class="ajuda">O painel completo abre os seis indicadores, as listas de produtos e os avisos sobre a contagem
+  de estoque e o prazo de entrega. <a href="{% url 'painel:completo' %}">Abrir o painel completo</a>.</p>
+
+{% else %}
+<section class="cartao">
+  <h2>Sem números para mostrar ainda</h2>
+  <p>O painel precisa de uma importação concluída. Depois da primeira, os indicadores aparecem aqui e passam a
+     ser atualizados toda noite.</p>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Painel",
+    "texto": "Esta é a tela do dia a dia: como está a loja hoje, em poucos números. Para destrinchar, use Ver o painel completo."
+  },
+  {
+    "seletor": ".estado-dados",
+    "titulo": "De quando são os dados",
+    "texto": "Confira esta data antes de decidir compra. Até um dia de atraso é normal, porque a importação lê o backup da noite."
+  },
+  {
+    "seletor": ".cartao-destaque",
+    "titulo": "O número mais confiável",
+    "texto": "Compras acima do que foi vendido no mesmo período. Sai de nota fiscal, então vale mesmo sem a contagem do estoque."
+  },
+  {
+    "seletor": ".tabela-rolavel table",
+    "titulo": "Melhores produtos para comprar",
+    "texto": "Entre os que precisam de reposição, os que mais deram margem em 12 meses. Comprar por esta lista é o contrário de comprar no olhômetro."
+  },
+  {
+    "seletor": ".grafico-meses",
+    "titulo": "Compra e venda mês a mês",
+    "texto": "A barra verde é o que a loja vendeu; a laranja, o que comprou. Mês em que a laranja passa a verde é mês em que o caixa apertou."
+  }
+]
+</script>
+{% endblock %}

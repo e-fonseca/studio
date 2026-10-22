@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<section class="abertura abertura-{{ estado.nivel }}">
+  <div>
+    <h1>Consulta de produtos</h1>
+    <p class="abertura-sub">O que tem na prateleira e quem traz, para atender no balcão</p>
+  </div>
+  <div class="abertura-dados">
+    <strong>{{ estado.titulo }}</strong>
+    <span>{{ estado.detalhe }}</span>
+  </div>
+</section>
+
+<section class="cartao">
+  <form class="busca-produto" method="get" action="">
+    <label for="produto">Produto</label>
+    <input type="search" id="produto" name="produto" value="{{ procurado }}"
+           placeholder="Ex.: tapete, 1042 ou passe o leitor" autocomplete="off" autofocus
+           data-sugestoes="{% url 'importacao:sugestoes' %}">
+    <button type="submit" class="botao">Procurar</button>
+  </form>
+  <p class="ajuda">Dá para digitar parte do nome, o código do produto ou passar o leitor de
+     código de barras com o cursor aqui: o leitor digita sozinho e já manda procurar.</p>
+
+  <form class="busca-produto busca-barras" method="get" action="">
+    <label for="barras">Código de barras</label>
+    <input type="search" id="barras" name="barras" value="{{ codigo_de_barras }}"
+           placeholder="Ex.: 0000000010421" autocomplete="off"
+           inputmode="numeric" pattern="[0-9 ]*" maxlength="20">
+    <button type="submit" class="botao">Procurar pelo código</button>
+  </form>
+  <p class="ajuda">Para digitar à mão o número impresso na etiqueta da prateleira. Aqui a
+     procura é pelo número exato, então só aparece o produto daquela etiqueta. Pode digitar
+     com ou sem os zeros da frente.</p>
+
+  {% if termo %}
+  {% if achados %}
+  <div class="tabela-rolavel">
+    <table class="tabela-consulta">
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col">Código de barras</th>
+          <th scope="col" class="numerico">Na prateleira</th>
+          <th scope="col">Fornecedor</th>
+          <th scope="col" class="numerico">Entrega em</th>
+          <th scope="col">Última venda</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for achado in achados %}
+        <tr>
+          <td>
+            {{ achado.produto.descricao }}
+            <span class="ajuda">código {{ achado.produto.codigo }}{% if achado.produto.grupo %} · {{ achado.produto.grupo }}{% endif %}</span>
+          </td>
+          <td class="celula-barras">
+            {% if achado.desenho %}{{ achado.desenho }}
+            {% elif achado.produto.codigo_barras %}<span class="ajuda">{{ achado.produto.codigo_barras }}</span>
+            {% else %}<span class="ajuda">sem código no SET</span>{% endif %}
+          </td>
+          <td class="numerico {% if not achado.tem_na_prateleira %}valor-ruim{% endif %}">
+            {{ achado.produto.estoque|floatformat:"-2" }}
+            {% if not achado.tem_na_prateleira %}<span class="ajuda">sem saldo no SET</span>{% endif %}
+          </td>
+          <td>{{ achado.produto.fornecedor|default:"—" }}</td>
+          <td class="numerico">{% if achado.prazo %}{{ achado.prazo }} dia{{ achado.prazo|pluralize }}{% else %}—{% endif %}</td>
+          <td>{% if achado.produto.ultima_venda %}{{ achado.produto.ultima_venda|date:"d/m/Y" }}{% else %}nunca{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if encontrados > mostrados %}
+  <p class="ajuda">{{ encontrados }} produtos casam com &ldquo;{{ termo }}&rdquo; e aqui estão
+     {{ mostrados }}. Escreva o nome mais completo ou use o código.</p>
+  {% endif %}
+  <p class="ajuda">O saldo vem do SET e a loja ainda não fez contagem física, então confira na
+     prateleira antes de prometer ao cliente.</p>
+  {% else %}
+  {% if procurou_por_barras %}
+  <p class="destaque">Nenhum produto cadastrado com o código de barras
+     &ldquo;{{ codigo_de_barras }}&rdquo;. Confira os dígitos na etiqueta: o código do SET tem
+     13 números e começa com zero. Se estiver certo, o produto não tem esse código no SET e
+     dá para achar pelo nome na busca de cima.</p>
+  {% else %}
+  <p class="destaque">Nenhum produto encontrado com &ldquo;{{ procurado }}&rdquo;. Tente parte do
+     nome, como &ldquo;tapete&rdquo;, ou o código exato.</p>
+  {% endif %}
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Consulta de produtos",
+    "texto": "A tela do balcão: digite parte do nome ou o código e veja o que tem na prateleira, quem traz e em quantos dias chega."
+  },
+  {
+    "seletor": ".busca-produto",
+    "titulo": "Como procurar",
+    "texto": "Parte do nome já basta. Se vierem muitos resultados, escreva o nome mais completo ou use o código do produto."
+  },
+  {
+    "seletor": ".busca-barras",
+    "titulo": "Pelo código de barras",
+    "texto": "Com o produto na mão, digite o número da etiqueta neste campo. A procura é pelo número exato e traz só aquele produto."
+  }
+]
+</script>
+{% endblock %}

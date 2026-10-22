@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>{{ catalogo.nome|default:"Produtos do fornecedor" }}</h1>
+  <a href="{% url 'fornecedores:lista' %}">Voltar aos fornecedores</a>
+</div>
+
+{% if not catalogo.nome %}
+<section class="cartao">
+  <h2>Escolha um fornecedor</h2>
+  <p>Esta tela mostra tudo o que a loja tem de um fornecedor. Abra pela
+     <a href="{% url 'fornecedores:lista' %}">lista de fornecedores</a>, no nome dele.</p>
+</section>
+{% elif not catalogo.produtos %}
+<section class="cartao">
+  <h2>Nenhum produto ligado a {{ catalogo.nome }}</h2>
+  <p>Na última importação nenhum produto está com este fornecedor. Isso acontece quando a
+     loja nunca comprou dele pelo SET, ou quando o nome mudou no cadastro.</p>
+</section>
+{% else %}
+
+<div class="cartoes-numero">
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Produtos deste fornecedor</span>
+    <strong class="cartao-valor">{{ catalogo.produtos|contagem }}</strong>
+    <span class="cartao-rodape">Em {{ catalogo.quantos_grupos }} tipo{{ catalogo.quantos_grupos|pluralize }} de produto.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Venderam no ano</span>
+    <strong class="cartao-valor">{{ catalogo.com_venda|contagem }}</strong>
+    <span class="cartao-rodape">{{ catalogo.parados|contagem }} não venderam uma unidade em 12 meses.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Na prateleira hoje</span>
+    <strong class="cartao-valor">{{ catalogo.estoque|reais }}</strong>
+    <span class="cartao-rodape">Ao custo. {{ catalogo.sem_estoque|contagem }} estão sem saldo.</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Faturou em 12 meses</span>
+    <strong class="cartao-valor">{{ catalogo.vendido_12m|reais }}</strong>
+    <span class="cartao-rodape">A loja comprou {{ catalogo.comprado_12m|reais }} dele no mesmo período.</span>
+  </div>
+</div>
+
+{% if catalogo.parado_na_prateleira %}
+<p class="aviso-parado">Deste fornecedor há <strong>{{ catalogo.parado_na_prateleira|reais }}</strong>
+   parados na prateleira, em produtos que não venderam nada no ano. É o mesmo número que
+   aparece ao lado dele na <a href="{% url 'compras:lista' %}">lista de compra</a>.</p>
+{% endif %}
+
+<section class="cartao">
+  <h2>A variedade, por tipo de produto</h2>
+  <p class="ajuda">Quantos produtos diferentes este fornecedor tem em cada grupo do SET, e
+     quantos deles venderam no ano. Clique no grupo para ver só ele na lista de baixo.</p>
+  <ul class="barras-lista barras-lista-grafico">
+    {% for grupo in catalogo.grupos %}
+    <li>
+      <span class="barras-nome">
+        <a href="{% url 'fornecedores:produtos' %}?nome={{ catalogo.nome|urlencode }}&amp;grupo={{ grupo.nome|urlencode }}">{{ grupo.nome }}</a>
+        <small>{{ grupo.com_venda|contagem }} venderam no ano, {{ grupo.parados|contagem }} não{% if grupo.estoque %} ·
+          {{ grupo.estoque|reais }} na prateleira{% endif %}</small></span>
+      <span class="barras-trilho"><span class="barras-preenchida" style="width: {{ grupo.largura }}%"></span></span>
+      <span class="barras-valor">{{ grupo.produtos|contagem }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="cartao">
+  <h2>Todos os produtos{% if catalogo.filtro_grupo %} de {{ catalogo.filtro_grupo }}{% endif %}</h2>
+  <form class="busca-produto" method="get" action="{% url 'fornecedores:produtos' %}">
+    <input type="hidden" name="nome" value="{{ catalogo.nome }}">
+    <label for="busca">Procurar no catálogo deste fornecedor</label>
+    <input type="search" id="busca" name="busca" value="{{ catalogo.busca }}"
+           placeholder="Ex.: cadeira, 000317" autocomplete="off">
+    <select name="grupo" aria-label="Tipo de produto">
+      <option value="">Todos os grupos</option>
+      {% for nome in catalogo.nomes_de_grupo %}
+      <option value="{{ nome }}" {% if nome == catalogo.filtro_grupo %}selected{% endif %}>{{ nome }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="botao">Procurar</button>
+  </form>
+  <p class="ajuda">Pode digitar com acento ou sem: <strong>quiteria</strong> acha
+     <strong>QUITÉRIA</strong>. O código também vale.</p>
+
+  <p class="acoes-da-lista">
+    <a class="botao secundario" href="{% url 'fornecedores:produtos_em_arquivo' %}?nome={{ catalogo.nome|urlencode }}&amp;busca={{ catalogo.busca|urlencode }}&amp;grupo={{ catalogo.filtro_grupo|urlencode }}">Baixar esta lista em arquivo</a>
+    <span class="ajuda">{{ catalogo.encontrados|contagem }} produto{{ catalogo.encontrados|pluralize }}
+      {% if catalogo.filtrando %}encontrado{{ catalogo.encontrados|pluralize }}{% else %}no catálogo{% endif %}{% if catalogo.escondidos %},
+      e a tela mostra os {{ catalogo.mostrados|contagem }} primeiros; o arquivo leva todos{% endif %}.</span>
+  </p>
+
+  {% if catalogo.tem_itens %}
+  <div class="tabela-rolavel tabela-dez">
+    <table>
+      <caption class="oculto-visualmente">Produtos de {{ catalogo.nome }}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Produto</th>
+          <th scope="col">Grupo</th>
+          <th scope="col" class="numerico">Na prateleira</th>
+          <th scope="col" class="numerico">Custo</th>
+          <th scope="col" class="numerico">Preço</th>
+          <th scope="col" class="numerico">Vendeu em 12m</th>
+          <th scope="col">Última venda</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in catalogo.itens %}
+        <tr>
+          <th scope="row">{{ item.descricao|default:item.codigo }}
+            <span class="linha-detalhe">código {{ item.codigo }}</span></th>
+          <td>{{ item.grupo|default:"—" }}</td>
+          <td class="numerico">{{ item.estoque|quantidade }}</td>
+          <td class="numerico">{% if item.custo %}{{ item.custo|reais }}{% else %}—{% endif %}</td>
+          <td class="numerico">{% if item.preco_venda %}{{ item.preco_venda|reais }}{% else %}—{% endif %}</td>
+          <td class="numerico">{{ item.vendas_12m|quantidade }}</td>
+          <td>{% if item.ultima_venda %}{{ item.ultima_venda|date:"d/m/Y" }}{% else %}nunca vendeu{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nada encontrado com esse filtro.
+     <a href="{% url 'fornecedores:produtos' %}?nome={{ catalogo.nome|urlencode }}">Ver o catálogo inteiro</a>.</p>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>De onde sai esta lista</h2>
+  <p>O SET não tem um cadastro de "quem fornece o quê": o que ele grava em cada produto é o
+     fornecedor da <strong>última compra</strong>. Então esta tela é o catálogo que a loja
+     montou comprando, e não o mostruário do fornecedor. Produto que a loja nunca comprou
+     pelo SET fica sem fornecedor, e produto comprado de dois fica com o último.</p>
+  <p class="ajuda">Para ver o cadastro, o prazo e a reputação dele, abra a
+     <a href="{% url 'fornecedores:ficha' %}?nome={{ catalogo.nome|urlencode }}">ficha do fornecedor</a>.</p>
+</section>
+
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Produtos do fornecedor",
+    "texto": "A variedade que a loja tem deste fornecedor: quantos produtos, de quantos tipos, quanto está na prateleira e quanto gira."
+  },
+  {
+    "seletor": ".barras-lista",
+    "titulo": "Por tipo de produto",
+    "texto": "Cada barra é um grupo do SET. A barra cheia é o grupo com mais produtos diferentes. Clicando no nome, a lista de baixo mostra só aquele grupo."
+  },
+  {
+    "seletor": ".busca-produto",
+    "titulo": "Procurar dentro do fornecedor",
+    "texto": "Procura só no catálogo deste fornecedor, com acento ou sem. O arquivo sai com tudo o que o filtro achou."
+  }
+]
+</script>
+{% endblock %}

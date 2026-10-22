@@ -1,0 +1,35 @@
+"""Rotas. Tudo vive sob /sistema (briefing, seção 4)."""
+
+from django.contrib import admin
+from django.urls import include, path
+from django.views.generic import RedirectView
+
+admin.site.site_header = "Administração do sistema auxiliar"
+admin.site.site_title = "Cabana do Jacarandá"
+
+rotas_sistema = [
+    path("", include("apps.core.urls")),
+    path("", include("apps.contas.urls")),
+    path("painel/", include("apps.painel.urls")),
+    path("compras/", include("apps.compras.urls")),
+    path("pedidos/", include("apps.pedidos.urls")),
+    path("backup/", include("apps.backup.urls")),
+    path("fornecedores/", include("apps.fornecedores.urls")),
+    path("financeiro/", include("apps.financeiro.urls")),
+    path("conciliacao/", include("apps.conciliacao.urls")),
+    path("caixa/", include("apps.caixa.urls")),
+    path("margem/", include("apps.margem.urls")),
+    path("clientes/", include("apps.clientes.urls")),
+    path("importacao/", include("apps.importacao.urls")),
+    path("inventario/", include("apps.inventario.urls")),
+    path("processos/", include("apps.processos.urls")),
+    path("alertas/", include("apps.alertas.urls")),
+    path("tempo/", include("apps.tempo.urls")),
+    path("auditoria/", include("apps.auditoria.urls")),
+    path("admin/", admin.site.urls),
+]
+
+urlpatterns = [
+    path("sistema/", include(rotas_sistema)),
+    path("", RedirectView.as_view(url="/sistema/", permanent=False)),
+]

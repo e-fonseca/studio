@@ -1,0 +1,4 @@
+{% load cabana %}{% comment %}
+Um valor de KPI no formato que ele pede. Fica num arquivo só para os dois blocos de
+cartões do dashboard não repetirem a mesma escada de ifs.
+{% endcomment %}{% if k.formato == "reais" %}{{ k.valor|reais }}{% elif k.formato == "porcento" %}{{ k.valor|floatformat:"-1" }}%{% elif k.formato == "meses" %}{{ k.valor|floatformat:"-1" }} {% if k.valor == 1 %}mês{% else %}meses{% endif %}{% else %}{{ k.valor|contagem }}{% endif %}

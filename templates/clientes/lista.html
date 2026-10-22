@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Clientes</h1>
+  <p><a href="{% url 'painel:painel' %}">Voltar ao painel</a></p>
+</div>
+
+<section class="cartao estado-dados estado-{{ estado.nivel }}">
+  <h2>{{ estado.titulo }}</h2>
+  <p>{{ estado.detalhe }}</p>
+</section>
+
+<div class="resumo-painel">
+  <div>
+    <span class="numero">{{ total }}</span>
+    <span class="rotulo">Clientes cadastrados no SET</span>
+  </div>
+  <div>
+    <span class="numero">{{ compraram }}</span>
+    <span class="rotulo">Já compraram com o nome lançado</span>
+  </div>
+  <div>
+    <span class="numero">{{ pessoas_juridicas }}</span>
+    <span class="rotulo">Empresas</span>
+  </div>
+</div>
+
+<section class="cartao cartao-atencao">
+  <h2>A maior parte da venda não tem cliente identificado</h2>
+  <p>No balcão o caixa lança a venda em CONSUMIDOR FINAL quando a pessoa não se identifica:
+     foram <strong>{{ balcao_vendas }}</strong> vendas assim, <strong>{{ balcao_valor|reais }}</strong> nos
+     últimos 12 meses. Por isso o cadastro abaixo é pequeno perto do movimento da loja. Para
+     saber quem compra, a venda precisa ser lançada no cliente, no próprio SET.</p>
+</section>
+
+<section class="cartao">
+  <h2>O que o sistema guarda de cada cliente</h2>
+  <p>Nome, cidade, estado, data de cadastro e o que a pessoa comprou. CPF, RG, endereço,
+     telefone e dados de família ficam só no SET: são dados pessoais e não há motivo para
+     copiá-los para cá (LGPD).</p>
+</section>
+
+{% if clientes %}
+<div class="tabela-rolavel">
+  <table class="tabela-clientes">
+    <caption>Clientes que já compraram, de quem mais comprou em 12 meses para quem menos.
+      Outros {{ sem_compra }} estão cadastrados e nunca tiveram venda lançada no nome.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Cliente</th>
+        <th scope="col">Cidade</th>
+        <th scope="col" class="numerico">Comprado em 12m</th>
+        <th scope="col" class="numerico">Comprado no total</th>
+        <th scope="col">Última compra</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cliente in clientes %}
+      <tr {% if cliente.bloqueado %}class="linha-atencao"{% endif %}>
+        <td>{{ cliente.nome|default:cliente.codigo }}
+          {% if cliente.pessoa_juridica %}<br><span class="ajuda">empresa</span>{% endif %}
+          {% if cliente.bloqueado %}<br><span class="etiqueta etiqueta-atencao">bloqueado no SET</span>{% endif %}</td>
+        <td>{{ cliente.cidade|default:"—" }}{% if cliente.uf %}/{{ cliente.uf }}{% endif %}</td>
+        <td class="numerico">{{ cliente.valor_comprado_12m|reais }}</td>
+        <td class="numerico">{{ cliente.valor_comprado|reais }}</td>
+        <td>{{ cliente.ultima_compra|date:"d/m/Y"|default:"nunca" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<section class="cartao">
+  <h2>Nenhum cliente para mostrar ainda</h2>
+  <p>A lista sai da última importação concluída.</p>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Clientes",
+    "texto": "O cadastro de clientes do SET, com o que cada um comprou. Serve para saber quem são os clientes que voltam."
+  },
+  {
+    "seletor": ".cartao-atencao",
+    "titulo": "Por que a lista é pequena",
+    "texto": "Quase toda venda da loja é de balcão, sem identificar quem comprou. Enquanto for assim, o cadastro mostra só quem foi lançado com nome."
+  }
+]
+</script>
+{% endblock %}
