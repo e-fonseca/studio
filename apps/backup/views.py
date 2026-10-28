@@ -48,7 +48,7 @@ def _ligar_de_vez(request, configuracao):
         # a digitar tudo de novo. O motivo vai para a tela, que é onde se conserta.
         messages.error(request, f"O token foi guardado, mas a primeira cópia não subiu. {erro}")
         return
-    messages.success(request, f"Backup ligado e primeira cópia no GitHub: {resultado.mensagem}")
+    messages.success(request, f"Cópia do programa ligada e primeira cópia no GitHub: {resultado.mensagem}")
 
 
 @login_required
@@ -72,7 +72,7 @@ def painel(request):
     else:
         formulario = ConfiguracaoDeBackupForm(instance=configuracao)
     return render(request, "backup/painel.html", {
-        "titulo": "Backup no GitHub",
+        "titulo": "Cópia do programa no GitHub",
         "estado": importacao_servicos.estado_dos_dados(),
         "configuracao": configuracao,
         "estado_do_backup": vigia.situacao(configuracao),

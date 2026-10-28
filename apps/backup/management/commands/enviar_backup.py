@@ -23,7 +23,7 @@ class Command(BaseCommand):
     def handle(self, *args, **opcoes):
         configuracao = ConfiguracaoDeBackup.atual()
         if not configuracao.configurado:
-            self.stdout.write("Backup no GitHub não configurado; nada a enviar.")
+            self.stdout.write("Cópia do programa no GitHub não configurada; nada a enviar.")
             return
         if not configuracao.ativo and not opcoes["forcar"]:
             self.stdout.write("Envio automático desligado na tela Backup; nada a enviar.")
@@ -31,6 +31,6 @@ class Command(BaseCommand):
         try:
             resultado = envio.enviar(configuracao=configuracao)
         except NaoDeuCerto as erro:
-            self.stderr.write(f"Backup no GitHub não foi enviado: {erro}")
+            self.stderr.write(f"Cópia do programa no GitHub não foi enviada: {erro}")
             raise SystemExit(1) from erro
         self.stdout.write(resultado.mensagem)

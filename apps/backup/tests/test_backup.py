@@ -466,7 +466,7 @@ class TelaTest(TestCase):
                 "repositorio": "loja/cabana", "ramo": "main", "ativo": "on",
                 "token": "token-novo"}, follow=True)
         self.assertTrue(enviou.called)
-        self.assertContains(pagina, "Backup ligado e primeira cópia no GitHub")
+        self.assertContains(pagina, "Cópia do programa ligada e primeira cópia no GitHub")
         self.assertTrue(ConfiguracaoDeBackup.atual().ativo)
 
     def test_token_recusado_na_primeira_copia_nao_apaga_o_que_foi_gravado(self):

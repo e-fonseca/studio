@@ -136,6 +136,18 @@ class ASituacao(TestCase):
         self.assertFalse(estado.tem_noticia)
         self.assertFalse(estado.precisa_de_voce)
 
+    def test_em_dia_diz_que_e_o_programa_e_que_so_sobe_com_alteracao(self):
+        """27/10/2026: "a nomenclatura deixa a entender outra coisa". A data parada de 22/10
+        parecia backup atrasado; era a data da última versão."""
+        from apps.core import versao  # noqa: PLC0415
+
+        configurada(ultimo_sucesso_em=AGORA - timedelta(days=5), ultimo_deu_certo=True,
+                    ultimos_arquivos=535)
+        estado = vigia.situacao(agora=AGORA)
+        self.assertIn("cópia do programa", estado.titulo.lower())
+        self.assertIn(f"versão {versao.atual().numero}", estado.frase)
+        self.assertIn("só muda quando há alteração ou implementação", estado.frase)
+
     def test_token_vencendo_avisa_antes(self):
         configurada(ultimo_sucesso_em=AGORA, ultimo_deu_certo=True,
                     token_validade=(AGORA + timedelta(days=4)).date())

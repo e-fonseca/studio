@@ -426,7 +426,7 @@ def backup_no_github(configuracao=None, agora=None):
     from apps.backup import vigia  # noqa: PLC0415 - o app de backup não é dependência dos alertas
 
     estado = vigia.situacao(configuracao, agora)
-    relatorio = Relatorio(rotina="backup", assunto="Backup no GitHub",
+    relatorio = Relatorio(rotina="backup", assunto="Cópia do programa no GitHub",
                           caminho=estado.caminho)
     relatorio.manchete = estado.titulo
     relatorio.resumo = estado.titulo
@@ -436,7 +436,7 @@ def backup_no_github(configuracao=None, agora=None):
     relatorio.blocos.append(Bloco(
         titulo="O que está acontecendo",
         frase=estado.frase,
-        link=estado.caminho, link_rotulo="Abrir a tela de Backup",
+        link=estado.caminho, link_rotulo="Abrir a tela Cópia do programa",
     ))
     if estado.precisa_de_voce:
         relatorio.blocos.append(Bloco(

@@ -34,7 +34,7 @@ class Rotina(models.TextChoices):
     COMPRA = "compra", "Sugestão de compra (toda semana)"
     # Vigia do backup no GitHub (1.33.0). Diária, e calada quando está tudo bem: ela
     # existe para a cópia fora do servidor não parar em silêncio.
-    BACKUP = "backup", "Backup no GitHub (todo dia)"
+    BACKUP = "backup", "Cópia do programa no GitHub (todo dia)"
     TESTE = "teste", "Teste de configuração"
 
 

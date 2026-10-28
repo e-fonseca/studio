@@ -7,6 +7,23 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.40.3 — 27/10/2026
+
+Ele viu "a última cópia subiu em 22/10" no dia 27 e perguntou se estava errado. Não
+estava, mas a tela levava a pensar outra coisa: *"no sistema, a nomenclatura deixa a
+entender outra coisa"* e *"mencionar que [é] algo relacionado ao github, mas somente quando
+ha alteracoes ou implementacoes"*.
+
+- **"Backup" virou "Cópia do programa no GitHub"**: no menu Sistema, no título da tela, no
+  e-mail e no Telegram do aviso e nas linhas que a atualização escreve. "Backup" sozinho
+  fazia pensar nos dados da loja, que nunca vão para o GitHub.
+- **Em dia, a tela diz qual versão está lá e por que a data fica parada**: "O GitHub tem a
+  versão X, copiada em ... Esta data só muda quando há alteração ou implementação no
+  sistema". Logo abaixo, lembra que os dados do dia têm cópia própria toda noite às 23:30,
+  no servidor.
+- O nome do aviso diário na tela Alertas mudou junto (migração `alertas.0005`, só o
+  rótulo; nada no banco muda de valor).
+
 ## 1.40.2 — 22/10/2026
 
 Ele colou o token na tela Backup e a tela ficou parada em "Enviando…": *"coloquei o token

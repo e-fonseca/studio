@@ -24,7 +24,7 @@ reenviar é barato.
 **Fala antes de quebrar.** Automação que falha calada é pior que botão, porque o botão
 pelo menos não dá a impressão de estar funcionando. O vigia olha três coisas: a cópia
 está velha? o GitHub recusou o token? o token vence em menos de dez dias? Qualquer uma
-delas vira recado na tela de Backup e, uma vez por dia, alerta por e-mail e Telegram.
+delas vira recado na tela Cópia do programa e, uma vez por dia, alerta por e-mail e Telegram.
 Nenhuma delas dá notícia quando está tudo bem — relatório que chega todo dia dizendo
 "está tudo certo" é relatório que ninguém abre.
 """
@@ -93,14 +93,14 @@ def situacao(configuracao=None, agora=None):
     faltando = configuracao.falta_preencher
     if faltando:
         return Situacao(
-            Gravidade.ERRO, "O backup no GitHub ainda não está ligado",
+            Gravidade.ERRO, "A cópia do programa no GitHub ainda não está ligada",
             "Falta " + " e ".join(faltando) + ". Enquanto isso, ESTE servidor não manda "
             "o código para o GitHub — o que já estiver lá, mandado de outro lugar, "
             "continua lá, mas nada do que mudar aqui chega sozinho.", precisa_de_voce=True)
 
     if not configuracao.ativo:
         return Situacao(
-            Gravidade.ATENCAO, "O backup está configurado mas desligado",
+            Gravidade.ATENCAO, "A cópia do programa está configurada mas desligada",
             "O token e o repositório estão preenchidos, mas o envio automático está "
             'desmarcado. Marque "mandar a cada atualização" para a cópia voltar a sair '
             "sozinha.", precisa_de_voce=True)
@@ -118,7 +118,7 @@ def situacao(configuracao=None, agora=None):
             return Situacao(
                 Gravidade.ATENCAO, f"O token do GitHub vence {quando}",
                 f"Ele vale até {validade:%d/%m/%Y}. Gerando um token novo e colando na "
-                "tela antes disso, o backup não para.", precisa_de_voce=True)
+                "tela antes disso, a cópia não para.", precisa_de_voce=True)
 
     dias = _dias_desde(configuracao.ultimo_sucesso_em, agora)
     if dias is None:
@@ -150,11 +150,16 @@ def situacao(configuracao=None, agora=None):
             f"{timezone.localtime(configuracao.ultimo_sucesso_em):%d/%m/%Y} continua lá, e "
             "o sistema tenta de novo sozinho.")
 
+    from apps.core import versao as versao_do_sistema  # noqa: PLC0415
+
     quando = timezone.localtime(configuracao.ultimo_sucesso_em)
     return Situacao(
-        Gravidade.OK, "O backup está em dia",
-        f"A última cópia subiu em {quando:%d/%m/%Y às %H:%M}, com "
-        f"{configuracao.ultimos_arquivos} arquivos.")
+        Gravidade.OK, "A cópia do programa está em dia",
+        # Pedido dele em 27/10/2026: "a nomenclatura deixa a entender outra coisa". A
+        # data parada em 22/10 parecia backup atrasado; é a data da última VERSÃO.
+        f"O GitHub tem a versão {versao_do_sistema.atual().numero}, copiada em "
+        f"{quando:%d/%m/%Y às %H:%M} ({configuracao.ultimos_arquivos} arquivos). Esta "
+        "data só muda quando há alteração ou implementação no sistema.")
 
 
 def anotar_validade_do_token(configuracao=None, agora=None, consultar=None):

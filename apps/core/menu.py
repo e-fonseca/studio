@@ -166,7 +166,7 @@ GRUPOS = [
              ajuda="Quem entra no sistema e com qual perfil."),
         Item("alertas:painel", "Alertas", "alertas.configurar_email",
              ajuda="Os relatórios que o sistema manda por e-mail sozinho."),
-        Item("backup:painel", "Backup", "backup.configurar_backup",
+        Item("backup:painel", "Cópia do programa", "backup.configurar_backup",
              irmas=("backup:enviar_agora",),
              ajuda="A cópia do código do sistema no GitHub, fora do servidor da loja."),
         # No menu só para quem administra, senão ela entraria na fileira do vendedor, que

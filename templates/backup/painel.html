@@ -2,7 +2,7 @@
 {% load cabana %}
 {% block conteudo %}
 <div class="cabecalho-pagina">
-  <h1>Backup no GitHub</h1>
+  <h1>Cópia do programa no GitHub</h1>
   <p><a href="{% url 'painel:painel' %}">Voltar ao painel</a></p>
 </div>
 
@@ -10,7 +10,7 @@
 se a cópia de fora do servidor existe hoje, não como ela funciona. Pedido do Edson em
 14/10/2026, de automatizar tudo — e automação que falha calada é pior que botão.{% endcomment %}
 <section class="cartao">
-  <h2>Como está o backup</h2>
+  <h2>Como está a cópia do programa</h2>
   <p class="resultado-da-conferencia {% if estado_do_backup.ok %}confere{% elif estado_do_backup.gravidade == 'erro' %}erro{% else %}divergente{% endif %}">
     {{ estado_do_backup.titulo }}</p>
   <p>{{ estado_do_backup.frase }}</p>
@@ -19,19 +19,20 @@ se a cópia de fora do servidor existe hoje, não como ela funciona. Pedido do E
      confere isso sozinho todo dia e avisa dez dias antes do vencimento, por e-mail e
      Telegram, para a cópia não parar sem ninguém notar.</p>
   {% endif %}
-  <p class="ajuda">O envio acontece no fim de cada atualização, sem ninguém clicar. E se a
-     última cópia passar de uma semana — atualização que falhou no meio, mês sem atualização
-     nenhuma —, o sistema tenta de novo por conta própria.</p>
+  <p class="ajuda">A cópia sobe sozinha no fim de cada atualização. Os <strong>dados do
+     dia</strong> (vendas, pedidos, contagens) não vão para o GitHub: têm cópia própria toda
+     noite às 23:30, no servidor da loja. Se passar uma semana sem versão nova, o sistema
+     confere o GitHub por conta própria e manda de novo o que tiver faltado.</p>
 </section>
 
 <section class="cartao">
   <h2>O que vai para o GitHub, e o que não vai</h2>
   <p>Vai o <strong>código do sistema</strong>: {{ quantos_arquivos }} arquivos de programa,
-     tela e documentação. É um backup fora do servidor da loja, com histórico de cada versão.</p>
+     tela e documentação. É uma cópia fora do servidor da loja, com histórico de cada versão.</p>
   <p><strong>O banco de dados não vai</strong>, e isso é de propósito. Nele estão os nomes
      dos clientes que vêm do SET, o extrato bancário e as notas fiscais anexadas aos pedidos.
-     GitHub é um serviço fora da loja; esse dado continua no servidor, no backup que roda
-     todo dia às 23:30 e guarda 14 dias em <code>C:\cabana-sistema\backups</code>.</p>
+     GitHub é um serviço fora da loja; esse dado continua no servidor, na cópia dos dados que
+     roda todo dia às 23:30 e guarda 14 dias em <code>C:\cabana-sistema\backups</code>.</p>
   <p><strong>Senha nenhuma vai.</strong> O arquivo de configuração com a senha do e-mail e a
      chave do sistema fica fora da pasta do programa, e o envio monta a lista pelo que pode ir.</p>
 </section>
@@ -99,7 +100,7 @@ se a cópia de fora do servidor existe hoje, não como ela funciona. Pedido do E
 <script type="application/json" id="passos-ajuda">
 [
   {
-    "titulo": "Backup no GitHub",
+    "titulo": "Cópia do programa no GitHub",
     "texto": "Uma cópia do código do sistema fora do servidor da loja, com histórico. O banco de dados não vai para lá, de propósito: tem nome de cliente e extrato bancário dentro."
   },
   {

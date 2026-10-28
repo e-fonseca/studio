@@ -89,7 +89,7 @@ class Command(BaseCommand):
         vigia.anotar_validade_do_token()
         resultado = vigia.reenviar_se_atrasado()
         if resultado is not None:
-            self.stdout.write(f"Backup no GitHub: {resultado.mensagem}")
+            self.stdout.write(f"Cópia do programa no GitHub: {resultado.mensagem}")
 
     def _adiantar_as_contas_da_abertura(self):
         """Deixa a tela de abertura pronta, para quem entrar no sistema não esperar por ela.
