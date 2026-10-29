@@ -7,6 +7,18 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.40.4 — 28/10/2026
+
+Pedido dele: *"no disparo de e-mail diário sobre vendas do dia inserir o valor de caixa
+inicial e final junto com o operador que abriu e fechou o caixa"*.
+
+- **O e-mail Vendas do dia ganhou o bloco "Caixa do dia"**, logo depois do resumo: para
+  cada caixa do dia, quem abriu, a que horas e com quanto, e quem fechou, a que horas e
+  com quanto. Os valores são os do SET, os mesmos da tela Caixa.
+- Caixa ainda aberto na importação sai como "Ainda aberto", sem valor final inventado;
+  caixa que virou a noite leva a data do fechamento junto da hora.
+- O Telegram leva as mesmas linhas ("Abriu: MARIA — R$ 200,00").
+
 ## 1.40.3 — 27/10/2026
 
 Ele viu "a última cópia subiu em 22/10" no dia 27 e perguntou se estava errado. Não

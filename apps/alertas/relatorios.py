@@ -362,6 +362,7 @@ def vendas_do_dia(importacao=None, dia=None):
                f"vendidos com custo conhecido.{sem_custo}"),
         link=relatorio.caminho, link_rotulo="Abrir a relação do dia",
     ))
+    relatorio.blocos.append(_caixa_do_dia(importacao, dados.dia))
 
     linhas, escondidas = _recorte([
         {
@@ -411,6 +412,64 @@ def vendas_do_dia(importacao=None, dia=None):
             link=relatorio.caminho, link_rotulo="Abrir a relação do dia",
         ))
     return relatorio
+
+
+def _hora(momento, dia):
+    """"18:10" no próprio dia; "28/10 01:10" quando o caixa virou a noite."""
+    local = timezone.localtime(momento)
+    return f"{local:%H:%M}" if local.date() == dia else f"{local:%d/%m %H:%M}"
+
+
+def _caixa_do_dia(importacao, dia):
+    """Com quanto cada caixa do dia abriu e fechou, e quem fez cada um.
+
+    Pedido do Edson em 28/10/2026: "inserir o valor de caixa inicial e final junto com
+    o operador que abriu e fechou o caixa". Os números são os que o SET gravou no turno
+    (CAIXA.SALDOINICIAL e SALDOFINAL), os mesmos da tela Caixa. Caixa ainda aberto na
+    hora da importação não tem saldo final, e o e-mail diz isso em vez de inventar um.
+
+    Duas linhas por caixa, abertura e fechamento, para caber nas duas colunas do e-mail
+    e para o Telegram, que só lê o nome e o valor, dizer quem fez cada coisa.
+    """
+    caixas = list(importacao.caixas.filter(dia=dia).order_by("aberto_em", "id_set"))
+    quando = dia.strftime("%d/%m/%Y")
+    bloco = Bloco(titulo="Caixa do dia", colunas=["Caixa", "Valor"],
+                  link="/sistema/caixa/", link_rotulo="Abrir a tela Caixa")
+    if not caixas:
+        bloco.frase = f"O SET não tem caixa aberto em {quando}."
+        return bloco
+
+    bloco.frase = ("O valor do caixa na abertura e no fechamento, como o SET gravou."
+                   if len(caixas) == 1 else
+                   f"{len(caixas)} caixas abertos neste dia, do mais cedo para o mais tarde.")
+    linhas = []
+    for caixa in caixas:
+        numero = f"caixa {caixa.id_set}"
+        linhas.append({
+            "quando": _hora(caixa.aberto_em, dia),
+            "quem": f"Abriu: {caixa.operador or 'operador não gravado no SET'}",
+            "o_que": numero,
+            "valor": _reais(caixa.saldo_inicial),
+            "detalhe": "",
+        })
+        if caixa.esta_aberto or caixa.saldo_final is None:
+            linhas.append({
+                "quando": "",
+                "quem": "Ainda aberto",
+                "o_que": numero,
+                "valor": "",
+                "detalhe": "não estava fechado na hora da importação, sem valor final",
+            })
+            continue
+        linhas.append({
+            "quando": _hora(caixa.fechado_em, dia) if caixa.fechado_em else "",
+            "quem": f"Fechou: {caixa.operador_fechamento or 'operador não gravado no SET'}",
+            "o_que": numero,
+            "valor": _reais(caixa.saldo_final),
+            "detalhe": "",
+        })
+    bloco.linhas, bloco.escondidas = _recorte(linhas)
+    return bloco
 
 
 def backup_no_github(configuracao=None, agora=None):

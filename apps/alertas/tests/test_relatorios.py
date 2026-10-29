@@ -1,12 +1,13 @@
 """Os quatro relatórios: o que cada um diz, e que ele diz o mesmo que a tela."""
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.alertas import relatorios
+from apps.alertas import relatorios, telegram
+from apps.caixa.models import CaixaImportado
 from apps.compras import limite, lista_de_compra, sugestoes
 from apps.financeiro import servicos as financeiro
 from apps.financeiro.models import Lancamento
@@ -315,3 +316,83 @@ class VendasDoDiaTest(BaseRelatorio):
         self.venda(linhas=[("001", "VASO", "100", "50")])
         relatorio = relatorios.vendas_do_dia(self.importacao)
         self.assertEqual(relatorio.caminho, "/sistema/painel/vendas-do-dia/")
+
+
+class CaixaNoEmailDeVendasTest(BaseRelatorio):
+    """Pedido do Edson em 28/10/2026: o caixa inicial e o final, e quem abriu e fechou."""
+
+    venda = VendasDoDiaTest.venda
+
+    def caixa(self, id_set, abriu, fechou=None, **campos):
+        aberto_em = timezone.make_aware(abriu)
+        padrao = dict(
+            importacao=self.importacao, id_set=id_set, dia=aberto_em.date(),
+            aberto_em=aberto_em, operador="MARIA", operador_fechamento="JOAO",
+            saldo_inicial=Decimal("200"), saldo_final=Decimal("1540.50"),
+            situacao=CaixaImportado.Situacao.FECHADO,
+            fechado_em=timezone.make_aware(fechou) if fechou else None,
+        )
+        padrao.update(campos)
+        return CaixaImportado.objects.create(**padrao)
+
+    def bloco(self):
+        relatorio = relatorios.vendas_do_dia(self.importacao)
+        return next(b for b in relatorio.blocos if b.titulo == "Caixa do dia")
+
+    def setUp(self):
+        super().setUp()
+        self.venda(linhas=[("001", "VASO", "100", "50")])
+
+    def test_abertura_e_fechamento_com_valor_e_operador(self):
+        self.caixa(969, datetime(2026, 9, 20, 8, 52), datetime(2026, 9, 20, 18, 10))
+        abertura, fechamento = self.bloco().linhas
+        self.assertEqual(abertura["quem"], "Abriu: MARIA")
+        self.assertEqual(abertura["valor"], "R$ 200,00")
+        self.assertEqual(abertura["quando"], "08:52")
+        self.assertEqual(fechamento["quem"], "Fechou: JOAO")
+        self.assertEqual(fechamento["valor"], "R$ 1.540,50")
+        self.assertEqual(fechamento["quando"], "18:10")
+        self.assertIn("caixa 969", abertura["o_que"])
+
+    def test_vem_logo_depois_do_resumo_do_dia(self):
+        self.caixa(1, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 20, 18, 0))
+        titulos = [b.titulo for b in relatorios.vendas_do_dia(self.importacao).blocos]
+        self.assertEqual(titulos[:3], ["O dia de 20/09/2026", "Caixa do dia", "O que mais vendeu"])
+
+    def test_caixa_ainda_aberto_nao_inventa_valor_final(self):
+        self.caixa(2, datetime(2026, 9, 20, 9, 0), situacao=CaixaImportado.Situacao.ABERTO,
+                   saldo_final=None, operador_fechamento="")
+        abertura, aberto = self.bloco().linhas
+        self.assertEqual(abertura["valor"], "R$ 200,00")
+        self.assertEqual(aberto["quem"], "Ainda aberto")
+        self.assertEqual(aberto["valor"], "")
+        self.assertIn("sem valor final", aberto["detalhe"])
+
+    def test_caixa_que_virou_a_noite_leva_a_data_do_fechamento(self):
+        self.caixa(3, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 21, 1, 10))
+        self.assertEqual(self.bloco().linhas[1]["quando"], "21/09 01:10")
+
+    def test_dois_caixas_no_dia_em_ordem_de_abertura(self):
+        self.caixa(11, datetime(2026, 9, 20, 14, 0), datetime(2026, 9, 20, 20, 0), operador="ANA")
+        self.caixa(10, datetime(2026, 9, 20, 8, 0), datetime(2026, 9, 20, 13, 0))
+        bloco = self.bloco()
+        self.assertEqual([linha["quem"] for linha in bloco.linhas],
+                         ["Abriu: MARIA", "Fechou: JOAO", "Abriu: ANA", "Fechou: JOAO"])
+        self.assertIn("2 caixas", bloco.frase)
+
+    def test_caixa_de_outro_dia_nao_entra(self):
+        self.caixa(4, datetime(2026, 9, 19, 9, 0), datetime(2026, 9, 19, 18, 0))
+        bloco = self.bloco()
+        self.assertEqual(bloco.linhas, [])
+        self.assertIn("não tem caixa aberto em 20/09/2026", bloco.frase)
+
+    def test_operador_em_branco_no_set_e_dito(self):
+        self.caixa(5, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 20, 18, 0),
+                   operador="", operador_fechamento="")
+        self.assertIn("não gravado no SET", self.bloco().linhas[0]["quem"])
+
+    def test_o_telegram_leva_quem_e_quanto(self):
+        self.caixa(6, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 20, 18, 0))
+        texto = telegram.texto_do_relatorio(relatorios.vendas_do_dia(self.importacao))
+        self.assertIn("· Abriu: MARIA — R$ 200,00", texto)
+        self.assertIn("· Fechou: JOAO — R$ 1.540,50", texto)

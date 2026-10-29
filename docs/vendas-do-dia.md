@@ -66,6 +66,23 @@ manda alarme nenhum. O motivo é prático: pedra e geodo são vendidos a peso, o
 guarda o custo do quilo e a venda é de uma fração dele, então a estimativa apareceria como
 prejuízo sem a loja ter perdido nada.
 
+## O caixa do dia, no e-mail (1.40.4)
+
+Pedido do Edson em 28/10/2026: *"no disparo de e-mail diário sobre vendas do dia inserir o
+valor de caixa inicial e final junto com o operador que abriu e fechou o caixa"*. Logo
+depois do resumo do dia, o bloco **Caixa do dia** traz, para cada caixa aberto naquele
+dia, duas linhas: "Abriu: <operador>" com a hora e o saldo inicial, e "Fechou:
+<operador>" com a hora e o saldo final. São os números que o SET gravou no turno
+(`CAIXA.SALDOINICIAL` e `SALDOFINAL`), os mesmos da tela Caixa.
+
+- O dia do caixa é o da abertura (`CaixaImportado.dia`). Caixa que virou a noite mostra a
+  data junto da hora de fechamento ("21/09 09:44").
+- Caixa ainda aberto na hora da importação vem como "Ainda aberto", sem valor final: o
+  sistema não inventa um.
+- Operador em branco no SET aparece escrito "operador não gravado no SET".
+- Dia sem caixa: o bloco diz que o SET não tem caixa aberto naquele dia.
+- No Telegram as mesmas linhas saem como "· Abriu: MARIA — R$ 200,00".
+
 ## O cupom e os produtos podem não bater
 
 A relação soma os **produtos**. O cupom pode ter desconto dado no fechamento, que não fica
