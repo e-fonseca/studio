@@ -319,16 +319,21 @@ class VendasDoDiaTest(BaseRelatorio):
 
 
 class CaixaNoEmailDeVendasTest(BaseRelatorio):
-    """Pedido do Edson em 28/10/2026: o caixa inicial e o final, e quem abriu e fechou."""
+    """Pedidos do Edson: em 28/10/2026, o caixa inicial e o final com quem abriu e fechou;
+    em 29/10/2026, o final EM DINHEIRO e o que entrou por PIX, débito e crédito."""
 
     venda = VendasDoDiaTest.venda
+    # O caixa 970 da cópia de 20/09/2026, com os números de verdade.
+    FORMAS = {"PIX": "1881.00", "AVISTA": "754.50", "CARTAO DEBITO": "2055.50",
+              "CARTAO CREDITO": "3376.50"}
 
     def caixa(self, id_set, abriu, fechou=None, **campos):
         aberto_em = timezone.make_aware(abriu)
         padrao = dict(
             importacao=self.importacao, id_set=id_set, dia=aberto_em.date(),
             aberto_em=aberto_em, operador="MARIA", operador_fechamento="JOAO",
-            saldo_inicial=Decimal("200"), saldo_final=Decimal("1540.50"),
+            saldo_inicial=Decimal("379.40"), saldo_final=Decimal("8180.65"),
+            recebido=Decimal("8067.50"), sangrias=Decimal("266.25"), por_forma=self.FORMAS,
             situacao=CaixaImportado.Situacao.FECHADO,
             fechado_em=timezone.make_aware(fechou) if fechou else None,
         )
@@ -339,60 +344,130 @@ class CaixaNoEmailDeVendasTest(BaseRelatorio):
         relatorio = relatorios.vendas_do_dia(self.importacao)
         return next(b for b in relatorio.blocos if b.titulo == "Caixa do dia")
 
+    def valores(self):
+        return {linha["quem"]: linha["valor"] for linha in self.bloco().linhas}
+
     def setUp(self):
         super().setUp()
-        self.venda(linhas=[("001", "VASO", "100", "50")])
+        self.venda(valor="100", linhas=[("001", "VASO", "100", "50")])
 
-    def test_abertura_e_fechamento_com_valor_e_operador(self):
-        self.caixa(969, datetime(2026, 9, 20, 8, 52), datetime(2026, 9, 20, 18, 10))
-        abertura, fechamento = self.bloco().linhas
-        self.assertEqual(abertura["quem"], "Abriu: MARIA")
-        self.assertEqual(abertura["valor"], "R$ 200,00")
-        self.assertEqual(abertura["quando"], "08:52")
-        self.assertEqual(fechamento["quem"], "Fechou: JOAO")
-        self.assertEqual(fechamento["valor"], "R$ 1.540,50")
-        self.assertEqual(fechamento["quando"], "18:10")
-        self.assertIn("caixa 969", abertura["o_que"])
+    def test_inicio_e_final_em_dinheiro_e_as_formas_na_ordem_pedida(self):
+        self.caixa(970, datetime(2026, 9, 20, 9, 41), datetime(2026, 9, 20, 18, 10))
+        self.assertEqual([(linha["quem"], linha["valor"]) for linha in self.bloco().linhas], [
+            ("Início do caixa em dinheiro · abriu MARIA", "R$ 379,40"),
+            ("Final do dia em dinheiro · fechou JOAO", "R$ 867,65"),
+            ("PIX", "R$ 1.881,00"),
+            ("Cartão de débito", "R$ 2.055,50"),
+            ("Cartão de crédito", "R$ 3.376,50"),
+            ("Total de vendas do dia", "R$ 8.067,50"),
+        ])
+
+    def test_o_final_nao_e_o_saldo_do_set_que_soma_pix_e_cartao(self):
+        """A 1.40.4 mostrava R$ 8.180,65 num dia em que a gaveta tinha R$ 867,65."""
+        self.caixa(970, datetime(2026, 9, 20, 9, 41), datetime(2026, 9, 20, 18, 10))
+        self.assertNotIn("R$ 8.180,65", self.valores().values())
+
+    def test_o_final_em_dinheiro_e_o_mesmo_da_tela_caixa(self):
+        from apps.caixa import dinheiro  # noqa: PLC0415
+        caixa = self.caixa(970, datetime(2026, 9, 20, 9, 41), datetime(2026, 9, 20, 18, 10),
+                           entradas=Decimal("50"), pagamentos=Decimal("30"))
+        final = self.bloco().linhas[1]
+        self.assertEqual(final["valor"], relatorios._reais(dinheiro.do_turno(caixa).saldo))
+        self.assertIn("− R$ 266,25 de sangria", final["detalhe"])
+        self.assertIn("+ R$ 50,00 de entradas", final["detalhe"])
+        self.assertIn("− R$ 30,00 pagos pelo caixa", final["detalhe"])
+
+    def test_horas_de_abertura_e_fechamento(self):
+        self.caixa(970, datetime(2026, 9, 20, 9, 41), datetime(2026, 9, 21, 9, 44))
+        inicio, final = self.bloco().linhas[:2]
+        self.assertEqual(inicio["quando"], "09:41")
+        self.assertEqual(final["quando"], "21/09 09:44")
+        self.assertIn("caixa 970", inicio["o_que"])
 
     def test_vem_logo_depois_do_resumo_do_dia(self):
         self.caixa(1, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 20, 18, 0))
         titulos = [b.titulo for b in relatorios.vendas_do_dia(self.importacao).blocos]
         self.assertEqual(titulos[:3], ["O dia de 20/09/2026", "Caixa do dia", "O que mais vendeu"])
 
-    def test_caixa_ainda_aberto_nao_inventa_valor_final(self):
+    def test_caixa_ainda_aberto_diz_que_e_ate_a_importacao(self):
         self.caixa(2, datetime(2026, 9, 20, 9, 0), situacao=CaixaImportado.Situacao.ABERTO,
                    saldo_final=None, operador_fechamento="")
-        abertura, aberto = self.bloco().linhas
-        self.assertEqual(abertura["valor"], "R$ 200,00")
-        self.assertEqual(aberto["quem"], "Ainda aberto")
-        self.assertEqual(aberto["valor"], "")
-        self.assertIn("sem valor final", aberto["detalhe"])
+        final = self.bloco().linhas[1]
+        self.assertEqual(final["quem"], "Final do dia em dinheiro · caixa ainda aberto")
+        self.assertIn("até a importação", final["detalhe"])
 
-    def test_caixa_que_virou_a_noite_leva_a_data_do_fechamento(self):
-        self.caixa(3, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 21, 1, 10))
-        self.assertEqual(self.bloco().linhas[1]["quando"], "21/09 01:10")
+    def test_forma_que_nao_veio_no_dia_nao_aparece(self):
+        self.caixa(3, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 20, 18, 0),
+                   por_forma={"AVISTA": "100", "PIX": "50"})
+        self.assertNotIn("Cartão de crédito", self.valores())
+        self.assertEqual(self.valores()["PIX"], "R$ 50,00")
 
-    def test_dois_caixas_no_dia_em_ordem_de_abertura(self):
+    def test_forma_desconhecida_aparece_avisando(self):
+        """Chutar que é dinheiro faria a gaveta faltar sem explicação."""
+        self.caixa(4, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 20, 18, 0),
+                   por_forma={"AVISTA": "100", "VOUCHER LOJA": "40"})
+        rotulos = list(self.valores())
+        self.assertTrue([r for r in rotulos if r.startswith("VOUCHER LOJA (forma que o sistema")])
+        self.assertEqual(self.bloco().linhas[1]["valor"], "R$ 213,15")
+
+    def test_dois_caixas_no_dia_em_ordem_de_abertura_e_inteiros(self):
         self.caixa(11, datetime(2026, 9, 20, 14, 0), datetime(2026, 9, 20, 20, 0), operador="ANA")
         self.caixa(10, datetime(2026, 9, 20, 8, 0), datetime(2026, 9, 20, 13, 0))
+        self.caixa(12, datetime(2026, 9, 20, 20, 30), datetime(2026, 9, 20, 23, 0), operador="RUI")
         bloco = self.bloco()
-        self.assertEqual([linha["quem"] for linha in bloco.linhas],
-                         ["Abriu: MARIA", "Fechou: JOAO", "Abriu: ANA", "Fechou: JOAO"])
-        self.assertIn("2 caixas", bloco.frase)
+        inicios = [linha["quem"] for linha in bloco.linhas if linha["quem"].startswith("Início")]
+        self.assertEqual(inicios, ["Início do caixa em dinheiro · abriu MARIA",
+                                   "Início do caixa em dinheiro · abriu ANA",
+                                   "Início do caixa em dinheiro · abriu RUI"])
+        self.assertEqual(len(bloco.linhas), 16)
+        self.assertEqual(bloco.escondidas, 0)
+        self.assertIn("3 caixas", bloco.frase)
 
     def test_caixa_de_outro_dia_nao_entra(self):
-        self.caixa(4, datetime(2026, 9, 19, 9, 0), datetime(2026, 9, 19, 18, 0))
+        self.caixa(5, datetime(2026, 9, 19, 9, 0), datetime(2026, 9, 19, 18, 0))
         bloco = self.bloco()
         self.assertEqual(bloco.linhas, [])
         self.assertIn("não tem caixa aberto em 20/09/2026", bloco.frase)
 
     def test_operador_em_branco_no_set_e_dito(self):
-        self.caixa(5, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 20, 18, 0),
+        self.caixa(6, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 20, 18, 0),
                    operador="", operador_fechamento="")
-        self.assertIn("não gravado no SET", self.bloco().linhas[0]["quem"])
+        self.assertIn("sem operador no SET", self.bloco().linhas[0]["quem"])
 
     def test_o_telegram_leva_quem_e_quanto(self):
-        self.caixa(6, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 20, 18, 0))
+        self.caixa(7, datetime(2026, 9, 20, 9, 0), datetime(2026, 9, 20, 18, 0))
         texto = telegram.texto_do_relatorio(relatorios.vendas_do_dia(self.importacao))
-        self.assertIn("· Abriu: MARIA — R$ 200,00", texto)
-        self.assertIn("· Fechou: JOAO — R$ 1.540,50", texto)
+        self.assertIn("· Início do caixa em dinheiro · abriu MARIA — R$ 379,40", texto)
+        self.assertIn("· Final do dia em dinheiro · fechou JOAO — R$ 867,65", texto)
+        self.assertIn("· PIX — R$ 1.881,00", texto)
+
+    def test_total_do_dia_soma_as_formas_de_todos_os_caixas(self):
+        """Pedido de 29/10/2026: "somando tudo (dinheiro + pix + cartão de debito + cartão
+        de credito)"."""
+        self.caixa(1, datetime(2026, 9, 20, 8, 0), datetime(2026, 9, 20, 13, 0),
+                   por_forma={"AVISTA": "100", "PIX": "50"})
+        self.caixa(2, datetime(2026, 9, 20, 14, 0), datetime(2026, 9, 20, 20, 0),
+                   por_forma={"CARTAO DEBITO": "30", "CARTAO CREDITO": "20"})
+        total = self.bloco().linhas[-1]
+        self.assertEqual(total["quem"], "Total de vendas do dia")
+        self.assertEqual(total["valor"], "R$ 200,00")
+        self.assertIn("2 caixas", total["o_que"])
+
+    def test_total_que_bate_com_os_produtos_nao_explica_nada(self):
+        self.caixa(1, datetime(2026, 9, 20, 8, 0), datetime(2026, 9, 20, 13, 0),
+                   por_forma={"AVISTA": "100"})
+        self.assertEqual(self.bloco().linhas[-1]["detalhe"], "")
+
+    def test_desconto_no_fechamento_explica_por_que_o_total_e_menor(self):
+        """A manchete soma os produtos; o caixa recebe o cupom, já com o desconto."""
+        self.venda(valor="90", linhas=[("002", "CESTO", "100", "50")])
+        self.caixa(1, datetime(2026, 9, 20, 8, 0), datetime(2026, 9, 20, 13, 0),
+                   por_forma={"AVISTA": "190"})
+        detalhe = self.bloco().linhas[-1]["detalhe"]
+        self.assertIn("os produtos somam R$ 200,00", detalhe)
+        self.assertIn("R$ 10,00 de desconto no fechamento", detalhe)
+
+    def test_total_diferente_dos_cupons_manda_conferir_o_caixa(self):
+        self.caixa(1, datetime(2026, 9, 20, 8, 0), datetime(2026, 9, 20, 13, 0),
+                   por_forma={"PIX": "1000"})
+        self.assertIn("confira na tela Caixa", self.bloco().linhas[-1]["detalhe"])

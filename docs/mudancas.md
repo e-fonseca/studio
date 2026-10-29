@@ -7,6 +7,30 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.40.6 — 29/10/2026
+
+Pedido dele, antes de instalar a 1.40.5: *"inserir o total de vendas do dia, somando
+tudo(dinheiro + pix + cartão de debito + cartão de credito)"*.
+
+- **Total de vendas do dia** no fim do bloco Caixa do dia, somando as quatro formas de
+  todos os caixas. Quando o número fica abaixo do "vendeu" da manchete por causa do
+  desconto no fechamento do cupom, a linha diz o desconto; quando não bate com os cupons
+  por outro motivo (venda a prazo, estorno, recebimento de outro dia), diz o total dos
+  cupons e manda conferir na tela Caixa.
+- Traz junto tudo da 1.40.5.
+
+## 1.40.5 — 29/10/2026
+
+Ele corrigiu o caixa do e-mail: *"inicio do caixa em dinheiro, final do dia caixa em
+dinheiro, pagamento por pix, pagamento por cartao de debito"* e de crédito.
+
+- **O final do caixa no e-mail Vendas do dia agora é o DINHEIRO na gaveta**, pela mesma
+  conta da tela Caixa (início + vendas em dinheiro + entradas − sangrias − pagamentos),
+  com a conta escrita embaixo. A 1.40.4 usava o saldo final do SET, que soma PIX e
+  cartão: R$ 8.180,65 num dia em que a gaveta tinha R$ 867,65.
+- **PIX, cartão de débito e cartão de crédito** vêm cada um na sua linha, pelo que o SET
+  gravou no turno.
+
 ## 1.40.4 — 28/10/2026
 
 Pedido dele: *"no disparo de e-mail diário sobre vendas do dia inserir o valor de caixa

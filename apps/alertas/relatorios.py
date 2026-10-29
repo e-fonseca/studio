@@ -25,6 +25,7 @@ from decimal import Decimal
 
 from django.utils import timezone
 
+from apps.caixa import dinheiro
 from apps.compras import limite, lista_de_compra, sugestoes
 from apps.financeiro import servicos as financeiro
 from apps.financeiro.models import Lancamento
@@ -362,7 +363,7 @@ def vendas_do_dia(importacao=None, dia=None):
                f"vendidos com custo conhecido.{sem_custo}"),
         link=relatorio.caminho, link_rotulo="Abrir a relação do dia",
     ))
-    relatorio.blocos.append(_caixa_do_dia(importacao, dados.dia))
+    relatorio.blocos.append(_caixa_do_dia(importacao, dados.dia, dados))
 
     linhas, escondidas = _recorte([
         {
@@ -420,16 +421,61 @@ def _hora(momento, dia):
     return f"{local:%H:%M}" if local.date() == dia else f"{local:%d/%m %H:%M}"
 
 
-def _caixa_do_dia(importacao, dia):
-    """Com quanto cada caixa do dia abriu e fechou, e quem fez cada um.
+# Os nomes do SET como a loja fala deles, e a ordem em que o Edson os pediu.
+NOME_DA_FORMA = {"PIX": "PIX", "CARTAO DEBITO": "Cartão de débito",
+                 "CARTAO CREDITO": "Cartão de crédito"}
 
-    Pedido do Edson em 28/10/2026: "inserir o valor de caixa inicial e final junto com
-    o operador que abriu e fechou o caixa". Os números são os que o SET gravou no turno
-    (CAIXA.SALDOINICIAL e SALDOFINAL), os mesmos da tela Caixa. Caixa ainda aberto na
-    hora da importação não tem saldo final, e o e-mail diz isso em vez de inventar um.
 
-    Duas linhas por caixa, abertura e fechamento, para caber nas duas colunas do e-mail
-    e para o Telegram, que só lê o nome e o valor, dizer quem fez cada coisa.
+def _formas_fora_da_gaveta(caixa):
+    """PIX, débito e crédito nessa ordem, depois o que mais o SET tiver, do maior valor."""
+    linhas = []
+    for nome, valor in (caixa.por_forma or {}).items():
+        if dinheiro.classificar(nome) == "dinheiro":
+            continue
+        chave = dinheiro._chave(nome)
+        rotulo = NOME_DA_FORMA.get(chave, nome or "sem forma gravada")
+        ordem = list(NOME_DA_FORMA).index(chave) if chave in NOME_DA_FORMA else len(NOME_DA_FORMA)
+        if dinheiro.classificar(nome) == "desconhecida":
+            rotulo += " (forma que o sistema não conhece, fora da conta do dinheiro)"
+        linhas.append((ordem, -Decimal(valor or 0), rotulo, Decimal(valor or 0)))
+    return [(rotulo, valor) for _, _, rotulo, valor in sorted(linhas)]
+
+
+def _total_contra_os_produtos(total, vendas):
+    """Por que o total do caixa e o "vendeu" da manchete podem ser números diferentes."""
+    if vendas is None or total == vendas.faturamento:
+        return ""
+    if total == vendas.total_dos_cupons and vendas.desconto_no_fechamento > 0:
+        return (f"é o que os clientes pagaram; os produtos somam {_reais(vendas.faturamento)}, "
+                f"com {_reais(vendas.desconto_no_fechamento)} de desconto no fechamento")
+    if total == vendas.total_dos_cupons:
+        return f"é o que os clientes pagaram; os produtos somam {_reais(vendas.faturamento)}"
+    # Na cópia de 20/09/2026, 9 dos últimos 57 dias com caixa não batem com os cupons, por
+    # três motivos vistos nos dados: venda A PRAZO (não passa no caixa), recebimento
+    # estornado no caixa com a venda mantida, e PIX recebido no caixa sem venda no dia.
+    return (f"os cupons do dia somam {_reais(vendas.total_dos_cupons)}; a diferença pode ser "
+            "venda a prazo, estorno no caixa ou recebimento de outro dia, confira na tela Caixa")
+
+
+def _caixa_do_dia(importacao, dia, vendas=None):
+    """O caixa do dia em dinheiro, e o que entrou por PIX e cartão.
+
+    Pedidos do Edson: em 28/10/2026, "o valor de caixa inicial e final junto com o
+    operador que abriu e fechou o caixa"; em 29/10/2026, corrigindo a 1.40.4, "inicio do
+    caixa em dinheiro, final do dia caixa em dinheiro, pagamento por pix, pagamento por
+    cartao de debito, [e de crédito]".
+
+    O final da 1.40.4 era o SALDOFINAL do SET, que soma PIX e cartão: R$ 8.180,65 num
+    dia em que a gaveta tinha R$ 867,65. O final daqui é o DINHEIRO, pela mesma conta
+    da tela Caixa (`caixa.dinheiro.do_turno`): abertura + vendas em dinheiro + entradas
+    − sangrias − pagamentos. PIX e cartões vêm do que o SET gravou por forma no turno.
+
+    Por último, o total de vendas do dia somando as formas de todos os caixas (pedido de
+    29/10/2026: "somando tudo (dinheiro + pix + cartão de debito + cartão de credito)").
+    É o que os clientes pagaram, e por isso pode ficar abaixo da manchete, que soma o
+    preço dos produtos antes do desconto dado no fechamento do cupom; a linha diz isso.
+
+    O operador vai no nome da linha porque o Telegram só lê o nome e o valor.
     """
     caixas = list(importacao.caixas.filter(dia=dia).order_by("aberto_em", "id_set"))
     quando = dia.strftime("%d/%m/%Y")
@@ -439,36 +485,52 @@ def _caixa_do_dia(importacao, dia):
         bloco.frase = f"O SET não tem caixa aberto em {quando}."
         return bloco
 
-    bloco.frase = ("O valor do caixa na abertura e no fechamento, como o SET gravou."
-                   if len(caixas) == 1 else
-                   f"{len(caixas)} caixas abertos neste dia, do mais cedo para o mais tarde.")
+    bloco.frase = ("Dinheiro na abertura e no fim do dia, e o que entrou por PIX e cartão, "
+                   "que não fica na gaveta.")
+    if len(caixas) > 1:
+        bloco.frase += f" {len(caixas)} caixas neste dia, do mais cedo para o mais tarde."
     linhas = []
+    total = ZERO
     for caixa in caixas:
+        total += sum((Decimal(valor or 0) for valor in (caixa.por_forma or {}).values()), ZERO)
         numero = f"caixa {caixa.id_set}"
+        gaveta = dinheiro.do_turno(caixa)
+        aberto = caixa.esta_aberto or caixa.saldo_final is None
         linhas.append({
             "quando": _hora(caixa.aberto_em, dia),
-            "quem": f"Abriu: {caixa.operador or 'operador não gravado no SET'}",
-            "o_que": numero,
-            "valor": _reais(caixa.saldo_inicial),
-            "detalhe": "",
+            "quem": f"Início do caixa em dinheiro · abriu {caixa.operador or 'sem operador no SET'}",
+            "o_que": numero, "valor": _reais(gaveta.inicio), "detalhe": "",
         })
-        if caixa.esta_aberto or caixa.saldo_final is None:
+        conta = f"{_reais(gaveta.inicio)} do início + {_reais(gaveta.recebido)} de vendas em dinheiro"
+        if gaveta.entradas:
+            conta += f" + {_reais(gaveta.entradas)} de entradas"
+        if gaveta.sangrias:
+            conta += f" − {_reais(gaveta.sangrias)} de sangria"
+        if gaveta.pagamentos:
+            conta += f" − {_reais(gaveta.pagamentos)} pagos pelo caixa"
+        if aberto:
             linhas.append({
-                "quando": "",
-                "quem": "Ainda aberto",
-                "o_que": numero,
-                "valor": "",
-                "detalhe": "não estava fechado na hora da importação, sem valor final",
+                "quando": "", "quem": "Final do dia em dinheiro · caixa ainda aberto",
+                "o_que": numero, "valor": _reais(gaveta.saldo),
+                "detalhe": f"até a importação, não fechado: {conta}",
             })
-            continue
-        linhas.append({
-            "quando": _hora(caixa.fechado_em, dia) if caixa.fechado_em else "",
-            "quem": f"Fechou: {caixa.operador_fechamento or 'operador não gravado no SET'}",
-            "o_que": numero,
-            "valor": _reais(caixa.saldo_final),
-            "detalhe": "",
-        })
-    bloco.linhas, bloco.escondidas = _recorte(linhas)
+        else:
+            linhas.append({
+                "quando": _hora(caixa.fechado_em, dia) if caixa.fechado_em else "",
+                "quem": ("Final do dia em dinheiro · fechou "
+                         f"{caixa.operador_fechamento or 'sem operador no SET'}"),
+                "o_que": numero, "valor": _reais(gaveta.saldo), "detalhe": conta,
+            })
+        for rotulo, valor in _formas_fora_da_gaveta(caixa):
+            linhas.append({"quando": "", "quem": rotulo, "o_que": numero,
+                           "valor": _reais(valor), "detalhe": ""})
+    linhas.append({"quando": "", "quem": "Total de vendas do dia",
+                   "o_que": "dinheiro + PIX + cartão de débito + cartão de crédito"
+                            + (f", {len(caixas)} caixas" if len(caixas) > 1 else ""),
+                   "valor": _reais(total), "detalhe": _total_contra_os_produtos(total, vendas)})
+    # Sem recorte: cortar no meio deixaria um caixa sem o final em dinheiro. A loja abre
+    # um caixa por dia (969 turnos em dois anos e meio), então o bloco é curto.
+    bloco.linhas = linhas
     return bloco
 
 

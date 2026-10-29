@@ -66,22 +66,40 @@ manda alarme nenhum. O motivo é prático: pedra e geodo são vendidos a peso, o
 guarda o custo do quilo e a venda é de uma fração dele, então a estimativa apareceria como
 prejuízo sem a loja ter perdido nada.
 
-## O caixa do dia, no e-mail (1.40.4)
+## O caixa do dia, no e-mail (1.40.4, corrigido na 1.40.5)
 
-Pedido do Edson em 28/10/2026: *"no disparo de e-mail diário sobre vendas do dia inserir o
-valor de caixa inicial e final junto com o operador que abriu e fechou o caixa"*. Logo
-depois do resumo do dia, o bloco **Caixa do dia** traz, para cada caixa aberto naquele
-dia, duas linhas: "Abriu: <operador>" com a hora e o saldo inicial, e "Fechou:
-<operador>" com a hora e o saldo final. São os números que o SET gravou no turno
-(`CAIXA.SALDOINICIAL` e `SALDOFINAL`), os mesmos da tela Caixa.
+Pedidos do Edson: em 28/10/2026, *"inserir o valor de caixa inicial e final junto com o
+operador que abriu e fechou o caixa"*; em 29/10/2026, corrigindo, *"inicio do caixa em
+dinheiro, final do dia caixa em dinheiro, pagamento por pix, pagamento por cartao de
+debito"* e de crédito. Logo depois do resumo do dia, o bloco **Caixa do dia** traz, para
+cada caixa aberto naquele dia:
+
+1. **Início do caixa em dinheiro**, com quem abriu e a hora (`CAIXA.SALDOINICIAL`).
+2. **Final do dia em dinheiro**, com quem fechou e a hora, e a conta embaixo: início +
+   vendas em dinheiro + entradas − sangrias − pagamentos pelo caixa. É a mesma conta da
+   tela Caixa (`apps/caixa/dinheiro.py:do_turno`).
+3. **PIX**, **Cartão de débito** e **Cartão de crédito**, pelo que o SET gravou por forma
+   no turno. Forma que não apareceu no dia não aparece; forma que o sistema não conhece
+   aparece com o nome do SET, avisando que ficou fora da conta do dinheiro.
+
+Por último vem o **Total de vendas do dia** (1.40.6, pedido de 29/10/2026: *"somando
+tudo (dinheiro + pix + cartão de debito + cartão de credito)"*): a soma das formas de
+todos os caixas do dia. É o que os clientes pagaram, por isso pode ficar abaixo do
+"vendeu" da manchete, que soma o preço dos produtos antes do desconto no fechamento do
+cupom; a linha diz o desconto quando é isso. Na cópia de 20/09/2026, 48 dos últimos 57
+dias com caixa batem com os cupons. Os outros 9 têm venda a prazo (não passa no caixa),
+recebimento estornado no caixa com a venda mantida, ou PIX recebido sem venda no dia; a
+linha mostra o total dos cupons e manda conferir na tela Caixa.
+
+**Por que não o `SALDOFINAL` do SET:** ele soma PIX e cartão. A 1.40.4 usava esse número
+e mostrava R$ 8.180,65 de fechamento no dia 20/09/2026, quando a gaveta tinha R$ 867,65.
 
 - O dia do caixa é o da abertura (`CaixaImportado.dia`). Caixa que virou a noite mostra a
   data junto da hora de fechamento ("21/09 09:44").
-- Caixa ainda aberto na hora da importação vem como "Ainda aberto", sem valor final: o
-  sistema não inventa um.
-- Operador em branco no SET aparece escrito "operador não gravado no SET".
-- Dia sem caixa: o bloco diz que o SET não tem caixa aberto naquele dia.
-- No Telegram as mesmas linhas saem como "· Abriu: MARIA — R$ 200,00".
+- Caixa ainda aberto na hora da importação diz "caixa ainda aberto", e o dinheiro é o de
+  até a importação.
+- Operador em branco no SET aparece como "sem operador no SET".
+- O bloco não é cortado em 12 linhas como os outros: cortar deixaria um caixa sem o final.
 
 ## O cupom e os produtos podem não bater
 
