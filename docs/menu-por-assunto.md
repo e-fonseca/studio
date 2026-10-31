@@ -24,19 +24,21 @@ rótulos antes de chegar no único que importa naquele minuto.
 
 ## O que é agora
 
-Seis entradas no topo, cada uma um assunto:
+Sete entradas no topo desde a 1.43.0 (eram seis na 1.35.0; ver "O Dashboard na frente",
+abaixo), cada uma um assunto:
 
 | Assunto | O que tem dentro |
 |---|---|
+| **Dashboard** | A loja em quadros: venda, margem, estoque e o que pede atenção (desde a 1.43.0) |
 | **Visão geral** | Como a loja está hoje, e o que fazer agora |
 | **Compras** | Lista de compra, Pedidos, Fornecedores, Indicadores de compra (desde a 1.40.1; Antes de comprar, Sugestões, Sugestões da equipe e Últimas compras abrem pela fileira "Também em Compras", logo abaixo do título da Lista) |
-| **Vendas** | Dashboard, Vendas do dia, Margem, Ticket médio, Clientes |
+| **Vendas** | Vendas do dia, Margem, Ticket médio, Clientes (o Dashboard morava aqui até a 1.42.0) |
 | **Estoque** | Consulta, Inventário |
 | **Dinheiro** | Financeiro, Caixa, Conciliação |
 | **Sistema** | Importações, Dados da empresa, Base de processos, Usuários, Alertas, Backup, Certificado, Auditoria |
 
 A segunda fileira do topo mostra **só as telas do assunto aberto**. Então a pessoa vê
-seis rótulos mais os cinco ou seis do assunto em que está, nunca os vinte e sete juntos.
+sete rótulos mais os cinco ou seis do assunto em que está, nunca os vinte e sete juntos.
 
 **Nenhuma tela foi apagada.** As vinte e sete continuam existindo, com o mesmo endereço
 e o mesmo conteúdo; o que mudou é como se chega a elas.
@@ -54,6 +56,23 @@ rápido, e a Lista de compra é onde a quantidade é escolhida e o pedido sai.
 **Assunto sem nenhuma tela aberta some do topo.** O operador vendedor enxerga um assunto
 só — Estoque, com a Consulta —, e por isso não recebe segunda fileira nenhuma. Mostrar
 "Dinheiro" para quem não pode abrir nada de dinheiro é oferecer uma porta trancada.
+
+## O Dashboard na frente (1.43.0)
+
+Pedido dele em 31/10/2026: *"logo quando fazer login quero que abra o Dashboard, causa bom
+impacto com as informações visíveis. no mesmo menu (principal) colocar ao lado como segunda
+opção a visão geral."*
+
+- **O Dashboard virou a primeira entrada do topo**, e a Visão geral a segunda, ao lado. Saiu
+  de dentro de Vendas, para não aparecer em dois lugares.
+- **Entrar abre o Dashboard**: a primeira tela de cada um é a primeira entrada do menu que o
+  perfil abre (`primeira_tela`), então a regra é a ordem do menu, sem exceção escrita à
+  parte. Quem não vê o Dashboard (o vendedor) continua caindo na Consulta.
+- **Abrir rápido sendo a primeira tela**: o Dashboard do período padrão fica guardado depois
+  de cada importação e a cada hora, como a Visão geral (`painel/aquecer.py`,
+  `servicos.dashboard_da_importacao`). Guardado, abre com 36 consultas em cerca de 0,13 s
+  na máquina de desenvolvimento; sem guardar eram 90 consultas e 1,3 s. Com filtro de grupo
+  ou fornecedor, a conta é feita na hora, como antes.
 
 ## Onde isto mora
 

@@ -1,65 +1,140 @@
 /*
  * Visual do sistema da Cabana do Jacarandá.
  *
- * PALETA PROVISÓRIA. Estas cores NÃO são a identidade oficial da Cabana: são um
- * conjunto quente (madeira e brasa) que combina com a loja até chegarem os
- * tokens oficiais (briefing, seção 3). Só os tokens abaixo carregam cor; o resto
- * do CSS usa as variáveis, então trocar a identidade é trocar este bloco.
+ * TELA ESCURA EM TODO O SISTEMA (1.43.0). Pedido do Edson em 31/10/2026, depois de ver o
+ * Dashboard no jeito do Grafana: "gostei do visual escuro (...) melhor visualização e cansa
+ * menos os olhos / adaptar e aplicar em todo o sistema (...) adotar o esquema Grafana em
+ * todo o sistema". As cores abaixo são as do Dashboard da 1.41.0: fundo quase preto puxado
+ * para a madeira, quadros um tom acima, letra creme, e as cores de situação do Grafana
+ * (verde é bom, laranja pede atenção, vermelho pede ação, azul é número sem juízo).
+ *
+ * A marca continua nas peças de ação: o botão principal, o assunto aceso no menu e o fio de
+ * latão dos títulos são da madeira e da brasa da loja. A tela de entrada é a que mais leva a
+ * cor da empresa, num degradê da madeira para o escuro.
+ *
+ * Só os tokens abaixo carregam cor; o resto do CSS usa as variáveis. Na impressão (e só
+ * nela) os tokens voltam ao papel claro, no bloco @media print logo abaixo: papel não tem
+ * fundo escuro, e letra creme em folha branca não se lê.
  *
  * Regras que valem para a tela toda:
  * - cor nunca é a única informação: o estado também aparece escrito;
+ * - letra comum com contraste de no mínimo 4,5:1 sobre o fundo em que está (conferido
+ *   por programa em todas as telas na 1.43.0, docs/tela-escura.md);
  * - alvo de toque com no mínimo 44px;
  * - nenhuma fonte, ícone ou biblioteca vem da internet (o servidor não acessa).
  */
 :root {
-  --cor-fundo: #f6f3ee;          /* fundo da página, creme */
-  --cor-superficie: #ffffff;     /* cartões */
-  --cor-superficie-2: #efe9e1;   /* faixas e cabeçalhos de tabela */
-  --cor-texto: #1b1813;
-  --cor-texto-suave: #5c5449;
-  --cor-borda: #e0d8cc;
-  --cor-borda-forte: #c9bcab;
-  --cor-primaria: #7a3b12;       /* madeira; contraste 8:1 no branco */
-  --cor-primaria-texto: #ffffff;
-  --cor-primaria-fraca: #f6e9dd;
-  --cor-brasa: #bf4e16;
+  /* Diz ao navegador que a página é escura: as barras de rolagem, o calendário do campo
+     de data, a lista aberta do campo de escolha e a caixa de marcar vêm escuros também. */
+  color-scheme: dark;
+  --cor-fundo: #13110f;          /* fundo da página, o do Dashboard */
+  --cor-superficie: #1c1916;     /* cartões e quadros */
+  --cor-superficie-2: #24201b;   /* faixas e cabeçalhos de tabela */
+  --cor-superficie-3: #2a2520;   /* o que fica por cima: balão, item sob o mouse */
+  --cor-campo: #13110f;          /* dentro do campo de digitar, um tom abaixo do cartão */
+  --cor-texto: #ece4da;          /* 13,9:1 no cartão */
+  --cor-texto-suave: #a99d8f;    /* 6,6:1 no cartão */
+  --cor-borda: #312a24;
+  --cor-borda-forte: #4a4038;
+  --cor-borda-campo: #776a5e;    /* borda de campo: 3:1, para o campo não sumir no cartão */
+  --cor-link: #8ab8ff;           /* o azul de link do Grafana, 8,6:1 no cartão */
+  --cor-primaria: #eda06b;       /* a brasa clareada, para número e realce sobre o escuro */
+  --cor-primaria-texto: #ffffff; /* letra em cima do botão da marca */
+  --cor-primaria-fraca: #2b2018; /* fundo puxado para a madeira: aviso, linha sob o mouse */
+  --cor-acao: #bf4e16;           /* o botão principal e o assunto aceso: a brasa da loja */
+  --cor-acao-forte: #a3410f;     /* o mesmo botão sob o mouse */
+  --cor-brasa: #e8763a;          /* brasa para letra e risco sobre o escuro (5,9:1) */
   --cor-escuro: #241f1a;         /* topo */
   --cor-escuro-texto: #f4ece2;
-  --cor-foco: #0b5cab;
-  --cor-sucesso: #1d6b3a;
-  --cor-sucesso-fraca: #e4f2e8;
-  --cor-erro: #9d241a;
-  --cor-erro-fraca: #fbe7e4;
-  --cor-alerta: #845300;
-  --cor-alerta-fraca: #fcf0d9;
-  /* Fatias de gráfico (1.18.0). Cor de gráfico é cor de gráfico: reaproveitar
-     --cor-sucesso ou --cor-erro numa rosca faria o leitor achar que a fatia verde é
-     a boa e a vermelha a ruim, e numa participação por grupo não existe boa nem ruim. */
-  --cor-fatia-1: #7a3b12;
-  --cor-fatia-2: #bf4e16;
-  --cor-fatia-3: #1d6b3a;
-  --cor-fatia-4: #0b5cab;
-  --cor-fatia-5: #845300;
-  --cor-fatia-6: #6b4a8f;
-  --cor-fatia-7: #167a74;
-  --cor-fatia-8: #9d241a;
-  --cor-fatia-9: #c9bcab;
-  --raio: 10px;
-  --raio-pequeno: 6px;
+  --cor-foco: #8ab8ff;
+  --cor-sucesso: #73bf69;
+  --cor-sucesso-fraca: #182a1a;
+  --cor-erro: #ff7383;
+  --cor-erro-fraca: #33181b;
+  --cor-alerta: #ff9830;
+  --cor-alerta-fraca: #33240f;
+  /* Letra em cima de selo pintado de verde, laranja ou vermelho: as cores de situação são
+     claras no escuro, e letra branca nelas não se lê. */
+  --cor-sobre-status: #17130f;
+  --cor-zebra: rgba(255, 255, 255, .025);
+  /* Fatias de gráfico (1.18.0), as do Dashboard desde a 1.43.0. Cor de gráfico é cor de
+     gráfico: reaproveitar --cor-sucesso ou --cor-erro numa rosca faria o leitor achar que
+     a fatia verde é a boa e a vermelha a ruim, e numa participação por grupo não existe
+     boa nem ruim. */
+  --cor-fatia-1: #73bf69;
+  --cor-fatia-2: #5794f2;
+  --cor-fatia-3: #ff9830;
+  --cor-fatia-4: #b877d9;
+  --cor-fatia-5: #fade2a;
+  --cor-fatia-6: #3fb6b2;
+  --cor-fatia-7: #ff7383;
+  --cor-fatia-8: #c9a36a;
+  --cor-fatia-9: #6e655c;
+  /* Cantos de quadro do Grafana: menos arredondados que o cartão de papel de antes. */
+  --raio: 6px;
+  --raio-pequeno: 4px;
   --espaco: 1rem;
-  --sombra: 0 1px 2px rgba(36, 31, 26, .06), 0 2px 10px rgba(36, 31, 26, .05);
+  --sombra: 0 1px 2px rgba(0, 0, 0, .35);
   --faixa: .5rem;                /* largura da tarja colorida à esquerda dos cartões */
   --largura: 82rem;              /* largura da coluna de conteúdo; o topo usa a mesma */
-  --sombra-forte: 0 .4rem 1.4rem rgba(36, 31, 26, .18);
+  --sombra-forte: 0 .4rem 1.4rem rgba(0, 0, 0, .5);
   /* Acabamento (1.15.0): o latão é o detalhe fino que dá o ar cuidado ao sistema.
      Nunca carrega informação sozinho, só acabamento: fio de título, borda de cartão
      em destaque, marca da tela aberta na fileira de apoio. */
-  --cor-latao: #a97e3a;
-  --cor-latao-fraca: #f0e4cd;
+  --cor-latao: #c9a36a;
+  --cor-latao-fraca: #2e261b;
   /* Título em serifa. São fontes que já existem no Windows e no celular: nada vem da
      internet, então a tela abre igual mesmo se a loja ficar sem link. */
   --fonte-titulo: Georgia, "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
   --fonte-texto: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+}
+
+/* Papel: a impressão volta às cores claras de antes da 1.43.0. O navegador não imprime
+   fundo por padrão, e sem isto sairia letra creme em folha branca. */
+@media print {
+  :root {
+    color-scheme: light;
+    --cor-fundo: #ffffff;
+    --cor-superficie: #ffffff;
+    --cor-superficie-2: #efe9e1;
+    --cor-superficie-3: #f6f3ee;
+    --cor-campo: #ffffff;
+    --cor-texto: #1b1813;
+    --cor-texto-suave: #5c5449;
+    --cor-borda: #e0d8cc;
+    --cor-borda-forte: #c9bcab;
+    --cor-borda-campo: #c9bcab;
+    --cor-link: #7a3b12;
+    --cor-primaria: #7a3b12;
+    --cor-primaria-fraca: #f6e9dd;
+    --cor-acao: #7a3b12;
+    --cor-acao-forte: #5f2d0c;
+    --cor-brasa: #bf4e16;
+    --cor-sucesso: #1d6b3a;
+    --cor-sucesso-fraca: #e4f2e8;
+    --cor-erro: #9d241a;
+    --cor-erro-fraca: #fbe7e4;
+    --cor-alerta: #845300;
+    --cor-alerta-fraca: #fcf0d9;
+    --cor-sobre-status: #ffffff;
+    --cor-zebra: #faf8f5;
+    /* A faixa escura do alto da Visão geral sai sem fundo no papel: letra escura nela. */
+    --cor-escuro: #ffffff;
+    --cor-escuro-texto: #1b1813;
+    --cor-latao: #a97e3a;
+    --cor-latao-fraca: #f0e4cd;
+    --cor-fatia-1: #7a3b12;
+    --cor-fatia-2: #bf4e16;
+    --cor-fatia-3: #1d6b3a;
+    --cor-fatia-4: #0b5cab;
+    --cor-fatia-5: #845300;
+    --cor-fatia-6: #6b4a8f;
+    --cor-fatia-7: #167a74;
+    --cor-fatia-8: #9d241a;
+    --cor-fatia-9: #c9bcab;
+    --sombra: none;
+    --sombra-forte: none;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -69,9 +144,9 @@ body {
   font-family: var(--fonte-texto);
   line-height: 1.55;
   color: var(--cor-texto);
-  /* Fundo de papel: um creme com um clarão quase imperceptível no alto, para a página
-     não ser uma chapa lisa de cor única atrás dos cartões brancos. */
-  background: var(--cor-fundo) radial-gradient(60rem 28rem at 50% 0, #fffdf9, transparent) no-repeat;
+  /* Fundo escuro com um brilho de brasa quase imperceptível no alto (1.43.0), para a
+     página não ser uma chapa lisa de cor única atrás dos quadros. */
+  background: var(--cor-fundo) radial-gradient(60rem 28rem at 50% 0, rgba(191, 78, 22, .07), transparent) no-repeat;
   -webkit-font-smoothing: antialiased;
 }
 /* Título em serifa e texto em sem serifa: é o contraste que faz a tela parecer
@@ -80,7 +155,7 @@ h1, h2, h3 { font-family: var(--fonte-titulo); line-height: 1.2; letter-spacing:
 h1 { font-size: 1.85rem; margin: 0 0 .25rem; }
 h2 { font-size: 1.3rem; }
 h3 { font-size: 1.05rem; }
-a { color: var(--cor-primaria); text-underline-offset: .15em; }
+a { color: var(--cor-link); text-underline-offset: .15em; }
 :focus-visible { outline: 3px solid var(--cor-foco); outline-offset: 2px; border-radius: var(--raio-pequeno); }
 .pular { position: absolute; left: -999px; }
 .pular:focus { left: var(--espaco); top: var(--espaco); background: var(--cor-superficie); padding: .5rem; z-index: 30; }
@@ -128,7 +203,7 @@ a { color: var(--cor-primaria); text-underline-offset: .15em; }
 }
 .menu-principal a:hover { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .28); }
 .menu-principal a[aria-current] {
-  background: var(--cor-brasa); border-color: var(--cor-brasa); color: #fff;
+  background: var(--cor-acao); border-color: var(--cor-acao); color: #fff;
   box-shadow: 0 .15rem .5rem rgba(191, 78, 22, .45);
 }
 /* A fileira de apoio: caixa alta menor, cinza, sem fundo. Fica abaixo de um fio
@@ -181,30 +256,117 @@ main { max-width: var(--largura); margin: 0 auto; padding: 1.5rem 1.25rem 3rem; 
 .cabecalho-pagina p { margin: 0; }
 
 /* ------------------------------------------------------------- tela de entrada
-   Sem menu e sem usuário, o topo escuro não tem o que mostrar: ele vira o fundo da
-   página e a marca sobe para cima do cartão, que fica centrado na tela. */
+   Refeita na 1.43.0, pedido do Edson em 31/10/2026: "na tela de login manter o layout com
+   as cores da empresa, mas com umas pegadas degrade para o escuro seguindo a ideia do
+   sistema (...) usar como teste a foto da frente da loja no plano de fundo (...) como marca
+   d'agua bem franquinho em preto e branco". O desenho é o mesmo de antes (a marca em cima,
+   o cartão no meio, versão e servidor embaixo); o fundo é que desce da madeira e da brasa
+   da loja para o escuro do sistema, com a fachada por trás de tudo.
+
+   A FOTO É TESTE: para tirar, basta apagar a linha do --entrada-foto abaixo (e o arquivo
+   static/img/fachada-marca-dagua.jpg). O resto da tela não depende dela.
+
+   Valem para as quatro telas de quem ainda não entrou: entrar, esqueci a senha, o código
+   que chegou no e-mail e o acesso bloqueado (todas em contas/_entrada.html). */
 .entrada {
-  min-height: 100vh; display: flex; flex-direction: column;
-  background: radial-gradient(70rem 35rem at 50% -15%, #3d2e23, var(--cor-escuro));
+  --entrada-foto: url("../img/fachada-marca-dagua.jpg");
+  position: relative; isolation: isolate;
+  min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
   color: var(--cor-escuro-texto);
+  background-color: var(--cor-fundo);
+  /* Duas camadas: um clarão de brasa no alto, onde fica a marca, e o degradê da madeira
+     (canto de cima) para o escuro do sistema (canto de baixo). */
+  background-image:
+    radial-gradient(52rem 24rem at 50% -4rem, rgba(191, 78, 22, .42), transparent 70%),
+    linear-gradient(160deg, #4d250c 0%, #2c1a0e 32%, #18120e 64%, var(--cor-fundo) 100%);
 }
-.entrada main { margin: auto; width: 100%; max-width: 27rem; padding: 2.5rem 1.25rem; }
-.entrada .rodape { max-width: 34rem; text-align: center; border-top: 0; color: #a99c8e; }
-.entrada .rodape a { color: #d8ccbd; }
+/* A fachada em marca d'água: preto e branco já no arquivo (64 KB), e bem fraca aqui ("bem
+   franquinho"). Cobre a página inteira e rola com ela: presa à janela (position: fixed),
+   a tela do código, mais comprida, mostrava a foto cortada numa faixa reta no meio. */
+.entrada::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--entrada-foto) 60% 14% / cover no-repeat;
+  opacity: .08;
+}
+.entrada main { margin: auto; width: 100%; max-width: 28rem; padding: 2.5rem 1.25rem 1.5rem; }
+.entrada .rodape { max-width: 34rem; text-align: center; border-top: 0; color: #b3a596; }
+.entrada .rodape a { color: #e2d6c7; }
 .marca-entrada {
   display: flex; flex-direction: column; align-items: center; gap: .35rem;
-  text-align: center; margin-bottom: 1.5rem;
+  text-align: center; margin-bottom: 1.4rem;
 }
-.marca-entrada .marca-simbolo { width: 4.6rem; height: 4.6rem; box-shadow: var(--sombra-forte); }
-.marca-entrada strong { font-size: 1.3rem; }
-.marca-entrada span { font-size: .9rem; color: #c8bcae; }
-/* A classe dupla é de propósito: .cartao vem depois neste arquivo e, com a mesma
-   especificidade, venceria o recuo daqui. */
-.cartao.cartao-entrada { margin: 0; padding: 1.6rem; box-shadow: var(--sombra-forte); color: var(--cor-texto); }
-.cartao-entrada h1 { font-size: 1.4rem; }
+.marca-entrada .marca-simbolo {
+  width: 4.8rem; height: 4.8rem;
+  box-shadow: 0 0 0 3px rgba(233, 163, 107, .35), 0 .6rem 1.6rem rgba(0, 0, 0, .55);
+}
+.marca-entrada strong { font-family: var(--fonte-titulo); font-size: 1.45rem; letter-spacing: .01em; }
+.marca-entrada span { font-size: .9rem; color: #cbbba8; }
+/* O cartão: um quadro escuro meio transparente, com o fio da brasa ao latão no alto, que é
+   a assinatura dos títulos do sistema. A classe dupla é de propósito: .cartao vem depois
+   neste arquivo e, com a mesma especificidade, venceria o recuo daqui. */
+.cartao.cartao-entrada {
+  position: relative; overflow: hidden; margin: 0; padding: 1.7rem 1.6rem 1.6rem;
+  color: var(--cor-texto);
+  background: rgba(24, 21, 18, .88);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, .09); border-radius: 12px;
+  box-shadow: 0 1.4rem 3.2rem rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .05);
+  animation: entrada-surge .35s ease-out both;
+}
+.cartao-entrada::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: linear-gradient(90deg, var(--cor-acao), #e8763a 55%, var(--cor-latao));
+}
+@keyframes entrada-surge { from { opacity: 0; transform: translateY(.6rem); } to { opacity: 1; transform: none; } }
+.cartao-entrada h1 { font-size: 1.5rem; margin-bottom: .35rem; }
+.cartao-entrada > .ajuda { margin: 0 0 .4rem; }
+.cartao-entrada .mensagem { margin: .9rem 0 .2rem; }
 .formulario-entrada input { max-width: none; }
-.formulario-entrada button { width: 100%; margin-top: 1.25rem; }
-.ajuda-entrada { margin: 1.25rem 0 0; text-align: center; font-size: .9rem; color: #c8bcae; }
+.formulario-entrada label { margin-top: 1rem; }
+/* O botão de entrar é o único da tela, em brasa da loja e na largura toda. O degradê vai
+   da brasa (letra branca 4,9:1) a um tom abaixo: o mais claro já passa dos 4,5. */
+.formulario-entrada button[type=submit] {
+  width: 100%; margin-top: 1.4rem; min-height: 48px; font-size: 1.02rem;
+  background: linear-gradient(180deg, var(--cor-acao), var(--cor-acao-forte)); border-color: var(--cor-acao-forte);
+  box-shadow: 0 .35rem 1rem rgba(191, 78, 22, .3);
+}
+.formulario-entrada button[type=submit]:hover { background: var(--cor-acao-forte); border-color: var(--cor-acao-forte); }
+/* Senha com o botão de mostrar dentro do campo. Ele só aparece com o JavaScript ligado
+   (static/js/entrada.js): sem ele, um botão que não faz nada seria pior que nenhum. */
+.campo-senha { position: relative; }
+.campo-senha input { padding-right: 6.2rem; }
+.mostrar-senha {
+  position: absolute; top: 50%; right: .3rem; transform: translateY(-50%);
+  min-height: 36px; min-width: 44px; padding: .2rem .7rem; cursor: pointer;
+  font: inherit; font-size: .85rem; font-weight: 600; color: var(--cor-link);
+  background: transparent; border: 1px solid transparent; border-radius: var(--raio-pequeno);
+}
+.mostrar-senha:hover { background: var(--cor-superficie-3); border-color: var(--cor-borda-forte); }
+.aviso-maiusculas {
+  margin: .45rem 0 0; font-size: .85rem; font-weight: 600; color: var(--cor-alerta);
+}
+.aviso-maiusculas::before { content: "⇪ "; }
+.esqueci-a-senha { margin: .6rem 0 0; text-align: right; font-size: .9rem; }
+.esqueci-a-senha a { display: inline-flex; align-items: center; min-height: 44px; }
+.ajuda-entrada { margin: 1.25rem 0 0; text-align: center; font-size: .9rem; color: #cbbba8; }
+.ajuda-entrada a { color: #f0c39b; }
+/* O código que chegou por e-mail: seis números grandes e espaçados, fáceis de conferir. */
+.campo-codigo {
+  max-width: 12rem !important; font-size: 1.6rem; font-weight: 700; letter-spacing: .4em;
+  text-align: center; font-variant-numeric: tabular-nums; padding-left: .9rem;
+}
+.voltar-entrada { margin: 1rem 0 0; text-align: center; font-size: .92rem; }
+/* "Mandar outro código" é o caminho de reserva: contorno, sem a brasa do botão principal,
+   para a pessoa não ficar em dúvida sobre qual dos dois apertar. */
+.formulario-entrada .secundario-entrada { margin-top: .75rem; }
+.formulario-entrada .secundario-entrada button[type=submit] {
+  width: 100%; margin-top: 0; min-height: 44px; font-size: .95rem;
+  color: var(--cor-texto); background: transparent; border-color: var(--cor-borda-campo);
+  box-shadow: none;
+}
+.formulario-entrada .secundario-entrada button[type=submit]:hover {
+  background: var(--cor-superficie-3); border-color: var(--cor-texto-suave);
+}
 /* Versão, servidor e IP logo abaixo do cartão de entrada (pedido de 08/10/2026).
    Nome próprio de classe: .versao e .versao-topo já existem neste arquivo com outro
    desenho, e reaproveitar um deles aqui somaria propriedades sem ninguém perceber.
@@ -217,10 +379,10 @@ main { max-width: var(--largura); margin: 0 auto; padding: 1.5rem 1.25rem 3rem; 
 .identificacao-entrada > div { text-align: center; }
 .identificacao-entrada dt {
   font-size: .68rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-  color: #a99c8e;
+  color: #b3a596;
 }
 .identificacao-entrada dd {
-  margin: .15rem 0 0; font-size: .88rem; font-weight: 600; color: #e4d8c7;
+  margin: .15rem 0 0; font-size: .88rem; font-weight: 600; color: #ece0d0;
   font-variant-numeric: tabular-nums;
 }
 /* No celular os três valores de verdade (1.22.0, 192.168.3.254:8443, 192.168.3.254)
@@ -230,18 +392,27 @@ main { max-width: var(--largura); margin: 0 auto; padding: 1.5rem 1.25rem 3rem; 
   .identificacao-entrada { gap: .5rem .9rem; }
   .identificacao-entrada dt { font-size: .62rem; letter-spacing: .06em; }
   .identificacao-entrada dd { font-size: .8rem; }
+  .entrada main { padding-top: 1.6rem; }
+  .marca-entrada { margin-bottom: 1rem; }
+  .marca-entrada .marca-simbolo { width: 4rem; height: 4rem; }
+  .cartao.cartao-entrada { padding: 1.4rem 1.15rem 1.3rem; }
+}
+/* Quem pediu ao sistema operacional menos movimento não vê o cartão subir, nem nada que
+   anda nas outras telas (o cartão que sobe ao passar o mouse, a barra que desliza). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
 /* ---------------------------------------------------------------- botões */
 .botao {
   display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 44px;
-  padding: .5rem 1.1rem; border: 2px solid var(--cor-primaria); border-radius: 999px;
-  background: var(--cor-primaria); color: var(--cor-primaria-texto); font: inherit; font-weight: 600;
+  padding: .5rem 1.1rem; border: 2px solid var(--cor-acao); border-radius: 999px;
+  background: var(--cor-acao); color: var(--cor-primaria-texto); font: inherit; font-weight: 600;
   text-decoration: none; cursor: pointer; transition: background .12s ease, border-color .12s ease;
 }
-.botao:hover { background: #5f2d0c; border-color: #5f2d0c; }
-.botao.secundario { background: transparent; color: var(--cor-primaria); border-color: var(--cor-borda-forte); }
-.botao.secundario:hover { background: var(--cor-primaria-fraca); border-color: var(--cor-primaria); }
+.botao:hover { background: var(--cor-acao-forte); border-color: var(--cor-acao-forte); }
+.botao.secundario { background: transparent; color: var(--cor-texto); border-color: var(--cor-borda-campo); }
+.botao.secundario:hover { background: var(--cor-superficie-3); border-color: var(--cor-texto-suave); }
 .botao:disabled { opacity: .6; cursor: progress; }
 
 /* ---------------------------------------------------------------- cartões */
@@ -296,10 +467,13 @@ input[type=text], input[type=password], input[type=search], input[type=date],
 input[type=number], input[type=email], input[type=time], input[type=tel], input[type=url],
 select, textarea {
   width: 100%; max-width: 40rem; min-height: 44px; padding: .55rem .7rem; font: inherit;
-  border: 1px solid var(--cor-borda-forte); border-radius: var(--raio-pequeno);
-  background: var(--cor-superficie); color: var(--cor-texto);
+  border: 1px solid var(--cor-borda-campo); border-radius: var(--raio-pequeno);
+  background: var(--cor-campo); color: var(--cor-texto);
 }
-input:focus, select:focus, textarea:focus { border-color: var(--cor-primaria); }
+input:focus, select:focus, textarea:focus { border-color: var(--cor-foco); }
+::placeholder { color: var(--cor-texto-suave); opacity: .8; }
+/* Caixa de marcar e bolinha de escolha na cor da marca. */
+input[type=checkbox], input[type=radio], progress { accent-color: var(--cor-acao); }
 /* Hora não precisa de 40rem: o campo tem quatro dígitos e o relógio do navegador. */
 input[type=time] { max-width: 10rem; }
 input[type=checkbox], input[type=radio] { width: 1.25rem; height: 1.25rem; vertical-align: middle; }
@@ -373,7 +547,7 @@ thead th {
   background: var(--cor-superficie-2); font-size: .82rem; text-transform: uppercase;
   letter-spacing: .04em; color: var(--cor-texto-suave); border-bottom: 1px solid var(--cor-borda-forte);
 }
-tbody tr:nth-child(even) { background: #faf8f5; }
+tbody tr:nth-child(even) { background: var(--cor-zebra); }
 tbody tr:hover { background: var(--cor-primaria-fraca); }
 tbody tr:last-child td { border-bottom: 0; }
 td.numerico, th.numerico { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -440,7 +614,7 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
   transition: border-color .12s ease, transform .12s ease;
 }
 .indicador:hover { transform: translateY(-2px); }
-.indicador-destaque { border-top-color: var(--cor-brasa); background: linear-gradient(180deg, #fff7f1, #fff); }
+.indicador-destaque { border-top-color: var(--cor-brasa); background: linear-gradient(180deg, var(--cor-primaria-fraca), var(--cor-superficie)); }
 .indicador a { display: block; text-decoration: none; color: inherit; }
 .indicador a:hover .rotulo { text-decoration: underline; }
 .indicador a[aria-current] { font-weight: 700; }
@@ -452,7 +626,7 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
 .indicador .ajuda { font-size: .88rem; }
 .indicador .etiqueta { align-self: flex-start; margin-top: auto; }
 .selo-destaque {
-  align-self: flex-start; background: var(--cor-brasa); color: #fff; border-radius: 999px;
+  align-self: flex-start; background: var(--cor-acao); color: #fff; border-radius: 999px;
   padding: .1rem .6rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
 }
 
@@ -530,7 +704,7 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
    valendo sem ter que ler a coluna de novo. `aria-pressed` carrega o mesmo para quem
    usa leitor de tela. */
 .botao-marcado, .acoes-da-peca [aria-pressed="true"] {
-  background: var(--cor-primaria); color: #fff; border-color: var(--cor-primaria);
+  background: var(--cor-acao); color: #fff; border-color: var(--cor-acao);
 }
 /* A marca da peça na lista de leituras do celular: "sem etiqueta", "danificada". */
 .leitura-estado {
@@ -592,9 +766,14 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: .78rem; letter-spacing: .08em; color: #000;
 }
-.etiqueta-interno { font-size: .62rem; color: var(--cor-texto-suave); }
+.etiqueta-interno { font-size: .62rem; color: #5c5449; }
 @media print {
   .nao-imprimir, .topo, .rodape, .mensagens { display: none !important; }
+  /* Papel não tem aviso de tela nem setas para outra tela (1.43.0). Na folha de etiquetas
+     sai também o aviso da data dos dados: ele ocupava a primeira fileira da folha, e a
+     tela promete que só as etiquetas saem no papel. */
+  .faixa-aviso, .navegacao-telas, .so-etiquetas .faixa-dados { display: none !important; }
+  .abertura-sub, .abertura-dados span { color: var(--cor-texto-suave); }
   .folha-de-etiquetas { gap: .35rem; grid-template-columns: repeat(4, 1fr); }
   .etiqueta-produto { border-color: #999; }
   body { background: #fff; }
@@ -619,7 +798,7 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
 /* ------------------------------------------------------------- lembretes do dia */
 .lembretes {
   position: fixed; inset: 0; z-index: 40; display: grid; place-items: center;
-  padding: var(--espaco); background: rgba(27, 24, 19, .55);
+  padding: var(--espaco); background: rgba(0, 0, 0, .65);
 }
 /* Sem esta linha o display: grid acima vence o hidden do navegador e o botão "Entendi"
    não fecha o aviso. Vale para qualquer caixa que esconda pelo atributo hidden. */
@@ -787,7 +966,9 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
 .ranking-fraco .ranking-barra i { background: var(--cor-alerta); }
 
 .estrelas { white-space: nowrap; letter-spacing: .05em; }
-.estrela { color: var(--cor-borda-forte); }
+/* A estrela vazia na cor da borda de campo (3:1): no escuro, a da borda forte (1,7:1)
+   sumia, e "duas estrelas de cinco" virava "duas estrelas". */
+.estrela { color: var(--cor-borda-campo); }
 .estrela.cheia { color: var(--cor-alerta); }
 .etiqueta-parceiro { border-color: var(--cor-sucesso); color: var(--cor-sucesso); background: var(--cor-sucesso-fraca); }
 .etiqueta-flexivel { border-color: var(--cor-primaria); color: var(--cor-primaria); background: var(--cor-primaria-fraca); }
@@ -800,7 +981,7 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
 .estrelas-escolha { display: flex; flex-direction: row-reverse; border: 0; padding: 0; margin: 0; }
 .estrelas-escolha input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .estrelas-escolha label {
-  cursor: pointer; font-size: 1.3rem; line-height: 1; color: var(--cor-borda-forte);
+  cursor: pointer; font-size: 1.3rem; line-height: 1; color: var(--cor-borda-campo);
   padding: .1rem .05rem; min-width: 1.4rem; text-align: center;
 }
 .estrelas-escolha input:checked ~ label,
@@ -1026,11 +1207,11 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
   border-radius: var(--raio-pequeno); padding: .5rem .8rem; min-width: 8.5rem;
 }
 .filtro:hover { border-color: var(--cor-borda-forte); }
-.filtro-ativo { background: var(--cor-primaria); border-color: var(--cor-primaria); color: var(--cor-primaria-texto); }
+.filtro-ativo { background: var(--cor-acao); border-color: var(--cor-acao); color: var(--cor-primaria-texto); }
 .filtro-rotulo { font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
 .filtro-numero { font-size: 1.3rem; font-weight: 700; line-height: 1.1; }
 .filtro-valor { font-size: .85rem; color: var(--cor-texto-suave); }
-.filtro-ativo .filtro-valor { color: var(--cor-primaria-fraca); }
+.filtro-ativo .filtro-valor { color: var(--cor-primaria-texto); }
 
 /* Autopreenchimento: a lista fica presa à caixa de busca e por cima do resto. */
 .campo-com-sugestoes { position: relative; display: block; }
@@ -1205,7 +1386,7 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
 /* Lanterna acesa é estado, e botão que não muda de cara quando é ligado faz a pessoa
    tocar duas vezes e apagar o que acabou de acender. */
 .camera-acoes [aria-pressed="true"] {
-  background: var(--cor-brasa); border-color: var(--cor-brasa); color: #fff;
+  background: var(--cor-acao); border-color: var(--cor-acao); color: #fff;
 }
 
 /* Lista de compra (1.17.0): o começo da lista vem em cartões de fornecedor, porque a
@@ -1216,13 +1397,13 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
 }
 .cartao-fornecedor {
   border: 1px solid var(--cor-borda); border-left: 4px solid var(--cor-brasa);
-  border-radius: var(--raio); padding: 1rem; background: #fff;
+  border-radius: var(--raio); padding: 1rem; background: var(--cor-superficie);
 }
 .cartao-fornecedor h3 { margin: 0 0 .25rem; font-size: 1rem; line-height: 1.3; }
 .cartao-fornecedor-valor { margin: 0 0 .5rem; font-size: 1.5rem; font-weight: 700; color: var(--cor-brasa); }
 .aviso-parado {
   margin: .75rem 0 0; padding: .5rem .6rem; border-radius: var(--raio);
-  background: #fdf3e7; border: 1px solid var(--cor-alerta); font-size: .9rem;
+  background: var(--cor-alerta-fraca); border: 1px solid var(--cor-alerta); font-size: .9rem;
 }
 
 /* Alertas por e-mail (1.22.0): os três relatórios são três itens com dois botões cada.
@@ -1277,9 +1458,9 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
   display: inline-block; padding: .15rem .5rem; border-radius: 999px;
   font-size: .8rem; font-weight: 600; white-space: nowrap;
 }
-.selo-faltando { background: var(--cor-erro); color: #fff; }
-.selo-abaixo_do_minimo { background: var(--cor-alerta); color: #3a2a12; }
-.selo-vai_faltar { background: var(--cor-borda-forte); color: #fff; }
+.selo-faltando { background: var(--cor-erro); color: var(--cor-sobre-status); }
+.selo-abaixo_do_minimo { background: var(--cor-alerta); color: var(--cor-sobre-status); }
+.selo-vai_faltar { background: var(--cor-borda-forte); color: var(--cor-texto); }
 
 /* Carro-chefe e alerta de 30% (1.40.0, pedido de 22/10/2026). O carro-chefe ganha selo e
    um fio de latão na linha, sem pintar a linha inteira: a cor forte fica para o alerta,
@@ -1320,13 +1501,13 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
   display: flex; gap: 1rem; align-items: center; justify-content: space-between;
   flex-wrap: wrap; padding: .7rem .9rem; border-radius: var(--raio);
   border: 1px solid var(--cor-borda); border-left: 4px solid var(--cor-borda-forte);
-  background: #fff;
+  background: var(--cor-superficie);
 }
 .tarefa div { min-width: min(18rem, 100%); flex: 1; }
 .tarefa strong { display: block; }
 .tarefa span { color: var(--cor-texto-suave); font-size: .92rem; }
 .tarefa-ruim { border-left-color: var(--cor-erro); background: var(--cor-erro-fraca); }
-.tarefa-atencao { border-left-color: var(--cor-alerta); background: #fdf6ea; }
+.tarefa-atencao { border-left-color: var(--cor-alerta); background: var(--cor-alerta-fraca); }
 @media (max-width: 40rem) {
   .tarefa .botao { width: 100%; text-align: center; }
 }
@@ -1415,7 +1596,7 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
    meses inteiros do lado. */
 .coluna-mes-parcial .coluna-barra-agora {
   background-image: repeating-linear-gradient(
-    45deg, rgba(255, 255, 255, .45) 0 4px, rgba(255, 255, 255, 0) 4px 9px);
+    45deg, rgba(0, 0, 0, .35) 0 4px, rgba(0, 0, 0, 0) 4px 9px);
 }
 .coluna-parcial {
   font-size: .62rem; color: var(--cor-texto-suave); line-height: 1.1; text-align: center;
@@ -1491,9 +1672,9 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
 .tabela-caixas th, .tabela-caixas td { padding-left: .5rem; padding-right: .5rem; }
 .tabela-caixas td small { color: var(--cor-texto-suave); white-space: nowrap; }
 .tabela-caixas td.numerico strong { font-size: 1.02rem; }
-.selo-caixa-aberto { background: var(--cor-alerta); color: #3a2a12; }
-.selo-caixa-confere { background: var(--cor-sucesso); color: #fff; }
-.selo-caixa-difere { background: var(--cor-erro); color: #fff; }
+.selo-caixa-aberto { background: var(--cor-alerta); color: var(--cor-sobre-status); }
+.selo-caixa-confere { background: var(--cor-sucesso); color: var(--cor-sobre-status); }
+.selo-caixa-difere { background: var(--cor-erro); color: var(--cor-sobre-status); }
 .lista-caixas-esquecidos { margin: .5rem 0 0; padding-left: 1.1rem; display: grid; gap: .3rem; }
 /* A conferência do turno tem duas colunas e fica dentro do cartão, sem rolagem: por
    isso NÃO herda o nowrap da tabela de turnos, que estourava 7 px no celular. */
@@ -1509,15 +1690,15 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
   display: block; font-weight: 400; font-size: .78rem; color: var(--cor-texto-suave);
 }
 .tabela-margem .selo { margin-top: .2rem; }
-.selo-abaixo { background: var(--cor-erro); color: #fff; }
-.selo-no_custo { background: var(--cor-alerta); color: #3a2a12; }
-.selo-sem_custo { background: var(--cor-borda-forte); color: #2a2319; }
-.selo-markup_errado { background: var(--cor-latao-fraca); color: #4a3516; border: 1px solid var(--cor-latao); }
+.selo-abaixo { background: var(--cor-erro); color: var(--cor-sobre-status); }
+.selo-no_custo { background: var(--cor-alerta); color: var(--cor-sobre-status); }
+.selo-sem_custo { background: var(--cor-borda-forte); color: var(--cor-texto); }
+.selo-markup_errado { background: var(--cor-latao-fraca); color: var(--cor-latao); border: 1px solid var(--cor-latao); }
 /* O ! da coluna "% no SET": o campo do SET está diferente do que o preço de hoje dá. */
 .marca-divergente {
   display: inline-block; margin-left: .2rem; width: 1.1rem; height: 1.1rem; line-height: 1.1rem;
   text-align: center; border-radius: 999px; font-weight: 700; font-size: .78rem;
-  background: var(--cor-alerta); color: #fff;
+  background: var(--cor-alerta); color: var(--cor-sobre-status);
 }
 /* As duas contas lado a lado, no cartão que explica a diferença. Uma coluna no celular
    é minmax(0, 1fr), nunca 1fr: item de grid tem min-width auto e estoura a tela. */
@@ -1992,9 +2173,9 @@ input[type=text].campo-quantidade {
 
    As cores de situação são as do Grafana, e significam o mesmo em todo quadro: verde é
    bom, laranja pede atenção, vermelho pede ação, azul é número sem juízo. Escrito junto
-   da cor sempre vai a palavra ou a seta (regra do topo deste arquivo). As cores das
-   fatias de gráfico são trocadas aqui dentro: as de fora são escuras para papel creme e
-   sumiriam no fundo escuro. */
+   da cor sempre vai a palavra ou a seta (regra do topo deste arquivo). Desde a 1.43.0 o
+   sistema inteiro usa estas cores (os tokens do :root são estes mesmos), e as fatias de
+   gráfico deixaram de ser trocadas aqui: já são as do Grafana em todas as telas. */
 .corpo-monitor {
   --mon-fundo: #13110f;
   --mon-quadro: #1c1916;
@@ -2008,15 +2189,6 @@ input[type=text].campo-quantidade {
   --mon-azul: #5794f2;
   --mon-amarelo: #fade2a;
   --mon-roxo: #b877d9;
-  --cor-fatia-1: #73bf69;
-  --cor-fatia-2: #5794f2;
-  --cor-fatia-3: #ff9830;
-  --cor-fatia-4: #b877d9;
-  --cor-fatia-5: #fade2a;
-  --cor-fatia-6: #3fb6b2;
-  --cor-fatia-7: #ff7383;
-  --cor-fatia-8: #c9a36a;
-  --cor-fatia-9: #6e655c;
   background: var(--mon-fundo);
   color: var(--mon-texto);
 }
@@ -2029,7 +2201,7 @@ input[type=text].campo-quantidade {
 }
 .corpo-monitor .navegacao-telas a:hover { background: #26211c; border-color: var(--mon-texto-suave); }
 /* Só dentro do Dashboard: o menu de cima continua com as cores de todas as telas. */
-.monitor a { color: #8ab8ff; }
+.monitor a { color: var(--cor-link); }
 
 .monitor { container-type: inline-size; }
 .monitor-cabeca {
@@ -2314,7 +2486,7 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
   display: inline-block; padding: .1rem .5rem; border-radius: 3px; font-size: .74rem; font-weight: 700;
   color: #1b1713; background: var(--mon-azul);
 }
-.monitor-selo-ruim { background: var(--mon-vermelho); color: #fff; }
+.monitor-selo-ruim { background: var(--mon-vermelho); color: var(--cor-sobre-status); }
 .monitor-selo-atencao { background: var(--mon-laranja); }
 .monitor-selo-neutro { background: #3a332c; color: var(--mon-texto); }
 
@@ -2414,4 +2586,13 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
      e a seta saía da tela. */
   .monitor-filtros select { flex: 1 1 0%; min-width: 0; max-width: none; }
   .monitor-dados { max-width: none; width: 100%; }
+}
+
+/* Impressão do Dashboard (1.43.0): os quadros voltam ao papel, como o resto do sistema
+   no bloco de impressão do topo deste arquivo. */
+@media print {
+  .corpo-monitor {
+    --mon-fundo: #ffffff; --mon-quadro: #ffffff; --mon-borda: #c9bcab; --mon-grade: #e0d8cc;
+    --mon-texto: #1b1813; --mon-texto-suave: #5c5449;
+  }
 }

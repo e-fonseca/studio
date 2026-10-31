@@ -29,6 +29,22 @@ Se o túnel não subir (porta ocupada, certificado ilegível), o sistema continu
 respondendo em HTTP e grava o motivo em `logs\sistema.log`. A loja não para por causa
 do HTTPS.
 
+### A página que chegava cortada (corrigido na 1.43.0)
+
+Até a 1.42.0 o túnel usava duas linhas por conexão, uma para cada sentido, e as duas
+mexiam ao mesmo tempo no mesmo objeto TLS do OpenSSL: uma parada lendo o pedido seguinte
+do navegador enquanto a outra escrevia a resposta. O OpenSSL não aguenta isso, e de vez em
+quando a leitura voltava "acabou" no meio da resposta; a linha dela fechava a conexão e a
+página (ou o CSS, ou uma imagem) chegava sem o fim. Quem entra por HTTP, no balcão, nunca
+passou por aqui.
+
+Apareceu como um teste que falhou uma vez com a máquina ocupada. Medido com 400 páginas
+seguidas pelo túnel: **2 cortadas com a máquina parada e 9 a 11 com ela ocupada**. Agora é
+uma linha só por conexão (`_encaminhar`, com `select`), que lê e escreve um lado de cada
+vez: **nenhuma cortada em 1.200**, e conexão mantida com 45 MB descendo e 15 MB subindo
+inteiros. O teste `test_o_tls_do_cliente_nunca_e_usado_por_duas_linhas_ao_mesmo_tempo`
+trava a causa, que acontecia em toda página, e não só o sintoma, que é raro.
+
 ## O certificado
 
 A loja não tem domínio nem certificado pago, e o endereço é um IP interno. O

@@ -544,9 +544,12 @@ class TestTela(BaseDashboard):
         self.assertContains(resposta, "Ver o valor de cada mês")
         self.assertContains(resposta, "R$ 1.500,00")   # agosto de 2026, do detalhe da importação
 
-    def test_o_dashboard_esta_no_assunto_de_vendas(self):
+    def test_o_dashboard_e_a_primeira_entrada_do_menu(self):
+        """Saiu de dentro de Vendas em 31/10/2026: é a tela que abre ao entrar."""
         from apps.core import menu
 
         assunto = menu.grupo_de("painel:dashboard")
         self.assertIsNotNone(assunto, "o dashboard saiu do menu")
-        self.assertEqual(assunto.chave, "vendas")
+        self.assertEqual(assunto.chave, "dashboard")
+        self.assertIs(menu.GRUPOS[0], assunto)
+        self.assertEqual(menu.GRUPOS[1].chave, "visao")

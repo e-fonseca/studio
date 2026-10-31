@@ -54,8 +54,9 @@ class NavegacaoEntreTelasTest(TestCase):
         self.client.login(username="edson", password=SENHA_TESTE)
 
     def test_primeira_tela_so_tem_proxima(self):
+        """A primeira é o Dashboard desde a 1.43.0; a Visão geral vem logo depois."""
         self.entrar()
-        pagina = self.client.get(reverse("painel:geral"))
+        pagina = self.client.get(reverse("painel:dashboard"))
         self.assertContains(pagina, "Próxima")
         self.assertNotContains(pagina, "navegacao-anterior")
 

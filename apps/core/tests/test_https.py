@@ -201,6 +201,47 @@ class TestTunelHttps(SimpleTestCase):
                 ligacao.close()
                 interno.shutdown()
 
+    def test_o_tls_do_cliente_nunca_e_usado_por_duas_linhas_ao_mesmo_tempo(self):
+        """A página cortada no celular (corrigida na 1.43.0).
+
+        Até a 1.42.0 o túnel tinha uma linha lendo o navegador e outra escrevendo nele, as
+        duas no mesmo objeto TLS do OpenSSL, que não aguenta isso: 2 a 11 de cada 400
+        páginas chegavam sem o fim. A falha em si é rara e depende da carga da máquina; o
+        que este teste trava é a causa, que acontecia em TODA página: a leitura parada à
+        espera do pedido seguinte enquanto a resposta era escrita.
+        """
+        with tempfile.TemporaryDirectory() as pasta:
+            arquivo, chave = certificado.garantir(Path(pasta), ["localhost", "127.0.0.1"])
+            interno = make_server("127.0.0.1", 0, _aplicacao)
+            threading.Thread(target=interno.serve_forever, daemon=True).start()
+            do_servidor = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            do_servidor.load_cert_chain(certfile=str(arquivo), keyfile=str(chave))
+            ouvinte = socket.create_server(("127.0.0.1", 0))
+            vigias = []
+
+            def aceitar():
+                crua, _ = ouvinte.accept()
+                vigia = _VigiaDoTls(do_servidor.wrap_socket(crua, server_side=True))
+                vigias.append(vigia)
+                tunel_tls._atender(vigia, ("127.0.0.1", interno.server_address[1]))
+
+            linha = threading.Thread(target=aceitar, daemon=True)
+            linha.start()
+            contexto = ssl.create_default_context(
+                cafile=str(Path(pasta) / certificado.NOME_AUTORIDADE))
+            ligacao = http.client.HTTPSConnection(
+                "localhost", ouvinte.getsockname()[1], context=contexto, timeout=10)
+            try:
+                ligacao.request("GET", "/sistema/")
+                self.assertEqual(ligacao.getresponse().read(), b"ola do sistema")
+            finally:
+                ligacao.close()
+                interno.shutdown()
+                ouvinte.close()
+            linha.join(timeout=10)
+            self.assertEqual(vigias[0].mais_de_uma_vez, 1,
+                             "duas linhas dentro do TLS do cliente ao mesmo tempo")
+
     def test_porta_ocupada_nao_derruba_o_sistema(self):
         """A loja não pode parar porque o HTTPS não subiu."""
         import socket
@@ -219,6 +260,35 @@ class TestTunelHttps(SimpleTestCase):
                 self.assertFalse(linha.is_alive())
             finally:
                 ocupada.close()
+
+
+class _VigiaDoTls:
+    """Embrulha o TLS do cliente e anota quantas linhas estiveram dentro dele de uma vez."""
+
+    def __init__(self, real):
+        self._real = real
+        self._trava = threading.Lock()
+        self._dentro = 0
+        self.mais_de_uma_vez = 0
+
+    def _contar(self, metodo, *args):
+        with self._trava:
+            self._dentro += 1
+            self.mais_de_uma_vez = max(self.mais_de_uma_vez, self._dentro)
+        try:
+            return metodo(*args)
+        finally:
+            with self._trava:
+                self._dentro -= 1
+
+    def recv(self, tamanho):
+        return self._contar(self._real.recv, tamanho)
+
+    def sendall(self, dados):
+        return self._contar(self._real.sendall, dados)
+
+    def __getattr__(self, nome):  # settimeout, pending, fileno, shutdown, close
+        return getattr(self._real, nome)
 
 
 def _porta_livre():

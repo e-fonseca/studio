@@ -184,5 +184,6 @@ class TestTela(BaseTicket):
         assunto = menu.grupo_de("painel:ticket_medio")
         self.assertIsNotNone(assunto, "o ticket médio saiu do menu")
         self.assertEqual(assunto.chave, "vendas")
-        resposta = self.client.get(reverse("painel:dashboard"))
+        # A segunda fileira de Vendas; o Dashboard virou entrada própria em 31/10/2026.
+        resposta = self.client.get(reverse("painel:vendas_dia"))
         self.assertContains(resposta, reverse("painel:ticket_medio"))

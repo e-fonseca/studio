@@ -1,4 +1,4 @@
-"""O menu do topo: cinco assuntos e a Visão geral, e dentro de cada um as suas telas.
+"""O menu do topo: o Dashboard, a Visão geral e cinco assuntos, e dentro de cada um as suas telas.
 
 Por que mudou (pedido do Edson, 19/10/2026)
 -------------------------------------------
@@ -9,7 +9,7 @@ comprar (...) os menus precisam se conectarem com o mesmo assunto."*
 
 Eram vinte e sete telas em duas fileiras, todas à vista ao mesmo tempo. Quem abria o
 sistema no celular, na estrada, lia vinte e sete rótulos antes de chegar na tela que
-decide a compra. Agora são **seis entradas**, e cada uma é um assunto:
+decide a compra. Ficaram **seis entradas** naquele dia, e cada uma é um assunto:
 
     Visão geral · Compras · Vendas · Estoque · Dinheiro · Sistema
 
@@ -21,6 +21,19 @@ não vinte e sete de uma vez.
 A ordem é a da decisão, não a do organograma: Compras vem logo depois da Visão geral
 porque comprar é o que ele precisa decidir rápido, e a primeira tela de Compras é a
 Lista de compra, que é onde a quantidade é escolhida e o pedido sai.
+
+O Dashboard na frente (pedido do Edson, 31/10/2026)
+---------------------------------------------------
+*"logo quando fazer login quero que abra o Dashboard, causa bom impacto com as
+informações visíveis. no mesmo menu (principal) colocar ao lado como segunda opção a
+visão geral."* O Dashboard saiu de dentro de Vendas e virou a primeira entrada do topo,
+com a Visão geral logo ao lado; são **sete entradas** desde a 1.43.0:
+
+    Dashboard · Visão geral · Compras · Vendas · Estoque · Dinheiro · Sistema
+
+Como `primeira_tela` devolve a primeira tela do menu que o perfil abre, quem tem o
+painel passa a entrar pelo Dashboard sem regra nova nenhuma, e o vendedor continua
+entrando pela Consulta, que é a tela dele. Clicar em Vendas cai agora em Vendas do dia.
 
 Como isto é lido no resto do sistema
 ------------------------------------
@@ -90,6 +103,12 @@ class Grupo:
 
 
 GRUPOS = [
+    # Primeiro de propósito: é a tela que abre ao entrar (pedido de 31/10/2026, acima).
+    Grupo("dashboard", "Dashboard",
+          ajuda="A loja em quadros: venda, margem, estoque e o que pede atenção.", telas=(
+        Item("painel:dashboard", "Dashboard", "importacao.ver_painel",
+             ajuda="Gráficos e estatísticas da loja: venda, margem, estoque e curva ABC."),
+    )),
     Grupo("visao", "Visão geral", ajuda="Como a loja está hoje, e o que fazer agora.", telas=(
         Item("painel:geral", "Visão geral", "importacao.ver_painel",
              ajuda="Como a loja está, em quatro números grandes."),
@@ -117,8 +136,6 @@ GRUPOS = [
     )),
     Grupo("vendas", "Vendas", ajuda="O que a loja vendeu, com que lucro e para quem.",
           telas=(
-        Item("painel:dashboard", "Dashboard", "importacao.ver_painel",
-             ajuda="Gráficos e estatísticas da loja: venda, margem, estoque e curva ABC."),
         Item("painel:vendas_dia", "Vendas do dia", "importacao.ver_painel",
              irmas=("painel:vendas_dia_arquivo",),
              ajuda="O que a loja vendeu no dia, com custo, lucro e margem de cada produto."),
@@ -309,7 +326,8 @@ def para(request):
 def primeira_tela(usuario):
     """A tela em que esta pessoa entra ao abrir o sistema.
 
-    É a primeira do menu que o perfil dela abre, que para a gerência é a Visão geral.
+    É a primeira do menu que o perfil dela abre, que para a gerência é o Dashboard desde
+    a 1.43.0 (era a Visão geral).
     Quem não tem o painel (o perfil de vendedor) cai na primeira tela que o perfil dele
     abre, em vez de numa página vazia dizendo que ele não tem acesso a nada.
     """

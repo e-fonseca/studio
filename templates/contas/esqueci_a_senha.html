@@ -1,0 +1,22 @@
+{% extends "contas/_entrada.html" %}
+{% block cartao %}
+<h1 id="titulo-entrada">Esqueci a minha senha</h1>
+<p class="ajuda">Digite o seu usuário. Se ele tiver e-mail cadastrado, mandamos para lá um
+   código de seis números para você criar uma senha nova.</p>
+{% include "contas/_mensagens_entrada.html" %}
+<form method="post" class="formulario-entrada">
+  {% csrf_token %}
+  {% if erro %}<p class="mensagem error" role="alert">{{ erro }}</p>{% endif %}
+  <label for="id_identificacao">Usuário ou e-mail cadastrado</label>
+  <input type="text" name="identificacao" id="id_identificacao" autocomplete="username"
+         autocapitalize="none" autocorrect="off" spellcheck="false" required autofocus
+         value="{{ digitado }}">
+  <button type="submit" class="botao" data-enviando="Mandando o código…">Mandar o código</button>
+</form>
+<p class="voltar-entrada"><a href="{% url 'contas:entrar' %}">Voltar para entrar</a></p>
+{% endblock %}
+
+{% block depois_do_cartao %}
+<p class="ajuda-entrada">Sem e-mail cadastrado, quem define uma senha nova é o administrador
+   do sistema, na tela de usuários.</p>
+{% endblock %}

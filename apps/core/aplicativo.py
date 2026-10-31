@@ -33,8 +33,11 @@ from apps.core import versao
 
 NOME = "Cabana do Jacarandá"
 NOME_CURTO = "Cabana"
-COR_DA_MARCA = "#7a3b12"
-COR_DO_FUNDO = "#f6f3ee"
+# As cores do aplicativo no celular: a barra de cima do aparelho e a tela de abertura.
+# Desde a 1.43.0 o sistema é escuro, e as duas acompanham (o topo e o fundo das telas);
+# a barra marrom e a abertura creme de antes piscavam claro antes da tela escura.
+COR_DA_MARCA = "#241f1a"
+COR_DO_FUNDO = "#13110f"
 
 
 def manifesto(request):

@@ -119,8 +119,9 @@ def _adiantar_o_painel(importacao, registrar_em=None):
     execução de agora — escrever no registro de ontem seria mexer no passado.
 
     São ~2,2 s sobre onze mil produtos, e quem esperava por elas era justamente quem
-    tinha acabado de digitar a senha, porque a Visão geral é a primeira tela depois de
-    entrar. Ver apps/painel/aquecer.py.
+    tinha acabado de digitar a senha, porque a primeira tela depois de entrar (a Visão
+    geral até a 1.42.0, o Dashboard desde a 1.43.0) mostra estas contas. Ver
+    apps/painel/aquecer.py.
 
     **Tudo aqui dentro é engolido, inclusive a importação do módulo.** Esta função é
     chamada no fim de `executar`, de dentro do `try` cujo `except` APAGA os produtos,

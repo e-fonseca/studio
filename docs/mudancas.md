@@ -7,6 +7,58 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.43.0 — 31/10/2026
+
+Pedido dele, com o print do Dashboard e a foto da fachada: *"gostei do visual escuro / na
+tela de login manter o layout com as cores da empresa, mas com umas pegadas degrade para o
+escuro (...) usar como teste o a foto da frente da loja no plano de fundo da tela de login
+como marca d'agua bem franquinho em preto e branco (...) adotar recurso de recuperar senha
+por e-mail cadastrado via confirmação de código, senão tiver cadastro informe que não é
+possível, procure o administrador do sistema. / melhor visualização e cansa menos os olhos /
+adaptar e aplicar em todo o sistema (...) logo quando fazer login quero que abra o
+Dashboard (...) no mesmo menu (principal) colocar ao lado como segunda opção a visão geral.
+/ adotar o esquema Grafana em todo o sistema."*
+
+- **O sistema inteiro ficou escuro, nas cores do Dashboard**: fundo quase preto puxado para
+  a madeira, quadros um tom acima, letra creme em vez de branco puro (cansa menos), e as
+  cores de situação do Grafana em toda tela (verde bom, laranja atenção, vermelho ação, azul
+  para link). Nenhuma tela mudou de desenho nem de conta. As 48 telas foram abertas no
+  computador e no celular por um programa que mediu o contraste de cada letra visível
+  (`docs/evidencias/contraste-1.43.0.md`). As páginas de erro também ficaram escuras.
+- **O que vai para o papel continua claro**: folha do pedido, etiquetas, folha de contagem
+  e qualquer tela impressa voltam às cores de antes na impressão. Os PDFs e os e-mails não
+  mudaram. A folha de etiquetas parou de imprimir o aviso da data dos dados em cima da
+  primeira fileira, e a Visão geral impressa ganhou letra escura no título.
+- **Entrar abre o Dashboard**, e o menu de cima tem sete entradas: **Dashboard, Visão geral**,
+  Compras, Vendas, Estoque, Dinheiro e Sistema. O Dashboard saiu de dentro de Vendas. Ele
+  fica guardado depois de cada importação, como a Visão geral, então abrir com ele não ficou
+  mais lento (36 consultas guardado, contra 90 sem guardar). Quem não abre o Dashboard (o
+  vendedor) continua caindo na Consulta.
+- **Tela de entrada nova**: o mesmo desenho (marca em cima, cartão no meio, versão e servidor
+  embaixo) num fundo que desce da madeira e da brasa da loja para o escuro, com a **fachada
+  da loja em preto e branco, bem fraquinha**, por trás. **A foto é teste**: para tirar, é uma
+  linha do CSS (`docs/tela-escura.md`). Ganhou o botão **Mostrar** a senha e o aviso de
+  **Caps Lock ligado**, as duas causas comuns de "a senha não entra".
+- **Esqueci a minha senha**, na tela de entrada: a pessoa digita o usuário (ou o e-mail) e
+  recebe no **e-mail cadastrado** um código de seis números, que vale 15 minutos e uma vez
+  só, com 5 tentativas. Com ele, cria a senha nova na mesma tela, e um segundo e-mail avisa
+  da troca. **Sem e-mail cadastrado, a tela diz que não é possível e manda procurar o
+  administrador do sistema.** O bloqueio de 5 senhas erradas sai junto com a senha nova.
+- **Onde se cadastra o e-mail**: a própria pessoa, em Trocar a minha senha (pede a senha de
+  agora); a gerência, no quadro novo "E-mail para recuperar a senha" da tela de usuários,
+  que também marca quem está sem e-mail.
+- Proteções: a mesma frase para usuário que não existe, sem e-mail ou desligado (ninguém
+  descobre quem tem conta); o código não fica guardado, só a assinatura dele; no máximo 5
+  códigos por pessoa e 10 pedidos do mesmo computador por hora; tudo na auditoria, com o
+  meio do e-mail escondido (`docs/sessao-e-acesso.md`).
+- **O código sai pelo envio da tela Alertas.** Enquanto a senha da caixa `naoresponder@` não
+  estiver colada lá, a recuperação responde que o envio de e-mail não está configurado.
+- **Correção no endereço seguro (8443, o do celular)**: cerca de 1 em cada 200 páginas, e
+  até 3 em cada 100 com o servidor ocupado, podiam chegar cortadas, sem o fim (às vezes sem
+  o CSS ou uma imagem), porque o túnel do HTTPS usava o mesmo TLS em duas linhas ao mesmo
+  tempo. Agora é uma linha só por conexão: nenhuma cortada em 1.200 seguidas
+  (`docs/https-e-camera.md`). O balcão, que entra por HTTP, nunca passou por isso.
+
 ## 1.42.0 — 31/10/2026
 
 Pedido dele, com a ficha e a descrição do cargo da Cássia: *"criar acesso para nova

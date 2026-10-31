@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+{% comment %}
+As telas de quem ainda não entrou (1.43.0): entrar, esqueci a senha, o código que chegou
+por e-mail e o acesso bloqueado. Sem menu e sem usuário, o topo escuro não tem o que
+mostrar: o fundo da página desce da madeira da loja para o escuro do sistema, com a
+fachada em marca d'água (static/css/sistema.css, "tela de entrada"), e o cartão fica no
+meio. O recado do sistema (senha nova salva, código enviado) vai dentro do cartão, onde o
+olho está, e não no alto da página.
+{% endcomment %}
+{% block classe_corpo %}entrada{% endblock %}
+{% block topo %}{% endblock %}
+{% block mensagens %}{% endblock %}
+{% block conteudo %}
+<div class="marca-entrada">
+  <img class="marca-simbolo" src="{% static 'img/logo.png' %}" alt="" width="108" height="108">
+  <strong>Cabana do Jacarandá</strong>
+  <span>Sistema auxiliar ao SET</span>
+</div>
+
+<section class="cartao cartao-entrada" aria-labelledby="titulo-entrada">
+  {% block cartao %}{% endblock %}
+</section>
+
+{% block depois_do_cartao %}{% endblock %}
+<script src="{% static 'js/entrada.js' %}" defer></script>
+{% endblock %}

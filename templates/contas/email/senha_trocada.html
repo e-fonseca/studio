@@ -1,0 +1,29 @@
+{% comment %}Aviso de senha trocada pelo código do e-mail (1.43.0). Ver codigo.html.{% endcomment %}<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A sua senha foi trocada</title></head>
+<body style="margin:0; padding:0; background:#f5f1ec; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; color:#2b2522;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f1ec; padding:16px 0;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px; background:#fffdfa; border:1px solid #e3d9cd; border-radius:10px;">
+  <tr><td style="background:#2b2018; padding:18px 22px; border-radius:9px 9px 0 0;">
+    <div style="color:#f2e6d6; font-size:18px; font-weight:700;">A sua senha foi trocada</div>
+    <div style="color:#c4ab8d; font-size:13px; margin-top:3px;">Cabana do Jacarandá · Sistema auxiliar</div>
+  </td></tr>
+  <tr><td style="padding:22px 22px 6px; font-size:15px; line-height:1.5;">
+    <p style="margin:0 0 12px;">Olá, {{ nome }}.</p>
+    <p style="margin:0 0 12px;">A senha do usuário <strong>{{ usuario }}</strong> no sistema
+      da Cabana do Jacarandá foi trocada em {{ quando|date:"d/m/Y" }}, às
+      {{ quando|date:"H:i" }}, com o código mandado a este e-mail.</p>
+    <p style="margin:0 0 12px;">Foi você? Então está tudo certo, e não precisa fazer nada.</p>
+    <p style="margin:0 0 12px; padding:10px 12px; background:#fbe7e4; border-left:4px solid #9d241a; font-size:14px;">
+      <strong>Não foi você?</strong> Procure o administrador do sistema agora: ele encerra o
+      acesso e define uma senha nova.</p>
+  </td></tr>
+  <tr><td style="padding:12px 22px 18px; font-size:12px; color:#8a7b6d; border-top:1px solid #e3d9cd;">
+    E-mail automático do sistema da Cabana do Jacarandá. Não precisa responder.
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>

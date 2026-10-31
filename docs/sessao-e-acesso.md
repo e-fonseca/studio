@@ -89,3 +89,61 @@ inclusive.
   em português de loja na própria tela.
 - **As outras sessões caem** (o celular, outro computador); a de agora continua
   (`update_session_auth_hash`). A auditoria registra `acesso.senha_trocada`, nunca a senha.
+
+## Esqueci a minha senha (1.43.0)
+
+Pedido dele em 31/10/2026: *"adotar recurso de recuperar senha por e-mail cadastrado via
+confirmação de código, senão tiver cadastro informe que não é possível, procure o
+administrador do sistema."* Até a 1.42.0, senha esquecida era a gerência definir outra na
+tela de usuários: o pedido tira esse passo da mão dela.
+
+**O caminho** (tudo em `apps/contas/recuperacao.py`; as telas em `apps/contas/views.py`):
+
+1. Na tela de entrada, **"Esqueci a minha senha"** (`/sistema/senha/esqueci/`). A pessoa
+   digita o usuário ou o e-mail cadastrado.
+2. Se a conta está ativa, tem senha e tem e-mail, sai para esse e-mail um **código de seis
+   números**, que vale **15 minutos**, uma vez só, com **5 tentativas**. A tela seguinte
+   (`/sistema/senha/esqueci/codigo/`) diz para onde foi, com o meio do endereço escondido
+   (`ed•••@gmail.com`).
+3. Com o código certo e uma senha que passe nas regras de sempre, a senha nova vale na hora:
+   as sessões abertas caem, o bloqueio de senhas erradas (django-axes) sai junto, a
+   auditoria registra `acesso.senha_recuperada` e **um segundo e-mail avisa da troca**, para
+   quem não pediu ficar sabendo.
+
+**Sem e-mail cadastrado**, a tela responde exatamente o pedido: *"Não é possível recuperar a
+senha por aqui: esse usuário não tem e-mail cadastrado ou não está com o acesso liberado.
+Procure o administrador do sistema."*
+
+### As decisões de segurança
+
+- **A mesma frase para tudo que não dá**: usuário que não existe, sem e-mail, desligado ou
+  ainda sem senha. Frases diferentes contariam a quem tenta adivinhar quais usuários existem.
+- **O código não fica guardado**: no banco vai só a assinatura dele (HMAC com a chave do
+  sistema e a conta), e na auditoria nem isso. Quem lê o banco não troca a senha de ninguém.
+- **Limites**: um código novo anula o anterior; pedir de novo em menos de um minuto não manda
+  outro e-mail (quem clica duas vezes achando que não chegou não anula o código que está
+  chegando); no máximo **5 códigos por conta por hora** e **10 pedidos por hora do mesmo
+  computador**, contados pela auditoria (`acesso.codigo_pedido`, que registra todo pedido,
+  o que deu e o que não deu, com o IP).
+- **O código e a senha vão juntos**, e a senha fraca não gasta o código: dá para corrigir a
+  senha sem pedir outro.
+- **As duas telas não abrem o menu nem passam pelo login**, e não ficam no cache do
+  navegador (`never_cache`). A segunda só abre para quem passou pela primeira na mesma
+  sessão.
+
+### Onde o e-mail se cadastra
+
+- **A própria pessoa**, em "Trocar a minha senha" (o nome no alto da tela), no quadro
+  "E-mail para recuperar a senha". Pede a senha de agora, como a troca de senha.
+- **A gerência**, na tela de usuários, no quadro "E-mail para recuperar a senha". A lista de
+  usuários marca quem está "sem e-mail: não recupera a senha sozinho".
+- As duas mudanças vão para a auditoria (`acesso.email_definido`), com o meio do endereço
+  escondido.
+
+### Por onde o código sai
+
+Pelo mesmo envio da tela Alertas (`apps/alertas/envio.enviar_avulso`): servidor, usuário e
+senha da caixa `naoresponder@`. Basta isso; a lista de destinatários e o "mandar os
+relatórios" não contam, porque o código vai ao e-mail de quem pediu. **Sem a senha da caixa
+colada na tela Alertas, a recuperação responde que o envio de e-mail do sistema ainda não
+está configurado** e manda procurar o administrador.

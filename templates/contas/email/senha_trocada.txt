@@ -1,0 +1,10 @@
+{% autoescape off %}Olá, {{ nome }}.
+
+A senha do usuário {{ usuario }} no sistema da Cabana do Jacarandá foi trocada em {{ quando|date:"d/m/Y" }}, às {{ quando|date:"H:i" }}, com o código mandado a este e-mail.
+
+Foi você? Então está tudo certo, e não precisa fazer nada.
+
+Não foi você? Procure o administrador do sistema agora: ele encerra o acesso e define uma senha nova.
+
+— Sistema da Cabana do Jacarandá (e-mail automático, não precisa responder)
+{% endautoescape %}

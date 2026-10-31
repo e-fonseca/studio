@@ -13,6 +13,9 @@ e a conta de 2,2 s sobrava para **a primeira pessoa que abrisse o sistema**. Com
 Visão geral é a primeira tela depois de entrar, essa pessoa sentia isso como "o login
 está lento". Três sincronizações por dia, três pessoas pagando a conta.
 
+Desde a 1.43.0 a primeira tela depois de entrar é o Dashboard (pedido do Edson em
+31/10/2026), e por isso ele também é adiantado aqui, no período que abre primeiro.
+
 A conta tem que ser feita de qualquer jeito. A escolha é só sobre QUEM espera: a
 tarefa agendada, que já está rodando e não tem pressa, ou a pessoa, que acabou de
 digitar a senha. Aqui ela passa para a tarefa.
@@ -34,7 +37,10 @@ registrador = logging.getLogger(__name__)
 
 
 def aquecer(importacao, estado=None, hoje=None):
-    """Calcula e guarda as três contas da abertura. Devolve quantos segundos levou.
+    """Calcula e guarda as contas da abertura. Devolve quantos segundos levou.
+
+    São quatro desde a 1.43.0: o painel, a Visão geral, "O que fazer agora" e o
+    Dashboard sem filtro, que passou a ser a primeira tela depois de entrar.
 
     Nunca levanta erro. Isto roda no fim da importação, que já terminou e já gravou os
     números: derrubar a importação porque um cálculo de tela falhou trocaria uma tela
@@ -51,6 +57,11 @@ def aquecer(importacao, estado=None, hoje=None):
         servicos.agenda_da_importacao(
             importacao, estado if estado is not None else importacao_servicos.estado_dos_dados(),
             hoje=hoje)
+        # O Dashboard abre logo depois de entrar desde a 1.43.0: o período padrão é o
+        # que a pessoa vê primeiro, então é ele que fica pronto.
+        from . import dashboard
+
+        servicos.dashboard_da_importacao(importacao, dashboard.PERIODO_PADRAO)
     except Exception:  # noqa: BLE001 - tela lenta é melhor que importação derrubada
         registrador.exception("Não consegui adiantar as contas do painel da importação %s",
                               importacao.pk)

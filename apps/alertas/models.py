@@ -153,6 +153,16 @@ class ConfiguracaoDeEmail(models.Model):
         return bool(self.servidor and self.usuario and self.tem_senha and self.lista_de_destinatarios)
 
     @property
+    def pode_enviar(self):
+        """Dá para mandar um e-mail avulso, a uma pessoa só? (1.43.0)
+
+        É o caso do código de recuperar a senha: vai ao e-mail de quem pediu, então a
+        lista de destinatários dos relatórios não conta, e o "mandar os relatórios" da
+        tela também não — ele liga e desliga os relatórios, não o servidor de e-mail.
+        """
+        return bool(self.servidor and self.usuario and self.tem_senha)
+
+    @property
     def o_que_falta(self):
         """O que ainda impede o envio, em palavras, para a tela dizer."""
         faltas = []

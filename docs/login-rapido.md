@@ -76,6 +76,16 @@ Economizaria 0,12 s e trocaria o formato da senha de todo mundo — numa máquin
 para acompanhar daqui, e em que senha que para de funcionar é a loja sem sistema. Não
 vale: 0,12 s não é o que a pessoa está sentindo, e os 1,8 s que ela sentia estavam na tela.
 
+## A primeira tela virou o Dashboard (1.43.0)
+
+Desde a 1.43.0 quem é da gerência cai no **Dashboard** ao entrar, e não mais na Visão geral
+(pedido de 31/10/2026). Pelo mesmo motivo de cima, ele entrou no que a importação e a tarefa
+de hora em hora deixam pronto: o período padrão, sem filtro, fica guardado com a mesma chave
+da Visão geral (`"dashboard:12m:" + chave(importacao)`). Medido na máquina de
+desenvolvimento: **36 consultas e cerca de 0,13 s** guardado, contra 90 consultas e 1,3 s
+com o cache limpo. O teste `test_aquecer_guarda_as_contas_da_abertura` confere que a
+chave do Dashboard está entre as que a importação deixa prontas.
+
 ## Como conferir que continua valendo
 
 A medida se refaz sozinha, com um `Client` do Django e o `CaptureQueriesContext` em volta

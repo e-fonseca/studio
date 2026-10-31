@@ -31,7 +31,10 @@ class TestManifesto(TestCase):
         self.assertIn("Cabana do Jacarandá", self.manifesto["name"])
         self.assertEqual(self.manifesto["short_name"], "Cabana")
         self.assertEqual(self.manifesto["lang"], "pt-BR")
-        self.assertEqual(self.manifesto["theme_color"], "#7a3b12")
+        # Escuras desde a 1.43.0, as do topo e do fundo das telas: a barra do celular
+        # e a tela de abertura não piscam claro antes do sistema escuro.
+        self.assertEqual(self.manifesto["theme_color"], "#241f1a")
+        self.assertEqual(self.manifesto["background_color"], "#13110f")
 
     def test_tem_icone_de_192_de_512_e_o_recortavel_do_android(self):
         por_tamanho = {}

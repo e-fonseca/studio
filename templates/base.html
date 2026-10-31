@@ -9,7 +9,7 @@
   próprio sistema, para não depender da internet.{% endcomment %}
   <link rel="icon" href="{% static 'img/icone.ico' %}" sizes="any">
   <link rel="apple-touch-icon" href="{% static 'img/icone-180.png' %}">
-  <meta name="theme-color" content="#7a3b12">
+  <meta name="theme-color" content="#241f1a">
   {% comment %}Atalho na tela inicial do celular: com o manifesto e o operário abaixo, o
   sistema abre em tela cheia, sem barra de endereço, como um aplicativo. Só funciona em
   https, igual à câmera (apps/core/aplicativo.py e docs/https-e-camera.md).{% endcomment %}
@@ -59,8 +59,9 @@
     </div>
     {% if user.is_authenticated %}
     {% comment %}O menu tem dois níveis (pedido do Edson, 19/10/2026: "muitos menus, acaba
-    dificultando o acesso e a tomada de decisões rápidas"). Em cima, com a cor da marca, os
-    SEIS assuntos: Visão geral, Compras, Vendas, Estoque, Dinheiro e Sistema. Embaixo, só as
+    dificultando o acesso e a tomada de decisões rápidas"). Em cima, com a cor da marca, as
+    SETE entradas: Dashboard, Visão geral, Compras, Vendas, Estoque, Dinheiro e Sistema (o
+    Dashboard veio para a frente em 31/10/2026, e é ele que abre ao entrar). Embaixo, só as
     telas do assunto que está aberto — nunca as vinte e sete de uma vez. Quem decide o que é
     de cada assunto é apps/core/menu.py, não este arquivo: assim a ordem do menu e a ordem
     das setas no pé nunca saem de sincronia. No celular as duas fileiras ficam atrás do botão
@@ -87,16 +88,20 @@
   {% if user.is_authenticated %}{% include "_aviso_dados.html" %}{% if endereco_seguro %}<div class="faixa-aviso faixa-sem-seguranca"><p>Você está no endereço <strong>sem</strong> segurança. No celular, a câmera e o atalho na tela inicial só funcionam no endereço com cadeado: <a href="{{ endereco_seguro }}">{{ endereco_seguro }}</a>. <a href="{% url 'core:certificado' %}">Como tirar o aviso do navegador</a>.</p></div>{% endif %}<div class="faixa-aviso"><p class="aviso-usuario">{{ aviso_usuario }}</p></div>{% endif %}
   <main id="conteudo" tabindex="-1">
     {% block migalhas %}{% endblock %}
+    {% comment %}As telas de entrada mostram o recado dentro do cartão, onde o olho está
+    (contas/_entrada.html); as outras, aqui, no alto da página.{% endcomment %}
+    {% block mensagens %}
     {% if messages %}
       <div class="mensagens" role="status">
         {% for m in messages %}<p class="mensagem {{ m.tags }}">{{ m }}</p>{% endfor %}
       </div>
     {% endif %}
+    {% endblock %}
     {% block conteudo %}{% endblock %}
     {% include "_navegacao.html" %}
   </main>
   <footer class="rodape">
-    <p>Sistema auxiliar ao SET. Não substitui o ERP nem a emissão fiscal. Cores provisórias até receber a identidade visual completa.</p>
+    <p>Sistema auxiliar ao SET. Não substitui o ERP nem a emissão fiscal.</p>
     {% comment %}A versão não se repete aqui: o Edson pediu para ficar só no topo, onde ele
     confere se a atualização entrou. Na tela de entrada, que não tem topo, ela saiu deste
     rodapé em 08/10/2026 e foi para o lado do campo de senha, junto do endereço do servidor
@@ -128,7 +133,7 @@
     document.addEventListener("submit", function (e) {
       if (e.target.hasAttribute("data-destino")) { return; }
       var b = e.target.querySelector("button[type=submit]");
-      if (b) { setTimeout(function () { b.disabled = true; b.textContent = "Enviando…"; }, 0); }
+      if (b) { setTimeout(function () { b.disabled = true; b.textContent = b.getAttribute("data-enviando") || "Enviando…"; }, 0); }
     });
   </script>
 </body>

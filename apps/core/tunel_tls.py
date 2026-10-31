@@ -10,6 +10,7 @@ celular, que precisa de página segura para liberar a câmera, entra por HTTPS.
 """
 
 import logging
+import selectors
 import socket
 import ssl
 import threading
@@ -20,18 +21,42 @@ PEDACO = 64 * 1024
 ESPERA_SEGUNDOS = 300  # conexão parada é fechada; o navegador reabre quando precisar
 
 
-def _repassar(origem, destino):
-    """Copia de um lado para o outro até acabar, e avisa o outro lado que acabou."""
+def _encaminhar(cliente, interno):
+    """Repassa nos dois sentidos, numa linha só, até um dos lados acabar.
+
+    Uma linha só de propósito (1.43.0). Até a 1.42.0 eram duas, uma para cada sentido, e as
+    duas mexiam no TLS do cliente ao mesmo tempo: uma parada lendo o pedido seguinte e a
+    outra escrevendo a resposta. O TLS é um objeto do OpenSSL que não aguenta isso, e de vez
+    em quando a leitura voltava "acabou" no meio da resposta: a linha dela fechava a conexão
+    e a página chegava cortada no celular. Medido aqui: 2 de 400 páginas cortadas com a
+    máquina parada, 9 a 11 de 400 com a máquina ocupada; com uma linha só, nenhuma.
+
+    O `select` acorda quando um dos lados tem o que entregar. O `pending()` cobre o que o
+    TLS já decifrou e guardou consigo: isso não acorda o `select`, e sem olhar ali o pedaço
+    ficaria esperando o próximo pacote do navegador.
+    """
+    seletor = selectors.DefaultSelector()
+    seletor.register(cliente, selectors.EVENT_READ)
+    seletor.register(interno, selectors.EVENT_READ)
     try:
         while True:
-            dados = origem.recv(PEDACO)
-            if not dados:
-                break
-            destino.sendall(dados)
-    except (OSError, ssl.SSLError):
-        pass
+            if cliente.pending():
+                prontos = [cliente]
+            else:
+                prontos = [chave.fileobj for chave, _ in seletor.select(timeout=ESPERA_SEGUNDOS)]
+                if not prontos:
+                    return  # parada demais: fecha, e o navegador reabre quando precisar
+            for origem in prontos:
+                destino = interno if origem is cliente else cliente
+                dados = origem.recv(PEDACO)
+                if not dados:
+                    return
+                destino.sendall(dados)
+    except (OSError, ssl.SSLError) as erro:
+        logger.debug("Conexão HTTPS encerrada: %s", erro)
     finally:
-        for lado in (origem, destino):
+        seletor.close()
+        for lado in (cliente, interno):
             try:
                 lado.shutdown(socket.SHUT_RDWR)
             except OSError:
@@ -61,10 +86,7 @@ def _atender(cliente, destino):
             _sem_espera(interno)
             cliente.settimeout(ESPERA_SEGUNDOS)
             interno.settimeout(ESPERA_SEGUNDOS)
-            ida = threading.Thread(target=_repassar, args=(cliente, interno), daemon=True)
-            ida.start()
-            _repassar(interno, cliente)
-            ida.join(timeout=5)
+            _encaminhar(cliente, interno)
     except (OSError, ssl.SSLError) as erro:
         logger.debug("Conexão HTTPS encerrada: %s", erro)
     finally:

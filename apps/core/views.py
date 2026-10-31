@@ -16,9 +16,11 @@ def inicio(request):
     """A porta do sistema: encaminha para o dashboard.
 
     O Edson pediu que o início fosse o dashboard, e não uma página de boas-vindas
-    com atalhos: quem abre o sistema quer ver como a loja está. Quem não tem o
-    painel (o vendedor) vai para a primeira tela do perfil dele. Quem não tem
-    tela nenhuma vê o recado de falar com a gerência, em vez de um erro.
+    com atalhos: quem abre o sistema quer ver como a loja está. Desde 31/10/2026 é o
+    Dashboard em quadros, a primeira entrada do menu ("causa bom impacto com as
+    informações visíveis"). Quem não tem o painel (o vendedor) vai para a primeira tela
+    do perfil dele. Quem não tem tela nenhuma vê o recado de falar com a gerência, em
+    vez de um erro.
     """
     destino = menu.primeira_tela(request.user)
     if destino:

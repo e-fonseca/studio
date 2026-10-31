@@ -141,6 +141,30 @@ def enviar(relatorio, configuracao=None, disparado_por=""):
     return registro
 
 
+def enviar_avulso(*, assunto, texto, html, para, configuracao=None):
+    """Um e-mail que não é relatório, a uma pessoa só (1.43.0: o código de criar a senha nova).
+
+    Usa o mesmo servidor, a mesma caixa e a mesma tradução de erro dos relatórios, e não
+    entra em `EnvioDeRelatorio`: quem registra o que aconteceu é quem pediu o envio (a
+    recuperação de senha grava na auditoria). Devolve None quando o e-mail saiu, ou a
+    frase do erro, já traduzida, quando não saiu. Nunca levanta erro.
+    """
+    configuracao = configuracao or ConfiguracaoDeEmail.atual()
+    if not configuracao.pode_enviar:
+        return "O envio de e-mail do sistema não está configurado (tela Alertas)."
+    try:
+        with _conexao(configuracao) as conexao:
+            mensagem = EmailMultiAlternatives(
+                subject=assunto, body=texto, from_email=_de(configuracao), to=[para],
+                connection=conexao,
+            )
+            mensagem.attach_alternative(html, "text/html")
+            mensagem.send(fail_silently=False)
+    except (smtplib.SMTPException, OSError, ValueError) as erro:
+        return _explicar(erro)
+    return None
+
+
 def enviar_rotina(rotina, configuracao=None, disparado_por="", forcar=False, relatorio=None):
     """Monta o relatório da rotina e manda, se houver notícia.
 

@@ -3,7 +3,8 @@
 <div class="cabecalho-pagina">
   <h1>Trocar a minha senha</h1>
   <p class="ajuda">A senha é só sua: ninguém da loja vê a senha que você escolher, nem a
-     gerência. Se esquecer, a gerência define uma nova na tela de usuários.</p>
+     gerência. Se esquecer, crie outra pela tela de entrada, em "Esqueci a minha senha", com
+     um código mandado ao seu e-mail cadastrado (logo abaixo).</p>
 </div>
 
 <section class="cartao cartao-senha">
@@ -31,6 +32,32 @@
   <p class="ajuda">Trocar a senha fecha a sua entrada nos outros aparelhos, como o celular.
      Neste aqui você continua dentro.</p>
 </section>
+
+{% comment %}O e-mail de recuperação gravado pela própria pessoa (1.43.0), com a senha de
+agora: quem achar o computador aberto não põe o e-mail dele na conta de outra pessoa.{% endcomment %}
+<section class="cartao" id="meu-email">
+  <h2>E-mail para recuperar a senha</h2>
+  {% if user.email %}
+  <p>Se esquecer a senha, o código vai para <strong>{{ user.email }}</strong>.</p>
+  {% else %}
+  <p class="mensagem warning">Você ainda não tem e-mail cadastrado. Sem ele, se esquecer a
+     senha, só a gerência define outra.</p>
+  {% endif %}
+  <form method="post" class="formulario-senha">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="email">
+    <div class="campo">
+      <label for="meu-email-campo">E-mail</label>
+      <input type="email" id="meu-email-campo" name="email" autocomplete="email" value="{{ user.email }}"
+             placeholder="nome@exemplo.com.br">
+    </div>
+    <div class="campo">
+      <label for="senha-para-email">Senha de agora</label>
+      <input type="password" id="senha-para-email" name="senha_atual" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="botao">Salvar o e-mail</button>
+  </form>
+</section>
 {% endblock %}
 
 {% block ajuda %}
@@ -44,6 +71,11 @@
     "seletor": ".formulario-senha",
     "titulo": "Por que pede a senha de agora",
     "texto": "Para quem achar o computador aberto não conseguir trocar a sua senha e ficar com o seu acesso."
+  },
+  {
+    "seletor": "#meu-email",
+    "titulo": "E-mail para recuperar a senha",
+    "texto": "Se esquecer a senha, na tela de entrada clique em Esqueci a minha senha: o código chega neste e-mail e você cria a senha nova sem depender da gerência."
   }
 ]
 </script>

@@ -62,6 +62,27 @@ def visao_da_importacao(importacao, hoje=None):
     return guardado
 
 
+def dashboard_da_importacao(importacao, periodo):
+    """O Dashboard sem filtro, calculado uma vez por importação e período (1.43.0).
+
+    Desde a 1.43.0 o Dashboard é a primeira tela depois de entrar, e a lição da 1.34.0
+    vale para ele: a primeira tela é o que a pessoa sente como "o login está lento".
+    Com grupo ou fornecedor escolhido a conta é feita na hora, porque as combinações
+    são muitas e quem filtra já está dentro do sistema, esperando por aquilo.
+    """
+    from . import dashboard
+
+    if importacao is None or not importacao.data_corte:
+        return dashboard.montar(importacao, periodo=periodo)
+    periodo = periodo if periodo in dashboard.DIAS_DO_PERIODO else dashboard.PERIODO_PADRAO
+    chave_dashboard = f"dashboard:{periodo}:" + chave(importacao)
+    guardado = cache.get(chave_dashboard)
+    if guardado is None:
+        guardado = dashboard.montar(importacao, periodo=periodo)
+        cache.set(chave_dashboard, guardado, VALIDADE_CACHE)
+    return guardado
+
+
 def agenda_da_importacao(importacao, estado, usuario=None, hoje=None):
     """A lista de tarefas da abertura, calculada uma vez por importação.
 

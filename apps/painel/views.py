@@ -123,12 +123,15 @@ def ticket_medio(request):
 def dashboard(request):
     """Dashboard: os gráficos e as estatísticas do varejo, com filtros."""
     estado = servicos.estado_dos_dados()
-    painel_dashboard = dashboard_servicos.montar(
-        estado.importacao,
-        periodo=request.GET.get("periodo", dashboard_servicos.PERIODO_PADRAO),
-        grupo=(request.GET.get("grupo") or "").strip(),
-        fornecedor=(request.GET.get("fornecedor") or "").strip(),
-    )
+    periodo = request.GET.get("periodo", dashboard_servicos.PERIODO_PADRAO)
+    grupo = (request.GET.get("grupo") or "").strip()
+    fornecedor = (request.GET.get("fornecedor") or "").strip()
+    if grupo or fornecedor:
+        painel_dashboard = dashboard_servicos.montar(
+            estado.importacao, periodo=periodo, grupo=grupo, fornecedor=fornecedor)
+    else:
+        # Sem filtro, a conta guardada: é a tela que abre logo depois de entrar (1.43.0).
+        painel_dashboard = painel_servicos.dashboard_da_importacao(estado.importacao, periodo)
     # A lista do que fazer é a da Visão geral, guardada por importação e filtrada pela
     # permissão de quem olha: o quadro de problemas e a palavra da situação saem dela.
     agenda = painel_servicos.agenda_da_importacao(estado.importacao, estado, usuario=request.user)

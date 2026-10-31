@@ -1,0 +1,52 @@
+# Telas que a conferência de contraste abre (docs/ferramentas/conferir-contraste.js).
+# Uma por linha; linha começada por # não conta. As de detalhe (pedido, caixa, contagem,
+# processo, extrato, fornecedor) dependem do que existe no banco de desenvolvimento:
+# troque o número ou o nome por um que exista no seu.
+/sistema/painel/dashboard/
+/sistema/painel/geral/
+/sistema/compras/lista/
+/sistema/pedidos/
+/sistema/pedidos/1/
+/sistema/fornecedores/
+/sistema/fornecedores/ficha/?nome=COURO%20BOI%20LTDA
+/sistema/fornecedores/produtos/?nome=COURO%20BOI%20LTDA
+/sistema/compras/antes/
+/sistema/compras/sugestoes/
+/sistema/compras/equipe/
+/sistema/compras/
+/sistema/compras/comparar/
+/sistema/painel/
+/sistema/painel/completo/
+/sistema/painel/vendas-do-dia/
+/sistema/margem/
+/sistema/painel/ticket-medio/
+/sistema/clientes/
+/sistema/tempo/
+/sistema/importacao/consulta/
+/sistema/importacao/consulta/?q=vaso
+/sistema/inventario/
+/sistema/inventario/1/
+/sistema/inventario/1/camera/
+/sistema/inventario/plano/
+/sistema/inventario/organizar/
+/sistema/inventario/organizar/etiquetas/
+/sistema/financeiro/
+/sistema/financeiro/despesas/
+/sistema/financeiro/receber/
+/sistema/financeiro/pagamentos/
+/sistema/caixa/
+/sistema/caixa/970/
+/sistema/conciliacao/
+/sistema/conciliacao/1/
+/sistema/importacao/
+/sistema/compras/empresa/
+/sistema/processos/
+/sistema/processos/21/
+/sistema/processos/ficha-tecnica/
+/sistema/usuarios/
+/sistema/alertas/
+/sistema/backup/
+/sistema/certificado/
+/sistema/auditoria/
+/sistema/versoes/
+/sistema/senha/

@@ -1,16 +1,11 @@
-{% extends "base.html" %}
-{% load static %}
-{% block classe_corpo %}entrada{% endblock %}
-{% block topo %}{% endblock %}
-{% block conteudo %}
-<div class="marca-entrada">
-  <img class="marca-simbolo" src="{% static 'img/logo.png' %}" alt="" width="108" height="108">
-  <strong>Cabana do Jacarandá</strong>
-  <span>Sistema auxiliar ao SET</span>
-</div>
-
-<section class="cartao cartao-entrada">
-  <h1>Acesso bloqueado por alguns minutos</h1>
-  <p>Houve tentativas de entrada sem sucesso. Espere 15 minutos e tente de novo, ou fale com a gerência.</p>
-</section>
+{% extends "contas/_entrada.html" %}
+{% block cartao %}
+<h1 id="titulo-entrada">Acesso bloqueado por alguns minutos</h1>
+<p>Houve tentativas de entrada sem sucesso. Espere 15 minutos e tente de novo, ou fale com a gerência.</p>
+{% comment %}Criar a senha nova pelo código do e-mail tira o bloqueio na hora (1.43.0):
+quem errou a senha cinco vezes geralmente esqueceu, e esperar quinze minutos não traz a
+senha de volta.{% endcomment %}
+<p>Se esqueceu a senha, dá para criar outra com um código enviado ao seu e-mail cadastrado,
+   e o bloqueio sai junto.</p>
+<p><a class="botao" href="{% url 'contas:esqueci_a_senha' %}">Esqueci a minha senha</a></p>
 {% endblock %}

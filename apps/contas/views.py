@@ -9,14 +9,16 @@ import datetime
 from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 
 from apps.core import documento
 
-from . import servicos
+from . import recuperacao, servicos
 from .perfis import DESCRICOES, PERFIS
 
 PERMISSAO = "contas.gerenciar_usuarios"
@@ -33,6 +35,8 @@ def _lista_de_usuarios():
             "usuario": usuario,
             "perfil": perfis[0] if perfis else "",
             "sem_senha": not usuario.has_usable_password(),
+            # Sem e-mail, a pessoa não recupera a senha sozinha (1.43.0): a tela avisa.
+            "sem_email": not (usuario.email or "").strip(),
             "cpf": documento.formatar(vinculo.cpf) if vinculo and vinculo.cpf else "",
             "acesso_ate": vinculo.acesso_ate if vinculo else None,
         })
@@ -170,6 +174,31 @@ def prazo_de_acesso(request):
 
 
 @login_required
+@permission_required(PERMISSAO, raise_exception=True)
+def email_de_recuperacao(request):
+    """A gerência grava o e-mail para onde vai o código de recuperar a senha (1.43.0)."""
+    if request.method != "POST":
+        return redirect("contas:usuarios")
+    escolhido = (request.POST.get("usuario") or "").strip()
+    alvo = get_object_or_404(get_user_model(), pk=int(escolhido) if escolhido.isdigit() else 0)
+    nome = alvo.get_full_name() or alvo.get_username()
+    try:
+        mudou = recuperacao.definir_email(alvo, request.POST.get("email"), responsavel=request.user)
+    except ValueError as erro:
+        messages.error(request, str(erro))
+    else:
+        if not mudou:
+            messages.info(request, f"Nada mudou no e-mail de {nome}.")
+        elif alvo.email:
+            messages.success(request, f"E-mail de {nome} salvo. Se esquecer a senha, o código "
+                                      f"vai para {alvo.email}.")
+        else:
+            messages.success(request, f"E-mail de {nome} tirado. Sem e-mail, só a gerência "
+                                      "define uma senha nova para essa pessoa.")
+    return redirect("contas:usuarios")
+
+
+@login_required
 def trocar_senha(request):
     """Cada pessoa troca a própria senha, de qualquer perfil, inclusive o vendedor.
 
@@ -178,6 +207,8 @@ def trocar_senha(request):
     Pede a senha atual (quem achou o computador aberto não troca a senha de ninguém) e
     passa pelas mesmas regras da senha definida pela gerência.
     """
+    if request.method == "POST" and request.POST.get("acao") == "email":
+        return _meu_email(request)
     if request.method == "POST":
         formulario = PasswordChangeForm(request.user, request.POST)
         if formulario.is_valid():
@@ -192,4 +223,117 @@ def trocar_senha(request):
     return render(request, "contas/trocar_senha.html", {
         "titulo": "Trocar a minha senha",
         "formulario": formulario,
+    })
+
+
+def _meu_email(request):
+    """A própria pessoa grava o e-mail de recuperação, confirmando a senha de agora.
+
+    A senha de agora pelo mesmo motivo da troca de senha: quem achar o computador aberto
+    não põe o próprio e-mail na conta de outra pessoa para tomar a senha dela depois.
+    """
+    if not request.user.check_password(request.POST.get("senha_atual") or ""):
+        messages.error(request, "A senha de agora não confere. O e-mail não foi mudado.")
+        return redirect("contas:trocar_senha")
+    try:
+        mudou = recuperacao.definir_email(request.user, request.POST.get("email"),
+                                          responsavel=request.user)
+    except ValueError as erro:
+        messages.error(request, str(erro))
+    else:
+        if not mudou:
+            messages.info(request, "O e-mail continua o mesmo.")
+        elif request.user.email:
+            messages.success(request, f"E-mail salvo. Se esquecer a senha, o código vai para "
+                                      f"{request.user.email}.")
+        else:
+            messages.success(request, "E-mail tirado. Sem e-mail, se esquecer a senha, só a "
+                                      "gerência define outra.")
+    return redirect("contas:trocar_senha")
+
+
+# ------------------------------------------------------------ esqueci a minha senha
+# Ver apps/contas/recuperacao.py. A pessoa ainda não entrou, então nada aqui pede login;
+# quem ela é fica na sessão entre a primeira tela e a segunda, e só lá.
+CHAVE_DA_SESSAO = "recuperar_senha"
+
+
+def _conta_da_sessao(request):
+    guardado = request.session.get(CHAVE_DA_SESSAO) or {}
+    if not guardado.get("usuario"):
+        return None, ""
+    conta = get_user_model().objects.filter(pk=guardado["usuario"], is_active=True).first()
+    return conta, guardado.get("para", "")
+
+
+def _recado_do_pedido(request, pedido, *, outro=False):
+    """O recado verde só quando diz algo que a tela do código ainda não diz.
+
+    A tela do código já abre dizendo para onde o código foi; repetir isso num quadro
+    verde logo abaixo era a mesma frase duas vezes. Fica o recado de quando o código
+    é o mesmo de antes (pediu duas vezes seguidas) e de quando saiu outro código.
+    """
+    if pedido.reaproveitado:
+        messages.info(request, f"O código mandado há pouco para {pedido.para} ainda vale. "
+                               "Confira a caixa de entrada e também o spam.")
+    elif outro:
+        messages.success(request, f"Mandamos outro código para {pedido.para}. Use o mais "
+                                  "novo: o anterior deixou de valer.")
+
+
+@never_cache
+def esqueci_a_senha(request):
+    """Primeira tela: quem é a pessoa. Se der, o código sai para o e-mail cadastrado."""
+    digitado, erro = "", ""
+    if request.method == "POST":
+        digitado = (request.POST.get("identificacao") or "").strip()
+        pedido = recuperacao.pedir_codigo(digitado)
+        if pedido.deu_certo:
+            request.session[CHAVE_DA_SESSAO] = {"usuario": pedido.usuario.pk, "para": pedido.para}
+            _recado_do_pedido(request, pedido)
+            return redirect("contas:codigo_da_senha")
+        erro = pedido.erro
+    return render(request, "contas/esqueci_a_senha.html", {
+        "titulo": "Esqueci a minha senha",
+        "digitado": digitado,
+        "erro": erro,
+    })
+
+
+@never_cache
+def codigo_da_senha(request):
+    """Segunda tela: o código que chegou no e-mail e a senha nova, duas vezes."""
+    conta, para = _conta_da_sessao(request)
+    if conta is None:
+        return redirect("contas:esqueci_a_senha")
+    erro_do_codigo = ""
+    digitado = ""
+    if request.method == "POST" and request.POST.get("acao") == "outro":
+        pedido = recuperacao.pedir_codigo(conta.get_username())
+        if pedido.deu_certo:
+            _recado_do_pedido(request, pedido, outro=True)
+        else:
+            messages.error(request, pedido.erro)
+        return redirect("contas:codigo_da_senha")
+    if request.method == "POST":
+        formulario = SetPasswordForm(conta, request.POST)
+        digitado = (request.POST.get("codigo") or "").strip()[:12]
+        with transaction.atomic():
+            codigo, erro_do_codigo = recuperacao.conferir_codigo(conta, digitado)
+            senha_boa = formulario.is_valid()
+            if codigo is not None and senha_boa:
+                recuperacao.criar_senha_nova(conta, codigo, formulario.cleaned_data["new_password1"])
+        if codigo is not None and senha_boa:
+            request.session.pop(CHAVE_DA_SESSAO, None)
+            messages.success(request, "Senha nova salva. Entre com ela.")
+            return redirect("contas:entrar")
+    else:
+        formulario = SetPasswordForm(conta)
+    return render(request, "contas/codigo_da_senha.html", {
+        "titulo": "Código do e-mail",
+        "formulario": formulario,
+        "para": para,
+        "erro_do_codigo": erro_do_codigo,
+        "digitado": digitado,
+        "aberto": recuperacao.codigo_aberto(conta) is not None,
     })

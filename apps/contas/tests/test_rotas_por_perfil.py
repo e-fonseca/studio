@@ -66,6 +66,10 @@ DE_TODOS = {
     "/sistema/certificado/autoridade.crt",
     # Trocar a própria senha (1.42.0): só o formulário, sem número da loja.
     "/sistema/senha/",
+    # Esqueci a minha senha (1.43.0): é para quem ainda NÃO entrou, então abre sem login.
+    # Não mostra número da loja e não diz se a conta existe (apps/contas/recuperacao.py).
+    "/sistema/senha/esqueci/",
+    "/sistema/senha/esqueci/codigo/",
 }
 
 FORA_DA_VARREDURA = "/sistema/admin/"

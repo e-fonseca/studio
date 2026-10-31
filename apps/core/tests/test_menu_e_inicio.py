@@ -1,4 +1,4 @@
-"""Menu por assunto, início encaminhando para a Visão geral e a versão só no topo."""
+"""Menu por assunto, início encaminhando para o Dashboard e a versão só no topo."""
 
 from django.test import TestCase
 from django.urls import reverse
@@ -8,11 +8,12 @@ from apps.core import menu
 from apps.core.fabricas import SENHA_TESTE, usuario
 
 
-class TestInicioAbreNaVisaoGeral(TestCase):
-    def test_gerencia_cai_na_visao_geral(self):
+class TestInicioAbreNoDashboard(TestCase):
+    def test_gerencia_cai_no_dashboard(self):
+        """Pedido de 31/10/2026: "logo quando fazer login quero que abra o Dashboard"."""
         usuario("edson", ADMINISTRACAO)
         self.client.login(username="edson", password=SENHA_TESTE)
-        self.assertRedirects(self.client.get(reverse("core:inicio")), reverse("painel:geral"))
+        self.assertRedirects(self.client.get(reverse("core:inicio")), reverse("painel:dashboard"))
 
     def test_vendedor_cai_na_consulta_que_e_a_tela_dele(self):
         """Ele não tem painel: mandar para lá daria 403 na cara de quem acabou de entrar."""
@@ -27,23 +28,30 @@ class TestInicioAbreNaVisaoGeral(TestCase):
         resposta = self.client.get(reverse("core:inicio"))
         self.assertContains(resposta, "ainda não foi liberado")
 
-    def test_login_entra_direto_na_visao_geral(self):
+    def test_login_entra_direto_no_dashboard(self):
         usuario("edson", ADMINISTRACAO)
         resposta = self.client.post(reverse("contas:entrar"),
                                     {"username": "edson", "password": SENHA_TESTE}, follow=True)
-        self.assertContains(resposta, "Visão geral")
+        self.assertEqual(resposta.resolver_match.view_name, "painel:dashboard")
+        # E a Visão geral logo ao lado, no mesmo menu de cima.
+        topo = resposta.content.decode()
+        topo = topo[:topo.index("</header>")]
+        self.assertLess(topo.index(">Dashboard<"), topo.index(">Visão geral<"))
 
 
 class TestMenuPorAssunto(TestCase):
-    """O pedido de 19/10/2026: seis entradas no topo, e nunca as vinte e sete juntas."""
+    """O pedido de 19/10/2026: poucas entradas no topo, e nunca as vinte e sete juntas.
+
+    Eram seis; o Dashboard virou a sétima, e a primeira, em 31/10/2026."""
 
     def setUp(self):
         usuario("edson", ADMINISTRACAO)
         self.client.login(username="edson", password=SENHA_TESTE)
 
-    def test_o_topo_tem_seis_assuntos_e_nenhuma_tela_solta(self):
+    def test_o_topo_tem_sete_entradas_com_o_dashboard_na_frente(self):
         self.assertEqual([grupo.rotulo for grupo in menu.GRUPOS],
-                         ["Visão geral", "Compras", "Vendas", "Estoque", "Dinheiro", "Sistema"])
+                         ["Dashboard", "Visão geral", "Compras", "Vendas", "Estoque", "Dinheiro",
+                          "Sistema"])
 
     def test_nenhuma_tela_aparece_em_dois_assuntos(self):
         vistas = [tela.rota for tela in menu.telas()]

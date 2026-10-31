@@ -41,6 +41,9 @@
             {% if pessoa.acesso_ate and pessoa.usuario.is_active %}
             <span class="etiqueta etiqueta-pendente">acesso até {{ pessoa.acesso_ate|date:"d/m/Y" }}</span>
             {% endif %}
+            {% if pessoa.sem_email and pessoa.usuario.is_active %}
+            <span class="etiqueta">sem e-mail: não recupera a senha sozinho</span>
+            {% endif %}
           </td>
           <td>
             <form method="post" action="{% url 'contas:alterar_usuario' pessoa.usuario.pk %}" class="formulario-linha">
@@ -120,6 +123,32 @@ faz de vez em quando.{% endcomment %}
   </form>
 </section>
 
+{% comment %}O e-mail para onde vai o código de "Esqueci a minha senha" (1.43.0). Um
+formulário só, como o da data de acesso, pelo mesmo motivo: a tabela já tem três ações por
+pessoa. Cada pessoa também grava o próprio e-mail em "Trocar a minha senha".{% endcomment %}
+<section class="cartao" id="email-de-recuperacao">
+  <h2>E-mail para recuperar a senha</h2>
+  <p class="ajuda">Quem esquece a senha pede, na tela de entrada, um código que chega neste
+     e-mail, e cria a senha nova sem precisar da gerência. Sem e-mail, só a gerência define
+     uma senha nova para a pessoa. Para tirar o e-mail, escolha a pessoa e deixe o campo em branco.</p>
+  <form method="post" action="{% url 'contas:email_de_recuperacao' %}" class="formulario-usuario">
+    {% csrf_token %}
+    <div>
+      <label for="email-pessoa">Pessoa</label>
+      <select id="email-pessoa" name="usuario">
+        {% for pessoa in pessoas %}{% if pessoa.usuario.is_active %}
+        <option value="{{ pessoa.usuario.pk }}">{{ pessoa.usuario.get_full_name|default:pessoa.usuario.get_username }}{% if pessoa.sem_email %} (sem e-mail){% endif %}</option>
+        {% endif %}{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="email-recuperacao">E-mail</label>
+      <input type="email" id="email-recuperacao" name="email" autocomplete="off" placeholder="nome@exemplo.com.br">
+    </div>
+    <button type="submit" class="botao">Salvar o e-mail</button>
+  </form>
+</section>
+
 <section class="cartao" id="dar-acesso">
   <h2>Dar acesso a mais alguém</h2>
   <p class="ajuda">A conta nasce sem senha e ninguém entra com ela até você definir uma, logo
@@ -140,7 +169,7 @@ faz de vez em quando.{% endcomment %}
              autocomplete="off">
     </div>
     <div>
-      <label for="email">E-mail</label>
+      <label for="email">E-mail <small>(para recuperar a senha)</small></label>
       <input type="email" id="email" name="email" autocomplete="off" placeholder="nome@exemplo.com.br">
     </div>
     <div>
@@ -186,6 +215,11 @@ faz de vez em quando.{% endcomment %}
     "seletor": "#acesso-com-data",
     "titulo": "Acesso com data para acabar",
     "texto": "Escolha a pessoa e o último dia. No dia seguinte o sistema encerra o acesso sozinho, como o Encerrar faria."
+  },
+  {
+    "seletor": "#email-de-recuperacao",
+    "titulo": "E-mail para recuperar a senha",
+    "texto": "Quem tem e-mail aqui, quando esquece a senha, recebe um código nele e cria a senha nova sozinho, pela tela de entrada. Sem e-mail, só a gerência define a senha."
   },
   {
     "seletor": "#dar-acesso",

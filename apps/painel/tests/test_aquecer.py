@@ -2,8 +2,9 @@
 
 O defeito que isto cobre: a chave do cache carrega o número da importação, então cada
 sincronização derruba o cache de propósito, e a conta de ~2 s sobrava para a primeira
-pessoa que abrisse o sistema. Como a Visão geral é a primeira tela depois de entrar,
-essa pessoa sentia isso como "o login está lento" — três vezes por dia.
+pessoa que abrisse o sistema. Como a Visão geral era a primeira tela depois de entrar,
+essa pessoa sentia isso como "o login está lento" — três vezes por dia. Desde a 1.43.0 a
+primeira tela é o Dashboard, e ele também fica pronto.
 """
 
 from datetime import timedelta
@@ -12,10 +13,13 @@ from unittest import mock
 
 from django.core.cache import cache
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
+from apps.contas.perfis import ADMINISTRACAO
+from apps.core.fabricas import SENHA_TESTE, usuario
 from apps.importacao.models import Importacao, ProdutoImportado
-from apps.painel import aquecer as aquecer_painel, servicos
+from apps.painel import aquecer as aquecer_painel, dashboard, servicos
 
 
 class AquecerTest(TestCase):
@@ -47,12 +51,25 @@ class AquecerTest(TestCase):
         aquecer_painel.aquecer(self.importacao)
         self.assertIsNotNone(servicos.painel_pronto(self.importacao))
 
-    def test_aquecer_guarda_as_tres_contas_da_abertura(self):
+    def test_aquecer_guarda_as_contas_da_abertura(self):
         aquecer_painel.aquecer(self.importacao)
         chave = servicos.chave(self.importacao)
         for rotulo, guardada in (("painel", chave), ("visão geral", "visao:" + chave),
-                                 ("agenda", "agenda:" + chave)):
+                                 ("agenda", "agenda:" + chave),
+                                 # A primeira tela depois de entrar desde a 1.43.0.
+                                 ("dashboard", "dashboard:12m:" + chave)):
             self.assertIsNotNone(cache.get(guardada), f"{rotulo} não ficou no cache")
+
+    def test_o_dashboard_guardado_e_o_que_a_tela_mostra(self):
+        """A tela sem filtro lê a conta guardada; com filtro, faz a conta na hora."""
+        aquecer_painel.aquecer(self.importacao)
+        usuario("gerencia", ADMINISTRACAO)
+        self.client.login(username="gerencia", password=SENHA_TESTE)
+        with mock.patch.object(dashboard, "montar", side_effect=AssertionError("refez a conta")):
+            self.assertEqual(self.client.get(reverse("painel:dashboard")).status_code, 200)
+        with mock.patch.object(dashboard, "montar", wraps=dashboard.montar) as conta:
+            self.client.get(reverse("painel:dashboard") + "?grupo=QUALQUER")
+        self.assertEqual(conta.call_count, 1)
 
     def test_sem_importacao_nao_faz_nada_e_nao_quebra(self):
         self.assertEqual(aquecer_painel.aquecer(None), 0.0)

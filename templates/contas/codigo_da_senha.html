@@ -1,0 +1,53 @@
+{% extends "contas/_entrada.html" %}
+{% block cartao %}
+<h1 id="titulo-entrada">Criar a senha nova</h1>
+{% if para %}<p class="ajuda">Mandamos um código de seis números para <strong>{{ para }}</strong>.
+   Digite o código e escolha a senha nova. Não achou o e-mail? Confira o spam.</p>{% endif %}
+{% include "contas/_mensagens_entrada.html" %}
+{% if not aberto and not erro_do_codigo %}
+<p class="mensagem warning" role="alert">O último código não vale mais (passou o prazo ou já
+   foi usado). Peça outro no botão abaixo.</p>
+{% endif %}
+<form method="post" class="formulario-entrada" id="formulario-codigo">
+  {% csrf_token %}
+  <div class="campo{% if erro_do_codigo %} com-erro{% endif %}">
+    <label for="id_codigo">Código do e-mail</label>
+    {% comment %}one-time-code: o celular oferece o código do e-mail acima do teclado.{% endcomment %}
+    <input type="text" name="codigo" id="id_codigo" class="campo-codigo" inputmode="numeric"
+           autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="7" required autofocus
+           value="{{ digitado }}" aria-describedby="ajuda-codigo">
+    <p class="ajuda" id="ajuda-codigo">Vale por 15 minutos, uma vez só.</p>
+    {% if erro_do_codigo %}<p class="erro-campo" role="alert">{{ erro_do_codigo }}</p>{% endif %}
+  </div>
+  {% if formulario.non_field_errors %}<div class="mensagem error" role="alert">{% for e in formulario.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+  <div class="campo{% if formulario.new_password1.errors %} com-erro{% endif %}">
+    <label for="id_new_password1">Senha nova</label>
+    <div class="campo-senha">
+      <input type="password" name="new_password1" id="id_new_password1" autocomplete="new-password"
+             required aria-describedby="aviso-maiusculas regras-da-senha">
+      <button type="button" class="mostrar-senha" aria-controls="id_new_password1" aria-pressed="false" hidden>Mostrar</button>
+    </div>
+    {% for e in formulario.new_password1.errors %}<p class="erro-campo" role="alert">{{ e }}</p>{% endfor %}
+  </div>
+  <div class="campo{% if formulario.new_password2.errors %} com-erro{% endif %}">
+    <label for="id_new_password2">Senha nova, de novo</label>
+    <div class="campo-senha">
+      <input type="password" name="new_password2" id="id_new_password2" autocomplete="new-password" required>
+      <button type="button" class="mostrar-senha" aria-controls="id_new_password2" aria-pressed="false" hidden>Mostrar</button>
+    </div>
+    {% for e in formulario.new_password2.errors %}<p class="erro-campo" role="alert">{{ e }}</p>{% endfor %}
+  </div>
+  <p class="aviso-maiusculas" id="aviso-maiusculas" hidden>A tecla Caps Lock está ligada.</p>
+  <p class="ajuda" id="regras-da-senha">Pelo menos 12 letras, números ou símbolos, nada parecido
+     com o seu nome ou usuário, e nada só de números. Uma frase curta é fácil de lembrar.</p>
+  <button type="submit" class="botao" data-enviando="Salvando…">Salvar a senha nova</button>
+</form>
+<form method="post" class="formulario-entrada">
+  {% csrf_token %}
+  <input type="hidden" name="acao" value="outro">
+  <div class="secundario-entrada">
+    <button type="submit" class="botao secundario" data-enviando="Mandando…">Mandar outro código</button>
+  </div>
+</form>
+<p class="voltar-entrada"><a href="{% url 'contas:entrar' %}">Voltar para entrar</a></p>
+{% endblock %}

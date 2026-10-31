@@ -1,6 +1,15 @@
-# Dashboard (1.18.0, redesenhos da 1.20.1, da 1.20.2 e da 1.41.0)
+# Dashboard (1.18.0, redesenhos da 1.20.1, da 1.20.2 e da 1.41.0; primeira tela na 1.43.0)
 
 Tela em `/sistema/painel/dashboard/`, código em `apps/painel/dashboard.py`.
+
+**Desde a 1.43.0 é a tela que abre ao entrar**, a primeira entrada do menu de cima, com a
+Visão geral ao lado (pedido de 31/10/2026: *"logo quando fazer login quero que abra o
+Dashboard, causa bom impacto com as informações visíveis"*). Por isso o período padrão
+(12 meses, sem filtro) fica guardado como a Visão geral: a importação e a tarefa de hora em
+hora deixam a conta pronta (`servicos.dashboard_da_importacao`, chamada de
+`aquecer.py`), e a tela guardada abre com 36 consultas, contra 90 sem guardar. Com filtro
+de grupo, de fornecedor ou outro período, a conta é feita na hora, como sempre foi. O
+escuro dele virou o de todas as telas (`docs/tela-escura.md`).
 
 ## Por que ela existe
 
