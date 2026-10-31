@@ -104,7 +104,8 @@ GRUPOS = [
              ajuda="O que comprar antes de faltar, quanto comprar e de qual fornecedor."),
         Item("pedidos:lista", "Pedidos", "pedidos.view_pedido",
              # "baixar" fica de fora: ela devolve o arquivo anexado, não uma tela com menu.
-             irmas=("pedidos:detalhe", "pedidos:anexar", "pedidos:receber"),
+             irmas=("pedidos:detalhe", "pedidos:anexar", "pedidos:receber",
+                    "pedidos:aprovar"),
              ajuda="Os pedidos feitos a fornecedores, com o romaneio e a nota de cada um."),
         Item("fornecedores:lista", "Fornecedores", "fornecedores.view_fornecedor",
              irmas=("fornecedores:ficha", "fornecedores:produtos",

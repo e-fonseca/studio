@@ -66,6 +66,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.auditoria.middleware.CorrelacaoMiddleware",
+    # A data marcada para o acesso acabar (1.42.0): antes de qualquer coisa ler
+    # request.user, para a conta vencida já chegar desligada à conferência.
+    "apps.contas.prazo.PrazoDeAcessoMiddleware",
     # Teto de tempo logado: o computador fica no balcão e a conta não pode
     # ficar aberta sozinha a tarde inteira.
     "apps.contas.sessao.LimiteDeSessaoMiddleware",

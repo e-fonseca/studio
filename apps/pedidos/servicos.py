@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 
 from apps.auditoria.servicos import registrar
@@ -16,6 +16,15 @@ ZERO = Decimal("0")
 
 class NaoDeuCerto(Exception):
     """O que impediu a gravação, numa frase que serve de recado na tela."""
+
+
+def aprova(usuario):
+    """Se o pedido feito por esta pessoa já nasce valendo.
+
+    Sem usuário (um comando, um teste de sistema) o pedido nasce esperando: nada vira
+    pedido de verdade sem uma pessoa da gerência por trás.
+    """
+    return bool(usuario and usuario.is_authenticated and usuario.has_perm("pedidos.aprovar_pedido"))
 
 
 @transaction.atomic
@@ -37,13 +46,23 @@ def registrar_pedido(usuario, bloco, data_corte=None, observacao=""):
         # a nota do fornecedor conferiria contra o dobro do que foi pedido.
         return repetido
 
+    quem = usuario if usuario and usuario.is_authenticated else None
+    # Pedido da gerência nasce valendo, aprovado por quem fez. Pedido da Líder de loja
+    # nasce esperando: "Nenhuma compra é confirmada sem aprovação prévia" (descrição do
+    # cargo, 31/10/2026).
+    valendo = aprova(usuario)
+    agora = timezone.now()
     novo = Pedido.objects.create(
         numero=Pedido.proximo_numero(),
         fornecedor=bloco.nome,
+        situacao=Pedido.Situacao.ABERTO if valendo else Pedido.Situacao.AGUARDANDO,
         data_corte=data_corte,
         prazo_dias=bloco.prazo_dias,
         observacao=observacao[:300],
-        criado_por=usuario if usuario and usuario.is_authenticated else None,
+        criado_em=agora,
+        criado_por=quem,
+        aprovado_em=agora if valendo else None,
+        aprovado_por=quem if valendo else None,
     )
     ItemDoPedido.objects.bulk_create([
         ItemDoPedido(
@@ -62,8 +81,42 @@ def registrar_pedido(usuario, bloco, data_corte=None, observacao=""):
     registrar("pedido.registrado", usuario=usuario, recurso=novo,
               recurso_rotulo=f"pedido {novo.numero} · {novo.fornecedor}",
               depois={"numero": novo.numero, "itens": len(itens),
-                      "valor": str(novo.valor_total)})
+                      "valor": str(novo.valor_total), "situacao": novo.situacao})
     return novo
+
+
+@transaction.atomic
+def aprovar_pedido(usuario, pedido):
+    """Faz valer o pedido que a Líder de loja montou. Só a gerência chega aqui.
+
+    Aprovar não manda nada ao fornecedor: o pedido passa a "Pedido feito, esperando a
+    mercadoria", e a folha que vale é a que a tela anexa logo depois, sem o aviso.
+    """
+    if not pedido.esperando_aprovacao:
+        raise NaoDeuCerto(
+            f"O pedido {pedido.numero} não está esperando aprovação: ele está "
+            f"{pedido.get_situacao_display().lower()}."
+        )
+    if not aprova(usuario):
+        raise NaoDeuCerto("Só a gerência aprova pedido.")
+    pedido.situacao = Pedido.Situacao.ABERTO
+    pedido.aprovado_em = timezone.now()
+    pedido.aprovado_por = usuario
+    pedido.save(update_fields=["situacao", "aprovado_em", "aprovado_por"])
+    registrar("pedido.aprovado", usuario=usuario, recurso=pedido,
+              recurso_rotulo=f"pedido {pedido.numero} · {pedido.fornecedor}",
+              antes={"situacao": Pedido.Situacao.AGUARDANDO},
+              depois={"situacao": pedido.situacao, "valor": str(pedido.valor_total),
+                      "feito_por": pedido.quem_fez})
+    return pedido
+
+
+def para_aprovar():
+    """Os pedidos esperando a gerência: quantos são e quanto somam."""
+    esperando = Pedido.objects.filter(situacao=Pedido.Situacao.AGUARDANDO)
+    valor = (ItemDoPedido.objects.filter(pedido__in=esperando)
+             .aggregate(soma=models.Sum("valor"))["soma"])
+    return esperando.count(), valor or ZERO
 
 
 def mesmo_pedido_de_hoje(fornecedor, itens):
@@ -74,8 +127,11 @@ def mesmo_pedido_de_hoje(fornecedor, itens):
     """
     assinatura = sorted((item.codigo, item.quantidade or ZERO) for item in itens)
     hoje = timezone.localdate()
+    # O que espera aprovação conta: imprimir duas vezes o pedido que a Líder de loja
+    # montou também é reimprimir, e a gerência acharia dois pedidos para aprovar.
     candidatos = Pedido.objects.filter(
-        fornecedor=fornecedor, situacao=Pedido.Situacao.ABERTO, criado_em__date=hoje,
+        fornecedor=fornecedor, criado_em__date=hoje,
+        situacao__in=(Pedido.Situacao.ABERTO, Pedido.Situacao.AGUARDANDO),
     ).prefetch_related("itens")
     for candidato in candidatos:
         atual = sorted((linha.codigo, linha.quantidade) for linha in candidato.itens.all())
@@ -168,6 +224,7 @@ def editar_pedido(usuario, pedido, *, quantidades, prazo_dias=None, observacao=N
             "Só pedido em aberto pode ser editado. Este pedido já foi "
             f"{pedido.get_situacao_display().lower()}."
         )
+    _so_quem_pode(usuario, pedido, "mudado")
 
     antes = {"itens": {linha.codigo: str(linha.quantidade) for linha in pedido.itens.all()},
              "prazo_dias": pedido.prazo_dias, "observacao": pedido.observacao,
@@ -246,6 +303,7 @@ def cancelar_pedido(usuario, pedido, motivo):
             "Só pedido em aberto pode ser cancelado. Este pedido já foi "
             f"{pedido.get_situacao_display().lower()}."
         )
+    _so_quem_pode(usuario, pedido, "cancelado")
 
     antes = pedido.situacao
     pedido.situacao = Pedido.Situacao.CANCELADO
@@ -259,6 +317,17 @@ def cancelar_pedido(usuario, pedido, motivo):
               depois={"situacao": pedido.situacao, "valor": str(pedido.valor_total)},
               motivo=motivo[:300])
     return pedido
+
+
+def _so_quem_pode(usuario, pedido, como):
+    """Depois de aprovado, o pedido só é mudado ou cancelado pela gerência.
+
+    A tela já esconde os botões; isto é para o envio que chega sem passar por ela.
+    """
+    if usuario is not None and not pedido.pode_ser_mudado_por(usuario):
+        raise NaoDeuCerto(
+            f"O pedido {pedido.numero} já foi aprovado: agora ele só é {como} pela gerência."
+        )
 
 
 def _quantidade(bruto):
@@ -282,6 +351,13 @@ def marcar_recebido(usuario, pedido, recebido=True):
         # deixava o motivo escrito num pedido que a tela mostra como recebido.
         raise NaoDeuCerto(
             f"O pedido {pedido.numero} está cancelado: não dá para marcar como recebido."
+        )
+    if pedido.esperando_aprovacao:
+        # Mercadoria de pedido que ninguém aprovou não devia ter vindo; e "voltar para
+        # esperando mercadoria" aprovaria o pedido pela porta dos fundos.
+        raise NaoDeuCerto(
+            f"O pedido {pedido.numero} ainda espera a aprovação da gerência: só depois "
+            "dela a mercadoria pode ser dada como recebida."
         )
     antes = pedido.situacao
     if recebido:

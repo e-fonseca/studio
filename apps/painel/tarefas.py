@@ -189,6 +189,25 @@ def _sugestoes_da_equipe(agenda):
         permissao="compras.responder_sugestao"))
 
 
+def _pedidos_para_aprovar(agenda):
+    """O pedido que a Líder de loja montou só vale depois que a gerência aprova.
+
+    Sem esta tarefa o pedido esperaria calado na tela de Pedidos, que a gerência em
+    viagem não abre; aqui ele aparece na Visão geral e no "O que fazer agora".
+    """
+    from apps.pedidos import servicos as pedidos  # noqa: PLC0415 - evita ciclo no import
+
+    quantos, valor = pedidos.para_aprovar()
+    if not quantos:
+        return
+    agenda.tarefas.append(Tarefa(
+        chave="aprovar", titulo="Aprovar os pedidos da loja",
+        detalhe=(f"{quantos} pedido{'' if quantos == 1 else 's'} montado{'' if quantos == 1 else 's'} "
+                 f"na loja, somando {_reais(valor)}, esperando a sua aprovação para valer."),
+        rota="pedidos:lista", parametros="?situacao=aguardando", nivel=ATENCAO,
+        rotulo_do_link="Ver pedidos", permissao="pedidos.aprovar_pedido"))
+
+
 def _inventario(importacao, agenda):
     from apps.inventario.models import Contagem
 
@@ -213,18 +232,44 @@ def _inventario(importacao, agenda):
             permissao="inventario.contar_estoque"))
 
 
-def montar(estado, importacao=None, resumo_financeiro=None, lista=None, usuario=None) -> Agenda:
-    """A agenda do dia. Recebe pronto o que já foi calculado para a tela, para não repetir conta."""
+def do_dia(estado, importacao=None, resumo_financeiro=None, lista=None) -> Agenda:
+    """As tarefas que saem dos números da importação: a parte cara, que vai para o cache
+    e só muda com importação nova ou com o dia."""
     agenda = Agenda(data_corte=getattr(importacao, "data_corte", None))
     _dados_velhos(estado, agenda)
     _financeiro(resumo_financeiro, agenda)
     _compras(lista, agenda)
     _parado(importacao, agenda)
-    _sugestoes_da_equipe(agenda)
     _inventario(importacao, agenda)
+    return agenda
 
+
+def com_quem_espera(agenda_do_dia) -> Agenda:
+    """Junta o que alguém da loja espera de resposta, contado na hora.
+
+    O pedido que a Líder de loja montou e a sugestão que a equipe escreveu mudam a
+    qualquer momento, sem importação nenhuma. Dentro do cache da agenda, que vale até a
+    próxima importação, o pedido já aprovado continuava pedindo aprovação, e o pedido
+    novo só aparecia horas depois. São duas contagens pequenas: rodam a cada abertura.
+
+    O aviso de dado velho continua antes de tudo; logo depois vem quem espera, antes das
+    outras de atenção. A ordenação só troca níveis de lugar, e no fim da fila estas caíam
+    no "não cabem aqui", atrás das que aparecem todo dia, como o caixa da semana.
+    """
+    esperando = Agenda()
+    _pedidos_para_aprovar(esperando)
+    _sugestoes_da_equipe(esperando)
+    importar = [t for t in agenda_do_dia.tarefas if t.chave == "importar"]
+    resto = [t for t in agenda_do_dia.tarefas if t.chave != "importar"]
+    agenda = Agenda(data_corte=agenda_do_dia.data_corte,
+                    tarefas=importar + esperando.tarefas + resto)
     agenda.tarefas.sort(key=lambda t: PESO.get(t.nivel, 3))
-    return para(agenda, usuario)
+    return agenda
+
+
+def montar(estado, importacao=None, resumo_financeiro=None, lista=None, usuario=None) -> Agenda:
+    """A agenda do dia. Recebe pronto o que já foi calculado para a tela, para não repetir conta."""
+    return para(com_quem_espera(do_dia(estado, importacao, resumo_financeiro, lista)), usuario)
 
 
 # O nome de cada nível no quadro de problemas do Dashboard, que é a lista desta mesma

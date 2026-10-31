@@ -1,4 +1,4 @@
-"""Varredura automática de TODAS as rotas do sistema contra os três perfis.
+"""Varredura automática de TODAS as rotas do sistema contra os perfis.
 
 Por que este teste existe
 -------------------------
@@ -35,7 +35,7 @@ O que ele NÃO cobre, de propósito
 from django.test import TestCase
 from django.urls import get_resolver
 
-from apps.contas.perfis import ADMINISTRACAO, ADMINISTRATIVO, VENDEDOR
+from apps.contas.perfis import ADMINISTRACAO, ADMINISTRATIVO, LIDER, VENDEDOR
 from apps.core.fabricas import SENHA_TESTE, usuario
 
 # A única tela do vendedor, decidida pelo Edson em 07/10/2026: consulta de balcão,
@@ -64,6 +64,8 @@ DE_TODOS = {
     "/sistema/operario.js",
     "/sistema/certificado/",
     "/sistema/certificado/autoridade.crt",
+    # Trocar a própria senha (1.42.0): só o formulário, sem número da loja.
+    "/sistema/senha/",
 }
 
 FORA_DA_VARREDURA = "/sistema/admin/"
@@ -104,6 +106,7 @@ class RotasPorPerfil(TestCase):
     def setUpTestData(cls):
         cls.gerencia = usuario("gerencia_varredura", ADMINISTRACAO)
         cls.administrativo = usuario("administrativo_varredura", ADMINISTRATIVO)
+        cls.lider = usuario("lider_varredura", LIDER)
         cls.vendedor = usuario("vendedor_varredura", VENDEDOR)
         cls.rotas = sorted(set(_rotas()))
 
@@ -141,7 +144,8 @@ class RotasPorPerfil(TestCase):
 
     def test_nenhuma_rota_quebra_para_nenhum_perfil(self):
         """Erro de programação em tela pouco visitada aparece aqui, não na loja."""
-        for nome in ("gerencia_varredura", "administrativo_varredura", "vendedor_varredura"):
+        for nome in ("gerencia_varredura", "lider_varredura", "administrativo_varredura",
+                     "vendedor_varredura"):
             self.client.login(username=nome, password=SENHA_TESTE)
             quebraram = []
             for rota in self.rotas:

@@ -35,7 +35,7 @@ def encerrar_sessoes(usuario):
 
 
 @transaction.atomic
-def desligar_usuario(usuario, *, motivo, responsavel=None):
+def desligar_usuario(usuario, *, motivo, responsavel=None, servico=None):
     """Bloqueia o acesso de quem saiu da empresa e encerra as sessões abertas."""
     if not motivo.strip():
         raise ValueError("Informe o motivo do desligamento.")
@@ -48,7 +48,7 @@ def desligar_usuario(usuario, *, motivo, responsavel=None):
     registrar(
         "acesso.usuario_desligado",
         usuario=responsavel,
-        servico=None if responsavel else "linha de comando",
+        servico=servico or (None if responsavel else "linha de comando"),
         recurso=usuario,
         recurso_rotulo=usuario.get_username(),
         depois={"ativo": False, "sessoes_encerradas": sessoes},
@@ -84,8 +84,65 @@ def definir_perfil(usuario, perfil, *, responsavel=None):
     )
 
 
+def _data(valor):
+    return valor.isoformat() if valor else ""
+
+
+def definir_acesso_ate(usuario, ultimo_dia, *, responsavel=None):
+    """Marca o último dia de acesso da pessoa. `None` tira a data.
+
+    A data é inclusiva: "até 12/11" entra no dia 12 inteiro e a conta se desliga sozinha
+    no dia 13 (`encerrar_acessos_vencidos`). Data que já passou é recusada, porque ela
+    desligaria a conta na hora sem ninguém ter pedido isso: para encerrar hoje, existe o
+    Encerrar, que pede o motivo.
+    """
+    if ultimo_dia is not None and ultimo_dia < timezone.localdate():
+        raise ValueError(
+            f"{ultimo_dia:%d/%m/%Y} já passou. Para encerrar o acesso hoje, use Encerrar, "
+            "com o motivo."
+        )
+    vinculo, _ = VinculoIdentidade.objects.get_or_create(usuario=usuario)
+    antes = vinculo.acesso_ate
+    if antes == ultimo_dia:
+        return False
+    vinculo.acesso_ate = ultimo_dia
+    vinculo.save(update_fields=["acesso_ate"])
+    registrar(
+        "acesso.prazo_definido",
+        usuario=responsavel,
+        servico=None if responsavel else "linha de comando",
+        recurso=usuario,
+        recurso_rotulo=usuario.get_username(),
+        antes={"acesso_ate": _data(antes)},
+        depois={"acesso_ate": _data(ultimo_dia)},
+    )
+    return True
+
+
+def encerrar_acessos_vencidos(hoje=None):
+    """Desliga quem passou do último dia de acesso, e devolve quem foi desligado.
+
+    É o Encerrar da tela de usuários, feito pelo sistema: a conta fica desligada, as
+    sessões abertas caem e a auditoria diz que foi a data marcada, e quando.
+    """
+    hoje = hoje or timezone.localdate()
+    vencidos = (VinculoIdentidade.objects
+                .filter(acesso_ate__lt=hoje, usuario__is_active=True)
+                .select_related("usuario"))
+    desligados = []
+    for vinculo in vencidos:
+        desligar_usuario(
+            vinculo.usuario,
+            motivo=f"Acesso combinado até {vinculo.acesso_ate:%d/%m/%Y}",
+            servico="data marcada para o acesso acabar",
+        )
+        desligados.append(vinculo.usuario)
+    return desligados
+
+
 @transaction.atomic
-def criar_usuario(*, apelido, nome, sobrenome="", email="", cpf="", perfil="", responsavel=None):
+def criar_usuario(*, apelido, nome, sobrenome="", email="", cpf="", perfil="", responsavel=None,
+                  acesso_ate=None):
     """Cria a conta sem senha: quem administra define a senha logo em seguida.
 
     Conta sem senha utilizável não entra no sistema, então não há janela em que alguém
@@ -105,6 +162,9 @@ def criar_usuario(*, apelido, nome, sobrenome="", email="", cpf="", perfil="", r
     if Usuario.objects.filter(username__iexact=apelido).exists():
         raise ValueError(f"Já existe um usuário chamado {apelido}.")
 
+    if acesso_ate is not None and acesso_ate < timezone.localdate():
+        raise ValueError(f"O último dia de acesso ({acesso_ate:%d/%m/%Y}) já passou.")
+
     numeros = documento.limpar(cpf)
     if numeros:
         if not documento.valido(numeros):
@@ -117,7 +177,8 @@ def criar_usuario(*, apelido, nome, sobrenome="", email="", cpf="", perfil="", r
     usuario.last_name = (sobrenome or "").strip()[:150]
     usuario.set_unusable_password()
     usuario.save()
-    VinculoIdentidade.objects.get_or_create(usuario=usuario, defaults={"cpf": numeros})
+    VinculoIdentidade.objects.get_or_create(usuario=usuario,
+                                            defaults={"cpf": numeros, "acesso_ate": acesso_ate})
     if perfil:
         definir_perfil(usuario, perfil, responsavel=responsavel)
     registrar(
@@ -127,7 +188,8 @@ def criar_usuario(*, apelido, nome, sobrenome="", email="", cpf="", perfil="", r
         recurso=usuario,
         recurso_rotulo=apelido,
         # O CPF não entra aqui de propósito: a trilha de auditoria não guarda documento.
-        depois={"nome": usuario.get_full_name(), "perfil": perfil, "ativo": True},
+        depois={"nome": usuario.get_full_name(), "perfil": perfil, "ativo": True,
+                "acesso_ate": _data(acesso_ate)},
     )
     return usuario
 
@@ -156,12 +218,36 @@ def reativar_usuario(usuario, *, responsavel=None):
     usuario.save(update_fields=["is_active"])
     vinculo, _ = VinculoIdentidade.objects.get_or_create(usuario=usuario)
     vinculo.desligado_em = None
-    vinculo.save(update_fields=["desligado_em"])
+    # A data que acabou com o acesso também sai: deixá-la desligaria a conta de novo no
+    # minuto seguinte. Quem liberou marca outra data, se for o caso.
+    prazo_antigo = vinculo.acesso_ate
+    vinculo.acesso_ate = None
+    vinculo.save(update_fields=["desligado_em", "acesso_ate"])
     registrar(
         "acesso.usuario_reativado",
         usuario=responsavel,
         servico=None if responsavel else "linha de comando",
         recurso=usuario,
         recurso_rotulo=usuario.get_username(),
-        depois={"ativo": True},
+        antes={"acesso_ate": _data(prazo_antigo)},
+        depois={"ativo": True, "acesso_ate": ""},
     )
+
+
+def trocar_a_propria_senha(usuario, senha_nova):
+    """A pessoa troca a própria senha. As OUTRAS sessões dela caem; a de agora a tela refaz.
+
+    Já validada pelo formulário (o mesmo validador de `definir_senha`). A senha nunca
+    entra na auditoria; entra só que foi trocada, por quem e quantas sessões caíram.
+    """
+    usuario.set_password(senha_nova)
+    usuario.save(update_fields=["password"])
+    sessoes = encerrar_sessoes(usuario)
+    registrar(
+        "acesso.senha_trocada",
+        usuario=usuario,
+        recurso=usuario,
+        recurso_rotulo=usuario.get_username(),
+        depois={"sessoes_encerradas": sessoes},
+    )
+    return sessoes

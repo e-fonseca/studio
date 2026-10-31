@@ -38,6 +38,9 @@
           <td>
             <strong>{{ pessoa.usuario.first_name|default:pessoa.usuario.get_username }}</strong>
             <span class="ajuda">entra como {{ pessoa.usuario.get_username }}{% if pessoa.usuario.email %} · {{ pessoa.usuario.email }}{% endif %}{% if pessoa.cpf %} · CPF {{ pessoa.cpf }}{% endif %}</span>
+            {% if pessoa.acesso_ate and pessoa.usuario.is_active %}
+            <span class="etiqueta etiqueta-pendente">acesso até {{ pessoa.acesso_ate|date:"d/m/Y" }}</span>
+            {% endif %}
           </td>
           <td>
             <form method="post" action="{% url 'contas:alterar_usuario' pessoa.usuario.pk %}" class="formulario-linha">
@@ -90,7 +93,34 @@
      histórico do que ela fez continua na auditoria: conta não se apaga.</p>
 </section>
 
-<section class="cartao">
+{% comment %}A data marcada (1.42.0), pedido do Edson em 31/10/2026: "ficara no lugar da
+barbara ate dia 12/11/2026". Um formulário só, e não um por linha: a tabela já tem três
+ações por pessoa, e uma quarta em cada linha dobrava a altura da tela para uma coisa que se
+faz de vez em quando.{% endcomment %}
+<section class="cartao" id="acesso-com-data">
+  <h2>Acesso com data para acabar</h2>
+  <p class="ajuda">Para quem está saindo da empresa ou cobre alguém por um tempo. O acesso vale
+     até o fim do dia marcado; no dia seguinte a conta se desliga sozinha e a sessão aberta cai,
+     sem ninguém precisar lembrar. Para tirar a data, escolha a pessoa e deixe a data em branco.</p>
+  <form method="post" action="{% url 'contas:prazo_de_acesso' %}" class="formulario-usuario">
+    {% csrf_token %}
+    <div>
+      <label for="prazo-pessoa">Pessoa</label>
+      <select id="prazo-pessoa" name="usuario">
+        {% for pessoa in pessoas %}{% if pessoa.usuario.is_active and pessoa.usuario != user %}
+        <option value="{{ pessoa.usuario.pk }}">{{ pessoa.usuario.get_full_name|default:pessoa.usuario.get_username }}{% if pessoa.acesso_ate %} (hoje até {{ pessoa.acesso_ate|date:"d/m/Y" }}){% endif %}</option>
+        {% endif %}{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="prazo-data">Último dia de acesso</label>
+      <input type="date" id="prazo-data" name="acesso_ate" min="{{ hoje|date:'Y-m-d' }}">
+    </div>
+    <button type="submit" class="botao">Salvar a data</button>
+  </form>
+</section>
+
+<section class="cartao" id="dar-acesso">
   <h2>Dar acesso a mais alguém</h2>
   <p class="ajuda">A conta nasce sem senha e ninguém entra com ela até você definir uma, logo
      abaixo, na linha da pessoa. Assim não existe senha provisória circulando.</p>
@@ -126,6 +156,10 @@
         {% endfor %}
       </select>
     </div>
+    <div>
+      <label for="acesso-ate-novo">Acesso até <small>(opcional)</small></label>
+      <input type="date" id="acesso-ate-novo" name="acesso_ate" min="{{ hoje|date:'Y-m-d' }}">
+    </div>
     <button type="submit" class="botao">Criar acesso</button>
   </form>
 </section>
@@ -140,8 +174,8 @@
   },
   {
     "seletor": ".perfis",
-    "titulo": "Os três perfis",
-    "texto": "Administração vê tudo. O administrativo cuida de contas e fornecedores. O vendedor só consulta produto e fornecedor, sem ver custo nem valores."
+    "titulo": "Os quatro perfis",
+    "texto": "Administração vê tudo. A Líder de loja faz o que o administrativo faz e ainda monta o pedido ao fornecedor, que só vale depois que a gerência aprova. O administrativo cuida de contas e fornecedores. O vendedor só consulta produto e fornecedor, sem ver custo nem valores."
   },
   {
     "seletor": ".tabela-usuarios",
@@ -149,7 +183,12 @@
     "texto": "Cada coluna é uma ação por si: trocar o perfil, definir uma senha nova ou encerrar o acesso. Encerrar derruba a sessão na hora."
   },
   {
-    "seletor": ".formulario-usuario",
+    "seletor": "#acesso-com-data",
+    "titulo": "Acesso com data para acabar",
+    "texto": "Escolha a pessoa e o último dia. No dia seguinte o sistema encerra o acesso sozinho, como o Encerrar faria."
+  },
+  {
+    "seletor": "#dar-acesso",
     "titulo": "Dar acesso a mais alguém",
     "texto": "A conta nasce sem senha e ninguém entra com ela até você definir uma na linha da pessoa."
   }

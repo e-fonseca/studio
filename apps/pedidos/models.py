@@ -33,6 +33,11 @@ class Pedido(models.Model):
     """Um pedido mandado a um fornecedor, com o que foi pedido congelado dentro."""
 
     class Situacao(models.TextChoices):
+        # Pedido montado por quem não aprova (a Líder de loja, 1.42.0). A descrição do
+        # cargo que o Edson mandou em 31/10/2026 diz: "Nenhuma compra é confirmada sem
+        # aprovação prévia" da Direção. Enquanto espera, a folha sai com o aviso de que
+        # não vale, e a mercadoria não pode ser dada como recebida.
+        AGUARDANDO = "aguardando", "Esperando aprovação"
         ABERTO = "aberto", "Pedido feito, esperando a mercadoria"
         RECEBIDO = "recebido", "Mercadoria recebida"
         CANCELADO = "cancelado", "Cancelado"
@@ -74,6 +79,13 @@ class Pedido(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
         related_name="pedidos_editados",
     )
+    # Quem fez o pedido valer. No pedido da gerência é quem fez, no mesmo instante; no da
+    # Líder de loja é quem aprovou depois. Em branco nos pedidos de antes da 1.42.0.
+    aprovado_em = models.DateTimeField(null=True, blank=True)
+    aprovado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="pedidos_aprovados",
+    )
 
     class Meta:
         ordering = ["-numero"]
@@ -86,6 +98,7 @@ class Pedido(models.Model):
         permissions = [
             ("registrar_pedido", "Registrar pedido ao fornecedor"),
             ("anexar_documento", "Anexar romaneio e nota fiscal ao pedido"),
+            ("aprovar_pedido", "Aprovar o pedido montado na loja"),
         ]
 
     def __str__(self):
@@ -115,13 +128,27 @@ class Pedido(models.Model):
         return self.situacao == self.Situacao.CANCELADO
 
     @property
+    def esperando_aprovacao(self):
+        return self.situacao == self.Situacao.AGUARDANDO
+
+    @property
     def pode_mudar(self):
-        """Só pedido aberto se edita ou cancela.
+        """Só pedido aberto (ou esperando aprovação) se edita ou cancela.
 
         Depois de recebido, mexer na quantidade apagaria justamente a prova contra a
         qual a nota fiscal é conferida; cancelado já é o fim da linha.
         """
-        return self.esta_aberto
+        return self.esta_aberto or self.esperando_aprovacao
+
+    def pode_ser_mudado_por(self, usuario):
+        """Se ESTA pessoa pode editar ou cancelar o pedido agora.
+
+        Quem não aprova mexe no pedido só enquanto ele espera a aprovação: depois de
+        aprovado, mudar a quantidade seria comprar o que ninguém aprovou.
+        """
+        if not self.pode_mudar or usuario is None or not usuario.has_perm("pedidos.registrar_pedido"):
+            return False
+        return self.esperando_aprovacao or usuario.has_perm("pedidos.aprovar_pedido")
 
     @property
     def foi_editado(self):
@@ -141,6 +168,17 @@ class Pedido(models.Model):
         if self.criado_por is None:
             return "usuário removido"
         return self.criado_por.get_full_name() or self.criado_por.get_username()
+
+    @property
+    def quem_aprovou(self):
+        if self.aprovado_por is None:
+            return ""
+        return self.aprovado_por.get_full_name() or self.aprovado_por.get_username()
+
+    @property
+    def aprovado_por_outra_pessoa(self):
+        """O pedido foi aprovado depois, por alguém que não é quem o fez."""
+        return self.aprovado_por_id is not None and self.aprovado_por_id != self.criado_por_id
 
 
 class ItemDoPedido(models.Model):

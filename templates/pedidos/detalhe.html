@@ -21,7 +21,8 @@
     <div class="cartao-numero">
       <span class="cartao-titulo">Situação</span>
       <strong class="cartao-valor etiqueta etiqueta-{{ pedido.situacao }}">{{ pedido.get_situacao_display }}</strong>
-      <span class="cartao-rodape">Feito em {{ pedido.criado_em|date:"d/m/Y H:i" }} por {{ pedido.quem_fez }}.</span>
+      <span class="cartao-rodape">Feito em {{ pedido.criado_em|date:"d/m/Y H:i" }} por {{ pedido.quem_fez }}.{% if pedido.aprovado_por_outra_pessoa %}
+        Aprovado em {{ pedido.aprovado_em|date:"d/m/Y H:i" }} por {{ pedido.quem_aprovou }}.{% endif %}</span>
     </div>
     {% if pedido.prazo_dias is not None %}
     <div class="cartao-numero">
@@ -31,6 +32,24 @@
     </div>
     {% endif %}
   </div>
+  {% if pedido.esperando_aprovacao %}
+  {% comment %}A descrição do cargo da Líder de loja (31/10/2026): "Nenhuma compra é
+  confirmada sem aprovação prévia". Quem aprova vê o botão; quem montou vê o que falta.{% endcomment %}
+  <div class="aviso-aprovacao">
+    {% if pode_aprovar %}
+    <p><strong>Este pedido espera a sua aprovação.</strong> Foi montado por {{ pedido.quem_fez }}
+       em {{ pedido.criado_em|date:"d/m/Y" }}. Confira as quantidades: aprovar faz o pedido
+       valer e anexa a folha sem o aviso, pronta para o fornecedor. Para recusar, cancele com o
+       motivo, lá embaixo.</p>
+    <form method="post" action="{% url 'pedidos:aprovar' pedido.numero %}">{% csrf_token %}
+      <button type="submit" class="botao">Aprovar o pedido</button>
+    </form>
+    {% else %}
+    <p><strong>Esperando a aprovação da gerência.</strong> Não mande a folha ao fornecedor
+       antes disso. Enquanto espera, você ainda pode mudar as quantidades aqui embaixo.</p>
+    {% endif %}
+  </div>
+  {% endif %}
   {% if pedido.foi_cancelado %}
   <p class="aviso-cancelado"><strong>Pedido cancelado</strong>
      em {{ pedido.cancelado_em|date:"d/m/Y H:i" }}{% if pedido.cancelado_por %}
@@ -49,7 +68,7 @@
   {% endif %}
   <div class="acoes-do-pedido">
     <a class="botao" href="{% url 'pedidos:imprimir' pedido.numero %}">Gerar o pedido de compra em PDF</a>
-    {% if perms.pedidos.anexar_documento and not pedido.foi_cancelado %}
+    {% if perms.pedidos.anexar_documento and not pedido.foi_cancelado and not pedido.esperando_aprovacao %}
     <form method="post" action="{% url 'pedidos:receber' pedido.numero %}">{% csrf_token %}
       {% if pedido.aberto %}
       <input type="hidden" name="recebido" value="1">
@@ -61,8 +80,13 @@
     </form>
     {% endif %}
   </div>
+  {% if pedido.esperando_aprovacao %}
+  <p class="ajuda">O PDF sai com o timbre da loja e, no alto, o aviso em vermelho de que o
+     pedido ainda espera a aprovação. Depois de aprovado, sai sem o aviso.</p>
+  {% else %}
   <p class="ajuda">O PDF sai com o timbre da loja e o endereço da entrega, pronto para mandar
      ao fornecedor. É a mesma folha da lista de compra, com as quantidades deste pedido.</p>
+  {% endif %}
 </section>
 
 {% if perms.pedidos.anexar_documento %}

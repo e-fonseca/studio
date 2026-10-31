@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Trocar a minha senha</h1>
+  <p class="ajuda">A senha é só sua: ninguém da loja vê a senha que você escolher, nem a
+     gerência. Se esquecer, a gerência define uma nova na tela de usuários.</p>
+</div>
+
+<section class="cartao cartao-senha">
+  <form method="post" class="formulario-senha">
+    {% csrf_token %}
+    {% if formulario.non_field_errors %}<div class="mensagem error" role="alert">{% for e in formulario.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+    {% comment %}Os campos um a um, sem o help_text do Django: o dele é uma lista em HTML com
+    as regras escritas para programador. As regras, em português da loja, vão logo abaixo.{% endcomment %}
+    {% for campo in formulario %}
+    <div class="campo{% if campo.errors %} com-erro{% endif %}">
+      <label for="{{ campo.id_for_label }}">{% if campo.name == "old_password" %}Senha de agora{% elif campo.name == "new_password1" %}Senha nova{% else %}Senha nova, de novo{% endif %}</label>
+      {{ campo }}
+      {% for e in campo.errors %}<p class="erro-campo" role="alert">{{ e }}</p>{% endfor %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="botao">Trocar a senha</button>
+  </form>
+  <h2>O que a senha nova precisa ter</h2>
+  <ul class="lista-simples">
+    <li>Pelo menos 12 letras, números ou símbolos. Uma frase curta, com espaços, é mais
+        fácil de lembrar do que uma palavra difícil.</li>
+    <li>Nada parecido com o seu nome, o seu usuário ou o seu e-mail.</li>
+    <li>Nada só de números e nada das senhas mais usadas, como 123456789012.</li>
+  </ul>
+  <p class="ajuda">Trocar a senha fecha a sua entrada nos outros aparelhos, como o celular.
+     Neste aqui você continua dentro.</p>
+</section>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Trocar a minha senha",
+    "texto": "Escreva a senha que você usa hoje e, duas vezes, a senha nova. Abre para todo mundo que entra no sistema, pelo nome no alto da tela."
+  },
+  {
+    "seletor": ".formulario-senha",
+    "titulo": "Por que pede a senha de agora",
+    "texto": "Para quem achar o computador aberto não conseguir trocar a sua senha e ficar com o seu acesso."
+  }
+]
+</script>
+{% endblock %}

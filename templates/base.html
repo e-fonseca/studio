@@ -47,7 +47,9 @@
         {% else %}
         <span class="versao-topo">versão {{ versao_sistema.numero }}</span>
         {% endif %}
-        <span>Usuário: <strong>{{ user.get_full_name|default:user.get_username }}</strong></span>
+        {% comment %}O nome abre a troca da própria senha (1.42.0), para todos os perfis: a tela
+        de usuários manda "trocar na primeira entrada", e até aqui não havia onde.{% endcomment %}
+        <span>Usuário: <a class="usuario-nome" href="{% url 'contas:trocar_senha' %}" title="Trocar a minha senha"><strong>{{ user.get_full_name|default:user.get_username }}</strong></a></span>
         <button type="button" class="botao secundario" id="abrir-ajuda" aria-haspopup="dialog">Ajuda (F1)</button>
         <form method="post" action="{% url 'contas:sair' %}">{% csrf_token %}
           <button type="submit" class="botao secundario">Sair</button>

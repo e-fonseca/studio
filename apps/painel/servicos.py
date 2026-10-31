@@ -66,8 +66,10 @@ def agenda_da_importacao(importacao, estado, usuario=None, hoje=None):
     """A lista de tarefas da abertura, calculada uma vez por importação.
 
     A conta pesada é a lista de compra, que roda sobre os produtos todos. O resultado
-    não depende de quem está olhando, então fica no cache inteiro e o filtro por
-    permissão é aplicado depois, para cada pessoa.
+    não depende de quem está olhando, então fica no cache e o filtro por permissão é
+    aplicado depois, para cada pessoa. Fica de fora o que alguém da loja espera de
+    resposta (pedido para aprovar, sugestão da equipe): muda a qualquer hora e é
+    contado a cada abertura, em `tarefas.com_quem_espera`.
     """
     from apps.compras import limite, lista_de_compra
     from apps.financeiro import servicos as financeiro
@@ -86,6 +88,6 @@ def agenda_da_importacao(importacao, estado, usuario=None, hoje=None):
             # da tela de abertura — a que a pessoa espera depois de digitar a senha.
             limite.teto_de(importacao, hoje=hoje, resumo_caixa=resumo),
         )
-        guardada = tarefas.montar(estado, importacao, resumo, lista)
+        guardada = tarefas.do_dia(estado, importacao, resumo, lista)
         cache.set(chave_agenda, guardada, VALIDADE_CACHE)
-    return tarefas.para(guardada, usuario)
+    return tarefas.para(tarefas.com_quem_espera(guardada), usuario)

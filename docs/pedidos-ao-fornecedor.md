@@ -33,8 +33,9 @@ texto, porque a coluna do banco tem três decimais e `"10"` e `"10.000"` são o 
 número.
 
 Entram no pedido só as linhas com quantidade maior que zero, como no PDF. Quem registra
-precisa da permissão `pedidos.registrar_pedido` (Administrador gerência); o Operador
-administrativo vê os pedidos e anexa documentos, mas não cria.
+precisa da permissão `pedidos.registrar_pedido` (Administrador gerência e, desde a 1.42.0,
+Líder de loja, cujo pedido espera a aprovação); o Operador administrativo vê os pedidos e
+anexa documentos, mas não cria.
 
 O timbre da folha sai do cadastro (tela Dados da empresa), e desde a 1.35.0 ele carrega
 os **dois endereços**: o fiscal, que é o da nota, e o físico, impresso como
@@ -147,6 +148,49 @@ aberto, então cancelar e gerar de novo cria um pedido novo, como tem de ser.
 Quem pode editar e cancelar é quem pode registrar pedido (`pedidos.registrar_pedido`):
 Administrador gerência. O Operador administrativo vê o pedido e gera a folha, que é
 leitura, e não mexe no que foi pedido. O vendedor não chega a nenhuma dessas telas.
+
+## O pedido da Líder de loja espera a gerência (1.42.0)
+
+Pedido dele em 31/10/2026, com a Cássia entrando como líder de loja: *"foco sera compras
+de mercadorias / controle de fornecedores"*. A descrição do cargo que ele mandou junto
+põe o limite: *"Nenhuma compra é confirmada sem aprovação prévia"* da Direção, e ela não
+pode, sem autorização, *"confirmar pedidos de compra"*.
+
+Por isso o perfil **Líder de loja** tem `pedidos.registrar_pedido` e não tem
+`pedidos.aprovar_pedido`, que é só da gerência:
+
+- **Quem não aprova faz pedido que nasce esperando** (`aguardando`, "Esperando
+  aprovação"). Quem aprova faz pedido que já nasce valendo (`aberto`), com
+  `aprovado_por` = quem fez: a gerência não aprova a si mesma. Sem usuário nenhum, o
+  pedido também espera.
+- **A folha diz no alto, em vermelho, que ainda não vale**: "ESPERANDO A APROVAÇÃO DA
+  GERÊNCIA / Esta folha ainda não vale como pedido: não mande ao fornecedor antes da
+  aprovação." Vale para a folha que ela leva da Lista de compra, a que fica anexada e a
+  que se gera de novo pela tela do pedido. No rodapé ninguém lê; no alto é a primeira
+  linha que o fornecedor leria. O nome do arquivo também diz (`...-esperando-aprovacao.pdf`,
+  `folha.com_o_aviso_no_nome`): depois da aprovação as duas folhas ficam nos anexos do mesmo
+  pedido, com o mesmo tipo, e é o nome que separa a que vale.
+- **A gerência aprova com um clique** na tela do pedido. A situação passa a "Pedido feito,
+  esperando a mercadoria", grava quem aprovou e quando, e anexa a folha que vale, sem o
+  aviso e com "emitido por Cássia, aprovado por Edson". **Recusar é cancelar**, com o
+  motivo, pelo mesmo caminho de qualquer pedido.
+- **Enquanto espera, a líder muda a quantidade no próprio pedido.** A Lista de compra e a
+  regra do alerta continuam da gerência (`compras.ajustar_compra`): ali o que se muda vale
+  para todo mundo e não passa por aprovação. **Depois de aprovado, só a gerência** edita
+  ou cancela (`Pedido.pode_ser_mudado_por`), na tela e no serviço.
+- **Pedido esperando não se recebe**: nem "mercadoria chegou", nem "voltar para esperando
+  mercadoria", que aprovaria o pedido pela porta dos fundos.
+- **A gerência fica sabendo** pela tarefa "Aprovar os pedidos da loja" em O que fazer
+  agora (Visão geral e Dashboard), com quantos são e quanto somam, e pela linha no alto da
+  tela de Pedidos, que filtra por `?situacao=aguardando`. A tarefa é contada na hora, fora
+  do cache da agenda (`tarefas.com_quem_espera`), e vem logo depois das urgentes: guardada
+  com o resto, o pedido aprovado continuava pedindo aprovação até a próxima importação.
+- Imprimir duas vezes no mesmo dia o pedido que espera continua sendo reimprimir: a regra
+  do pedido repetido olha `aberto` e `aguardando`.
+
+O que ficou de fora de propósito: a folha que o **Operador administrativo** imprime da Lista
+de compra sem registrar nada (o GET de sempre) continua sem aviso, porque é a mesma de antes
+da 1.42.0 e quem decide a quantidade ali é a gerência.
 
 ## Os anexos
 

@@ -1,15 +1,25 @@
-"""Os três perfis de acesso da loja e o que cada um pode fazer.
+"""Os perfis de acesso da loja e o que cada um pode fazer.
 
-Definidos pelo Edson em 07/10/2026. A regra é simples: quem administra vê tudo e mexe
-em tudo, inclusive em quem tem acesso; o administrativo cuida do dia a dia de contas e
-fornecedores, sem mexer em usuário nem em auditoria; o vendedor só consulta produto e
-fornecedor no balcão, e não vê custo, margem nem nada de dinheiro.
+Os três primeiros foram definidos pelo Edson em 07/10/2026. A regra é simples: quem
+administra vê tudo e mexe em tudo, inclusive em quem tem acesso; o administrativo cuida
+do dia a dia de contas e fornecedores, sem mexer em usuário nem em auditoria; o vendedor
+só consulta produto e fornecedor no balcão, e não vê custo, margem nem nada de dinheiro.
+
+O quarto, Líder de loja, veio com a Cássia (pedido dele em 31/10/2026): *"será líder de
+loja / acesso moderado as informações gerenciais / foco sera compras de mercadorias /
+controle de fornecedores / gestao da equipe local / lançamentos de pagamentos / controle
+de estoque"*. É o administrativo inteiro, mais montar o pedido ao fornecedor e responder
+a equipe. A descrição do cargo que ele mandou junto põe o limite: *"Nenhuma compra é
+confirmada sem aprovação prévia"* da Direção. Por isso o pedido que ela monta nasce
+esperando a aprovação da gerência (`pedidos.aprovar_pedido`), e a lista de compra e a
+regra do alerta continuam com a gerência.
 
 Permissão é conferida no servidor, em toda tela. Esconder o menu não protege nada: o
 que protege é o permission_required de cada view.
 """
 
 ADMINISTRACAO = "Administrador gerência"
+LIDER = "Líder de loja"
 ADMINISTRATIVO = "Operador administrativo"
 VENDEDOR = "Operador vendedor"
 
@@ -67,6 +77,9 @@ PERFIS = {
         # Registrar o pedido é comprometer dinheiro com um fornecedor: fica com quem
         # ajusta a quantidade, que é a mesma decisão.
         "pedidos.registrar_pedido",
+        # Aprovar é o que faz o pedido da Líder de loja valer. Quem tem esta permissão
+        # também faz pedido que já nasce aprovado: a gerência não aprova a si mesma.
+        "pedidos.aprovar_pedido",
         # Só a gerência: esta tela guarda a senha do e-mail da loja e decide o que sai
         # do servidor para fora. Não é configuração de dia a dia.
         "alertas.configurar_email",
@@ -75,6 +88,16 @@ PERFIS = {
         "backup.configurar_backup",
         "tempo.configurar_tempo",
     ],
+    LIDER: _ADMINISTRATIVO + [
+        # "Gestão da equipe local": quem está na loja escreve o que o cliente pediu e a
+        # líder responde, sem a sugestão esperar a gerência voltar de viagem.
+        "compras.responder_sugestao",
+        # Monta o pedido, e o pedido dela nasce esperando a aprovação da gerência. A
+        # quantidade ela muda NO PEDIDO, antes de aprovado; a lista de compra e a regra
+        # do alerta (`compras.ajustar_compra`) continuam da gerência, porque ali o que
+        # se muda vale para todo mundo e não passa por aprovação nenhuma.
+        "pedidos.registrar_pedido",
+    ],
     ADMINISTRATIVO: _ADMINISTRATIVO,
     # Só a tela de consulta: produto e fornecedor, sem custo e sem dinheiro.
     VENDEDOR: ["importacao.consultar_produtos"],
@@ -82,6 +105,9 @@ PERFIS = {
 
 DESCRICOES = {
     ADMINISTRACAO: "Acesso total, inclusive a usuários, auditoria, importação e os relatórios por e-mail.",
+    LIDER: "Tudo do administrativo, mais montar o pedido ao fornecedor, que só vale "
+           "depois que a gerência aprova, e responder as sugestões da equipe. Não mexe em "
+           "usuários, na lista de compra nem nas configurações.",
     ADMINISTRATIVO: "Lançamentos, contas a pagar e a receber, fornecedores, painéis, a "
                     "contagem do estoque e sugestões de compra. Não mexe em usuários nem "
                     "vê a auditoria.",

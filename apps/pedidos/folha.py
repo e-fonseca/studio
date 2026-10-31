@@ -19,6 +19,14 @@ from apps.compras import pedido as folha_do_pedido
 
 ZERO = Decimal("0")
 
+# A folha do pedido que a Líder de loja montou e a gerência ainda não aprovou. Sai no alto
+# da folha, em vermelho: se ela chegar ao fornecedor antes da aprovação, ele lê isto
+# antes de ler a primeira linha.
+AVISO_SEM_APROVACAO = (
+    "ESPERANDO A APROVAÇÃO DA GERÊNCIA\n"
+    "Esta folha ainda não vale como pedido: não mande ao fornecedor antes da aprovação."
+)
+
 
 @dataclass
 class _Linha:
@@ -82,7 +90,21 @@ def montar(pedido, empresa, emitido_por=""):
     return folha_do_pedido.montar(
         [como_bloco(pedido)], empresa,
         data_corte=pedido.data_corte, emitido_por=emitido_por, observacao=observacao,
+        aviso=AVISO_SEM_APROVACAO if pedido.esperando_aprovacao else "",
     )
+
+
+def quem_emite(pedido, usuario):
+    """O "emitido por" da folha: quem fez e, quando foi outra pessoa, quem aprovou.
+
+    Na folha do pedido da Líder de loja o fornecedor lê os dois nomes: quem montou e
+    quem da gerência fez valer. Nos outros continua sendo quem imprimiu.
+    """
+    if pedido.aprovado_por_outra_pessoa:
+        return f"{pedido.quem_fez}, aprovado por {pedido.quem_aprovou}"
+    if usuario is None:
+        return ""
+    return usuario.get_full_name() or usuario.get_username()
 
 
 def nome_do_arquivo(pedido):
@@ -90,4 +112,18 @@ def nome_do_arquivo(pedido):
     import re
 
     limpo = re.sub(r"[^a-zA-Z0-9]+", "-", pedido.fornecedor).strip("-").lower()[:40]
-    return f"pedido-{pedido.numero}-{limpo or 'fornecedor'}.pdf"
+    nome = f"pedido-{pedido.numero}-{limpo or 'fornecedor'}.pdf"
+    return com_o_aviso_no_nome(nome) if pedido.esperando_aprovacao else nome
+
+
+def com_o_aviso_no_nome(nome):
+    """A folha que ainda não vale diz isso também no nome do arquivo.
+
+    Na lista de anexos ela fica ao lado da que a aprovação anexa depois, do mesmo pedido e
+    com o mesmo tipo; e no computador de quem baixou, não se confunde com a que vai ao
+    fornecedor.
+    """
+    base, ponto, extensao = nome.rpartition(".")
+    if not ponto:
+        return f"{nome}-esperando-aprovacao"
+    return f"{base}-esperando-aprovacao.{extensao}"

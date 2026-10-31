@@ -47,6 +47,7 @@ def lista(request):
         "fornecedor": fornecedor,
         "situacoes": Pedido.Situacao.choices,
         "em_aberto": servicos.em_aberto(),
+        "para_aprovar": servicos.para_aprovar()[0],
         "sem_documento": servicos.sem_documento(),
         # Na tela entram os fornecedores que cabem no mês, mais os que já foram
         # pedidos hoje. Os outros são dezenas — a lista de compra tem 200 e tantos
@@ -121,14 +122,15 @@ def gerar(request):
                       "numeros": [p.numero for p in guardados]})
     if pulados:
         messages.error(request, f"Sem linha nenhuma para pedir a {', '.join(pulados)}.")
+    esperando = "" if servicos.aprova(request.user) else ", esperando a aprovação da gerência"
     if len(guardados) == 1:
         messages.success(request,
                          f"Pedido {guardados[0].numero} de {guardados[0].fornecedor} "
-                         "guardado, com a folha em PDF anexada.")
+                         f"guardado{esperando}, com a folha em PDF anexada.")
         return redirect("pedidos:detalhe", numero=guardados[0].numero)
     if guardados:
-        messages.success(request, f"{len(guardados)} pedidos guardados, cada um com a "
-                                  "folha em PDF anexada.")
+        messages.success(request, f"{len(guardados)} pedidos guardados{esperando}, cada um "
+                                  "com a folha em PDF anexada.")
     return redirect("pedidos:lista")
 
 
@@ -149,8 +151,31 @@ def detalhe(request, numero):
         "tipos": AnexoDoPedido.Tipo.choices,
         "limite_mb": settings.ANEXO_TAMANHO_MAXIMO // (1024 * 1024),
         "ficha": fornecedores_servicos.cadastrados().get(pedido.fornecedor),
-        "pode_mexer": pedido.pode_mudar and request.user.has_perm("pedidos.registrar_pedido"),
+        "pode_mexer": pedido.pode_ser_mudado_por(request.user),
+        "pode_aprovar": pedido.esperando_aprovacao and servicos.aprova(request.user),
     })
+
+
+@login_required
+@permission_required("pedidos.aprovar_pedido", raise_exception=True)
+@require_http_methods(["POST"])
+def aprovar(request, numero):
+    """A gerência faz valer o pedido que a Líder de loja montou.
+
+    Um clique, e a folha que vale (sem o aviso vermelho) fica anexada ao pedido, com o
+    nome de quem montou e de quem aprovou. Recusar é cancelar, com o motivo: o mesmo
+    caminho de qualquer pedido que não vai acontecer.
+    """
+    pedido = get_object_or_404(Pedido, numero=numero)
+    try:
+        servicos.aprovar_pedido(request.user, pedido)
+    except servicos.NaoDeuCerto as erro:
+        messages.error(request, str(erro))
+        return redirect("pedidos:detalhe", numero=pedido.numero)
+    _guardar_a_folha_nova(request, pedido)
+    messages.success(request, f"Pedido {pedido.numero} aprovado. A folha que vale ficou "
+                              "anexada aqui, pronta para mandar ao fornecedor.")
+    return redirect("pedidos:detalhe", numero=pedido.numero)
 
 
 @login_required
@@ -293,8 +318,8 @@ def imprimir(request, numero):
     guardado — e não da lista de hoje, que já mudou de lá para cá.
     """
     pedido = get_object_or_404(Pedido, numero=numero)
-    emitido_por = request.user.get_full_name() or request.user.get_username()
-    relatorio = folha.montar(pedido, DadosDaEmpresa.atual(), emitido_por=emitido_por)
+    relatorio = folha.montar(pedido, DadosDaEmpresa.atual(),
+                             emitido_por=folha.quem_emite(pedido, request.user))
     registrar("pedido.folha_gerada", usuario=request.user, recurso=pedido,
               recurso_rotulo=f"pedido {pedido.numero} · {pedido.fornecedor}",
               depois={"itens": pedido.quantas_linhas, "valor": str(pedido.valor_total)})
@@ -303,6 +328,6 @@ def imprimir(request, numero):
 
 def _guardar_a_folha_nova(request, pedido):
     """Anexa ao pedido a folha que vale depois da edição. Silencioso quando repete."""
-    emitido_por = request.user.get_full_name() or request.user.get_username()
-    relatorio = folha.montar(pedido, DadosDaEmpresa.atual(), emitido_por=emitido_por)
+    relatorio = folha.montar(pedido, DadosDaEmpresa.atual(),
+                             emitido_por=folha.quem_emite(pedido, request.user))
     servicos.guardar_a_folha(request.user, pedido, relatorio, folha.nome_do_arquivo(pedido))

@@ -27,7 +27,7 @@ from decimal import Decimal
 from apps.compras import lista_de_compra, pedido as folha_do_pedido
 from apps.compras.models import DadosDaEmpresa
 
-from . import servicos
+from . import folha as folha_do_pedido_guardado, servicos
 
 ZERO = Decimal("0")
 
@@ -120,9 +120,14 @@ def gerar(usuario, blocos, *, data_corte, emitido_por, empresa=None):
         except servicos.NaoDeuCerto:
             pulados.append(bloco.nome)
             continue
-        folha = folha_do_pedido.montar([bloco], empresa, data_corte=data_corte,
-                                       emitido_por=emitido_por)
-        servicos.guardar_a_folha(usuario, registro, folha,
-                                 folha_do_pedido.nome_do_arquivo([bloco], data_corte))
+        # O pedido da Líder de loja nasce esperando a gerência, e a folha guardada com ele
+        # diz isso no alto. A que vale é anexada no dia da aprovação.
+        folha = folha_do_pedido.montar(
+            [bloco], empresa, data_corte=data_corte, emitido_por=emitido_por,
+            aviso=folha_do_pedido_guardado.AVISO_SEM_APROVACAO if registro.esperando_aprovacao else "")
+        nome = folha_do_pedido.nome_do_arquivo([bloco], data_corte)
+        if registro.esperando_aprovacao:
+            nome = folha_do_pedido_guardado.com_o_aviso_no_nome(nome)
+        servicos.guardar_a_folha(usuario, registro, folha, nome)
         guardados.append(registro)
     return guardados, pulados

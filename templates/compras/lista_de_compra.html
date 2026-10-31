@@ -140,8 +140,8 @@ começar o pedido do mês, não ler duas mil linhas.{% endcomment %}
     </form>
     <span class="ajuda">Sai um pedido por folha, com o timbre da loja e as quantidades
       que estão aqui.{% if perms.pedidos.registrar_pedido %} O pedido fica guardado em
-      <a href="{% url 'pedidos:lista' %}">Pedidos</a>, para anexar o romaneio e a nota
-      fiscal quando a mercadoria chegar.{% endif %}</span>
+      <a href="{% url 'pedidos:lista' %}">Pedidos</a>{% if perms.pedidos.aprovar_pedido %}, para anexar o romaneio e a nota
+      fiscal quando a mercadoria chegar.{% else %} e só vale depois que a gerência aprovar.{% endif %}{% endif %}</span>
   </p>
   {% if empresa.falta_preencher and perms.compras.change_dadosdaempresa %}
   <p class="ajuda">O pedido sai como <strong>{{ empresa.razao_social }}</strong>, mas ainda

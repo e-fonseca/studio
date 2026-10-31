@@ -49,3 +49,43 @@ banco a cada clique).
   quatro horas.
 - **O motivo aparece na tela de entrada**, em linguagem de loja, e não um "sessão
   expirada" seco: quem está no balcão precisa entender que não é defeito.
+
+## Data para o acesso acabar (1.42.0)
+
+Pedido dele em 31/10/2026, com a Cássia entrando no lugar da Bárbara: *"ficara no lugar da
+barbara ate dia 12/11/2026"*. Até a 1.41.0 a única saída era alguém abrir a tela de usuários
+no dia certo e clicar em Encerrar. Era também o "registrar delegações temporárias, bloquear
+desligados e invalidar sessões" do briefing de 05/10/2026, que ficou sem a parte da data.
+
+- **A data mora na conta** (`VinculoIdentidade.acesso_ate`, "último dia de acesso") e se
+  marca no quadro "Acesso com data para acabar" da tela de usuários (um formulário só, e não
+  um por linha: a tabela já tem três ações por pessoa), ou já na criação da conta. É
+  inclusiva: "até 12/11" entra no dia 12 inteiro.
+- **No dia seguinte a conta se desliga sozinha**, com o mesmo efeito do Encerrar: conta
+  desligada, sessões abertas derrubadas, e a auditoria registra o motivo "Acesso combinado
+  até 12/11/2026" com o serviço "data marcada para o acesso acabar".
+- **Quem cumpre a data é um middleware** (`apps/contas/prazo.py`), não uma tarefa agendada
+  nova: ele roda na primeira requisição de cada dia, de quem quer que seja, inclusive na
+  tentativa de entrar da própria pessoa, antes de a senha ser conferida. Não há janela em
+  que a conta vencida ainda entra, e não há mais um agendamento no servidor para instalar e
+  vigiar. Uma vez por dia por processo: a conferência é uma consulta só.
+- **Data que já passou é recusada** (ela desligaria a conta na hora sem ninguém ter pedido);
+  para encerrar hoje, existe o Encerrar, com o motivo. Ninguém marca data no próprio acesso,
+  pela mesma regra que impede desligar a si mesmo.
+- **Liberar de novo tira a data** que acabou com o acesso; quem liberou marca outra, se for
+  o caso. Senão a conta voltaria a se desligar no minuto seguinte.
+
+## Trocar a própria senha (1.42.0)
+
+A tela de usuários dizia "peça para ela trocar na primeira entrada" desde a 1.4.0, e não
+havia onde trocar: a senha que a gerência escolhia valia para sempre. Agora o **nome no alto
+da tela** abre "Trocar a minha senha" (`/sistema/senha/`), para todos os perfis, o vendedor
+inclusive.
+
+- Pede a **senha de agora**: quem acha o computador do balcão aberto não troca a senha de
+  ninguém.
+- As regras são as mesmas da senha que a gerência define (`AUTH_PASSWORD_VALIDATORS`: 12
+  caracteres, nada parecido com o nome, nada só de números, nada das mais comuns), escritas
+  em português de loja na própria tela.
+- **As outras sessões caem** (o celular, outro computador); a de agora continua
+  (`update_session_auth_hash`). A auditoria registra `acesso.senha_trocada`, nunca a senha.

@@ -25,6 +25,12 @@ class VinculoIdentidade(models.Model):
     # omite a chave "cpf") e não aparece em tela nenhuma fora de Usuários.
     cpf = models.CharField("CPF", max_length=11, blank=True)
     desligado_em = models.DateTimeField(null=True, blank=True)
+    # Último dia em que a pessoa entra no sistema (1.42.0). Pedido do Edson em 31/10/2026,
+    # com a Cássia chegando e a Bárbara saindo: "ficara no lugar da barbara ate dia
+    # 12/11/2026". No dia seguinte a conta se desliga sozinha, com o mesmo efeito do
+    # Encerrar da tela de usuários. É o "registrar delegações temporárias, bloquear
+    # desligados e invalidar sessões" do briefing de 05/10/2026.
+    acesso_ate = models.DateField("último dia de acesso", null=True, blank=True)
     observacao = models.TextField(blank=True)
 
     class Meta:

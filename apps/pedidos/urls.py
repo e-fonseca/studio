@@ -10,6 +10,7 @@ urlpatterns = [
     path("<int:numero>/anexar/", views.anexar, name="anexar"),
     path("<int:numero>/receber/", views.receber, name="receber"),
     path("<int:numero>/editar/", views.editar, name="editar"),
+    path("<int:numero>/aprovar/", views.aprovar, name="aprovar"),
     path("<int:numero>/cancelar/", views.cancelar, name="cancelar"),
     path("<int:numero>/imprimir/", views.imprimir, name="imprimir"),
     path("<int:numero>/anexo/<int:anexo_id>/", views.baixar, name="baixar"),

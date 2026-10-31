@@ -7,6 +7,40 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.42.0 — 31/10/2026
+
+Pedido dele, com a ficha e a descrição do cargo da Cássia: *"criar acesso para nova
+funciona Cassia inicio 26/10/2026 / ficara no lugar da barbara ate dia 12/11/2026 / será
+líder de loja / acesso moderado as informações gerenciais / foco sera compras de
+mercadorias / controle de fornecedores / gestao da equipe local / lançamentos de
+pagamentos / controle de estoque"*.
+
+- **Perfil novo, Líder de loja**: tudo do Operador administrativo (fornecedores, lançar
+  pagamento, financeiro, caixa, conciliação, contagem e inventário, painéis), mais **montar
+  o pedido ao fornecedor** e **responder as sugestões da equipe**. Não mexe em usuários,
+  auditoria, importação, configurações, dados da empresa, lista de compra nem na regra do
+  alerta.
+- **O pedido que a Líder de loja monta espera a aprovação da gerência**, como diz a descrição
+  do cargo ("Nenhuma compra é confirmada sem aprovação prévia"). A folha sai com o aviso em
+  vermelho, no alto, de que ainda não vale; a gerência aprova com um clique na tela do
+  pedido, e a folha que vale fica anexada com o nome de quem montou e de quem aprovou.
+  Recusar é cancelar, com o motivo. Enquanto espera, ela muda a quantidade no próprio
+  pedido; depois de aprovado, só a gerência mexe.
+- **"Aprovar os pedidos da loja"** entra em O que fazer agora, na Visão geral e no Dashboard,
+  com quantos pedidos esperam e quanto somam. Só para a gerência. Vem logo depois das
+  urgentes, e aparece e some na hora: a agenda fica guardada até a próxima importação, mas o
+  que alguém da loja espera de resposta é contado a cada abertura. A sugestão da equipe, que
+  também esperava a importação seguinte para aparecer, passou a fazer o mesmo.
+- **Data para o acesso acabar**, no quadro "Acesso com data para acabar" da tela de usuários
+  e na criação da conta.
+  "Até 12/11" entra no dia 12 inteiro; no dia 13 a conta se desliga sozinha, a sessão aberta
+  cai e a auditoria registra o motivo. Liberar de novo tira a data.
+- **Trocar a minha senha**, pelo nome no alto da tela, para todos os perfis. A tela de
+  usuários mandava "peça para ela trocar na primeira entrada" e não havia onde. Pede a senha
+  de agora, segue as mesmas regras e derruba as sessões dos outros aparelhos.
+- A foto que veio junto não tem lugar no sistema e não foi guardada.
+- Traz junto tudo da 1.40.2 à 1.41.0.
+
 ## 1.41.0 — 31/10/2026
 
 Pedido dele, com o print de um painel do Grafana: *"adaptar os recursos de grafana no

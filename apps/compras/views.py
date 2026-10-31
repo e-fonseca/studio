@@ -415,9 +415,16 @@ def pedido_ao_fornecedor(request):
     if not blocos:
         raise Http404("Não há o que pedir com esses filtros.")
 
+    from apps.pedidos import folha as folha_guardada, servicos as pedidos  # noqa: PLC0415
+
     empresa = DadosDaEmpresa.atual()
     emitido_por = request.user.get_full_name() or request.user.get_username()
-    relatorio = pedido.montar(blocos, empresa, data_corte=lista.data_corte, emitido_por=emitido_por)
+    registra = request.method == "POST" and request.user.has_perm("pedidos.registrar_pedido")
+    # O pedido da Líder de loja nasce esperando a gerência, e a folha que ela leva desta
+    # tela tem que dizer isso, igual à que fica guardada no pedido.
+    aviso = folha_guardada.AVISO_SEM_APROVACAO if registra and not pedidos.aprova(request.user) else ""
+    relatorio = pedido.montar(blocos, empresa, data_corte=lista.data_corte, emitido_por=emitido_por,
+                              aviso=aviso)
     registrar("compras.pedido_gerado", usuario=request.user,
               recurso_rotulo=", ".join(b.nome for b in blocos)[:200],
               depois={"fornecedores": len(blocos),
@@ -427,9 +434,10 @@ def pedido_ao_fornecedor(request):
     # é a ele que o romaneio e a nota fiscal vão ser anexados quando a mercadoria
     # chegar (pedido do Edson, 14/10/2026). GET continua sendo só a folha, para
     # reimprimir sem registrar nada.
-    if request.method == "POST" and request.user.has_perm("pedidos.registrar_pedido"):
+    if registra:
         _guardar_os_pedidos(request, blocos, empresa, lista, emitido_por)
-    return pdf.resposta(relatorio, pedido.nome_do_arquivo(blocos, lista.data_corte))
+    nome = pedido.nome_do_arquivo(blocos, lista.data_corte)
+    return pdf.resposta(relatorio, folha_guardada.com_o_aviso_no_nome(nome) if aviso else nome)
 
 
 def _guardar_os_pedidos(request, blocos, empresa, lista, emitido_por):
@@ -445,7 +453,17 @@ def _guardar_os_pedidos(request, blocos, empresa, lista, emitido_por):
                                  emitido_por=emitido_por, empresa=empresa)
     if not guardados:
         return
-    if len(guardados) == 1:
+    if any(registro.esperando_aprovacao for registro in guardados):
+        # O recado da Líder de loja: o que ela tem que esperar, e não o que fazer quando a
+        # mercadoria chegar, que ainda nem foi pedida.
+        endereco = (reverse("pedidos:detalhe", args=[guardados[0].numero]) if len(guardados) == 1
+                    else reverse("pedidos:lista") + "?situacao=aguardando")
+        quais = (f"Pedido {guardados[0].numero} guardado" if len(guardados) == 1
+                 else f"{len(guardados)} pedidos guardados")
+        messages.success(request, mark_safe(
+            f"{quais}, esperando a aprovação da gerência. "
+            f'<a href="{endereco}">Abrir</a> para mudar alguma quantidade antes disso.'))
+    elif len(guardados) == 1:
         endereco = reverse("pedidos:detalhe", args=[guardados[0].numero])
         messages.success(request, mark_safe(
             f"Pedido {guardados[0].numero} guardado. "

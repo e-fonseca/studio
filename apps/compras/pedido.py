@@ -68,12 +68,20 @@ def _timbre(relatorio, empresa):
         relatorio.paragrafo(" · ".join(linhas), tamanho=8.5, cor=pdf.CINZA, espaco=2)
 
 
-def _um_pedido(relatorio, bloco, empresa, data_corte=None, observacao=""):
+def _um_pedido(relatorio, bloco, empresa, data_corte=None, observacao="", aviso=""):
     """Uma folha: o timbre da loja, para quem é o pedido e o que se está pedindo."""
     _timbre(relatorio, empresa)
     relatorio.espaco(6)
     relatorio.paragrafo(f"Para: {bloco.nome}", tamanho=14, fonte=pdf.NEGRITO,
                         cor=pdf.MARROM, espaco=4)
+    if aviso:
+        # No alto e em vermelho, antes da tabela: é a primeira coisa que o fornecedor
+        # leria, se a folha chegasse até ele. Rodapé ninguém lê. Uma linha por linha do
+        # aviso, porque `paragrafo` corta o que não cabe na largura da folha.
+        linhas = [linha.strip() for linha in aviso.splitlines() if linha.strip()]
+        for posicao, linha in enumerate(linhas):
+            relatorio.paragrafo(linha, tamanho=12 if posicao == 0 else 10, fonte=pdf.NEGRITO,
+                                cor=pdf.VERMELHO, espaco=6 if posicao == len(linhas) - 1 else 2)
 
     itens = itens_do_pedido(bloco)
     total = _total(itens)
@@ -142,7 +150,7 @@ def _um_pedido(relatorio, bloco, empresa, data_corte=None, observacao=""):
                 relatorio.paragrafo(linha.strip(), tamanho=9)
 
 
-def montar(blocos, empresa, data_corte=None, emitido_por="", observacao=""):
+def montar(blocos, empresa, data_corte=None, emitido_por="", observacao="", aviso=""):
     """O PDF dos pedidos, uma folha por fornecedor.
 
     Deitado (paisagem) porque a linha tem descrição longa, quantidade, custo e total,
@@ -160,7 +168,8 @@ def montar(blocos, empresa, data_corte=None, emitido_por="", observacao=""):
     for posicao, bloco in enumerate(blocos):
         if posicao:
             relatorio.pagina_nova()
-        _um_pedido(relatorio, bloco, empresa, data_corte=data_corte, observacao=observacao)
+        _um_pedido(relatorio, bloco, empresa, data_corte=data_corte, observacao=observacao,
+                   aviso=aviso)
     return relatorio
 
 

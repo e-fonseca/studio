@@ -13,8 +13,10 @@
      com as quantidades do dia e a folha que foi mandada. Quando a mercadoria chegar, anexe o
      <strong>romaneio</strong> e a <strong>nota fiscal</strong>: com o XML da nota, o sistema
      confere item por item contra o que foi pedido.</p>
-  {% if em_aberto or sem_documento %}
+  {% if em_aberto or sem_documento or para_aprovar %}
   <ul class="lista-simples">
+    {% if para_aprovar %}<li class="destaque"><a href="{% url 'pedidos:lista' %}?situacao=aguardando">{{ para_aprovar }}
+      pedido{{ para_aprovar|pluralize }}</a> esperando a aprovação da gerência.</li>{% endif %}
     {% if em_aberto %}<li>{{ em_aberto }} pedido{{ em_aberto|pluralize }} esperando mercadoria.</li>{% endif %}
     {% if sem_documento %}<li class="destaque">{{ sem_documento }} pedido{{ sem_documento|pluralize }}
       recebido{{ sem_documento|pluralize }} sem nota nem romaneio anexado.</li>{% endif %}
@@ -33,7 +35,9 @@ automaticamente". Fica ACIMA dos pedidos guardados porque é o que falta fazer.{
   <p class="ajuda">Montados pela lista de compra de
      {{ lista_de_hoje.data_corte|date:"d/m/Y" }}, com a quantidade sugerida pelo sistema mais
      o que foi escrito à mão. Cada botão grava o pedido daquele fornecedor e anexa a folha em
-     PDF; nada é mandado ao fornecedor pelo sistema.</p>
+     PDF; nada é mandado ao fornecedor pelo sistema.{% if pode_gerar and not perms.pedidos.aprovar_pedido %}
+     <strong>O pedido que você gerar fica esperando a aprovação da gerência</strong> e só vale
+     depois dela.{% endif %}</p>
   {% if cabem_no_mes and pode_gerar %}
   <form method="post" action="{% url 'pedidos:gerar' %}" class="formulario-em-linha">{% csrf_token %}
     <button type="submit" class="botao">Gerar os {{ cabem_no_mes|length }} que cabem no mês</button>
@@ -87,9 +91,14 @@ automaticamente". Fica ACIMA dos pedidos guardados porque é o que falta fazer.{
      que comprar e passam do teto do mês. Eles estão na
      <a href="{% url 'compras:lista' %}">lista de compra</a>, e de lá o pedido também sai.</p>
   {% endif %}
+  {% if perms.compras.ajustar_compra or not pode_gerar %}
   <p class="ajuda">Para mudar uma quantidade antes de pedir, use a
      <a href="{% url 'compras:lista' %}">lista de compra</a>: lá cada linha tem a sugestão do
      sistema, o campo da quantidade à mão e a soma das duas.</p>
+  {% else %}
+  <p class="ajuda">Para mudar uma quantidade, gere o pedido e mude no próprio pedido: até a
+     gerência aprovar, cada linha tem o campo da quantidade.</p>
+  {% endif %}
 </section>
 {% endif %}
 
@@ -158,7 +167,7 @@ automaticamente". Fica ACIMA dos pedidos guardados porque é o que falta fazer.{
   {
     "seletor": ".filtros-ficha",
     "titulo": "Esperando ou recebido",
-    "texto": "Pedido nasce esperando mercadoria. Quem recebe marca como recebido e anexa o papel que veio com ela."
+    "texto": "O pedido da gerência nasce esperando mercadoria; o da Líder de loja, esperando a aprovação da gerência. Quem recebe marca como recebido e anexa o papel que veio com a mercadoria."
   },
   {
     "seletor": ".tabela-de-pedidos",

@@ -146,6 +146,10 @@ a { color: var(--cor-primaria); text-underline-offset: .15em; }
 .menu-apoio a[aria-current] { color: #fff; box-shadow: inset 0 -2px 0 0 var(--cor-latao); }
 .usuario { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; font-size: .9rem; }
 .usuario form { margin: 0; }
+/* O nome abre "Trocar a minha senha": sublinhado pontilhado, para se ver que é link sem
+   gritar no topo de toda tela. */
+.usuario-nome { color: inherit; text-decoration: underline dotted rgba(255, 255, 255, .55); text-underline-offset: 3px; }
+.usuario-nome:hover { text-decoration-color: currentColor; }
 .versao-topo {
   padding: .2rem .6rem; border-radius: 999px; font-size: .8rem; font-weight: 600;
   color: var(--cor-escuro-texto); text-decoration: none; background: rgba(255, 255, 255, .1);
@@ -867,6 +871,8 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
 .etiqueta-aberto { border-color: var(--cor-primaria); color: var(--cor-primaria); background: var(--cor-primaria-fraca); }
 .etiqueta-recebido { border-color: var(--cor-sucesso); color: var(--cor-sucesso); background: var(--cor-sucesso-fraca); }
 .etiqueta-cancelado { border-color: var(--cor-borda-forte); color: var(--cor-texto-suave); background: var(--cor-superficie-2); }
+/* Pedido da Líder de loja esperando a gerência (1.42.0): a cor de "atenção", não a de erro. */
+.etiqueta-aguardando { border-color: var(--cor-alerta); color: var(--cor-alerta); background: var(--cor-alerta-fraca); }
 /* Etiqueta dentro de cartão de número não herda o tamanho gigante do valor: ela é
    uma palavra numa pílula, e a 2rem a pílula estoura o cartão. */
 .cartao-valor.etiqueta { font-size: .9rem; align-self: flex-start; }
@@ -927,6 +933,9 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
 .formulario-linha { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; margin: 0; }
 .formulario-linha input, .formulario-linha select { margin: 0; min-width: 0; }
 .formulario-linha input[type="password"], .formulario-linha input[type="text"] { width: 10rem; }
+.cartao-senha { max-width: 34rem; }
+.formulario-senha { display: grid; gap: .8rem; margin-bottom: 1rem; }
+.formulario-senha .botao { justify-self: start; }
 .tabela-usuarios td { vertical-align: top; }
 .tabela-usuarios .ajuda { display: block; font-size: .78rem; }
 .linha-desligada td { opacity: .6; }
@@ -1957,10 +1966,17 @@ input[type=text].campo-quantidade {
   background: var(--cor-erro-fraca); border-left: 4px solid var(--cor-erro);
   color: var(--cor-erro);
 }
+.aviso-aprovacao {
+  margin: .75rem 0 0; padding: .7rem .9rem; border-radius: var(--raio);
+  background: var(--cor-alerta-fraca); border-left: 4px solid var(--cor-alerta);
+}
+.aviso-aprovacao p { margin: 0; }
+.aviso-aprovacao form { margin: .7rem 0 0; }
 
 @media (max-width: 40rem) {
   .acoes-do-pedido { flex-direction: column; align-items: stretch; }
   .acoes-do-pedido .botao, .acoes-do-pedido form, .acoes-do-pedido button { width: 100%; }
+  .aviso-aprovacao .botao { width: 100%; }
   /* No cartão a tabela já alinha à esquerda; o campo acompanha. */
   input[type=text].campo-quantidade { text-align: left; }
 }
