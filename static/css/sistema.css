@@ -1968,3 +1968,434 @@ input[type=text].campo-quantidade {
 /* A conta da reposição por extenso (1.36.0, seção 4 do pedido de 20/10/2026): são os
    números de apoio, não a decisão, então ficam no tom mais suave da linha. */
 .conta-da-reposicao { color: var(--cor-texto-suave); font-size: .78rem; }
+
+/* -------------------------------------------------------- dashboard em quadros */
+/* O Dashboard no jeito do Grafana (1.41.0), a partir do print que o Edson mandou de
+   modelo em 31/10/2026. Tudo aqui tem o prefixo `monitor-`: classe nova pede nome
+   próprio, e esta tela é a única de fundo escuro do sistema.
+
+   As cores de situação são as do Grafana, e significam o mesmo em todo quadro: verde é
+   bom, laranja pede atenção, vermelho pede ação, azul é número sem juízo. Escrito junto
+   da cor sempre vai a palavra ou a seta (regra do topo deste arquivo). As cores das
+   fatias de gráfico são trocadas aqui dentro: as de fora são escuras para papel creme e
+   sumiriam no fundo escuro. */
+.corpo-monitor {
+  --mon-fundo: #13110f;
+  --mon-quadro: #1c1916;
+  --mon-borda: #312a24;
+  --mon-grade: #2a241f;
+  --mon-texto: #ece4da;
+  --mon-texto-suave: #a99d8f;
+  --mon-verde: #73bf69;
+  --mon-laranja: #ff9830;
+  --mon-vermelho: #f2495c;
+  --mon-azul: #5794f2;
+  --mon-amarelo: #fade2a;
+  --mon-roxo: #b877d9;
+  --cor-fatia-1: #73bf69;
+  --cor-fatia-2: #5794f2;
+  --cor-fatia-3: #ff9830;
+  --cor-fatia-4: #b877d9;
+  --cor-fatia-5: #fade2a;
+  --cor-fatia-6: #3fb6b2;
+  --cor-fatia-7: #ff7383;
+  --cor-fatia-8: #c9a36a;
+  --cor-fatia-9: #6e655c;
+  background: var(--mon-fundo);
+  color: var(--mon-texto);
+}
+.corpo-monitor .faixa-aviso { background: #1a1714; border-bottom-color: var(--mon-borda); }
+.corpo-monitor .aviso-usuario { color: var(--mon-texto-suave); }
+.corpo-monitor .rodape { color: var(--mon-texto-suave); border-top-color: var(--mon-borda); }
+.corpo-monitor .navegacao-telas { border-top-color: var(--mon-borda); }
+.corpo-monitor .navegacao-telas a {
+  background: var(--mon-quadro); border-color: var(--mon-borda); color: var(--mon-texto);
+}
+.corpo-monitor .navegacao-telas a:hover { background: #26211c; border-color: var(--mon-texto-suave); }
+/* Só dentro do Dashboard: o menu de cima continua com as cores de todas as telas. */
+.monitor a { color: #8ab8ff; }
+
+.monitor { container-type: inline-size; }
+.monitor-cabeca {
+  display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: center; justify-content: space-between;
+  margin-bottom: .75rem;
+}
+.monitor-cabeca h1 { color: var(--mon-texto); font-size: 1.6rem; margin: 0; }
+.monitor-cabeca-sub { margin: 0; color: var(--mon-texto-suave); font-size: .9rem; }
+.monitor-dados {
+  display: flex; gap: .6rem; align-items: flex-start; margin: 0; max-width: 36rem;
+  padding: .5rem .8rem; border: 1px solid var(--mon-borda); border-radius: 6px;
+  background: var(--mon-quadro); font-size: .85rem;
+}
+.monitor-dados i {
+  flex: 0 0 auto; width: .7rem; height: .7rem; margin-top: .35rem; border-radius: 50%;
+  background: var(--mon-verde);
+}
+.monitor-dados-atencao i { background: var(--mon-laranja); }
+.monitor-dados-vencido i, .monitor-dados-sem_dados i { background: var(--mon-vermelho); }
+.monitor-dados strong { display: block; }
+.monitor-dados small { display: block; color: var(--mon-texto-suave); font-size: .78rem; line-height: 1.4; }
+
+/* Os filtros como as variáveis do Grafana: o nome numa etiqueta e o campo colado nela. */
+.monitor-filtros {
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: 0 0 .9rem;
+}
+.monitor-filtros .monitor-variavel {
+  display: inline-flex; align-items: stretch; margin: 0; font-weight: 400;
+  border: 1px solid var(--mon-borda); border-radius: 4px; overflow: hidden;
+}
+.monitor-variavel > span {
+  display: flex; align-items: center; padding: 0 .65rem; font-size: .85rem;
+  background: #24201b; color: #8ab8ff; border-right: 1px solid var(--mon-borda);
+}
+.monitor-filtros select {
+  width: auto; max-width: 15rem; min-height: 38px; margin: 0; padding: .3rem 1.9rem .3rem .6rem;
+  border: 0; border-radius: 0; background-color: var(--mon-quadro); color: var(--mon-texto);
+  font-size: .9rem;
+}
+.monitor-botao {
+  min-height: 40px; padding: .35rem 1rem; border-radius: 4px; cursor: pointer; font: inherit;
+  font-weight: 600; font-size: .9rem; color: var(--mon-texto); background: #2a3a55;
+  border: 1px solid #3c5a8a;
+}
+.monitor-botao:hover { background: #33496b; }
+.monitor-limpar { font-size: .88rem; }
+.monitor-filtros-nota {
+  flex-basis: 100%; margin: 0; font-size: .78rem; color: var(--mon-texto-suave);
+}
+
+/* A grade: doze colunas no computador, como a do Grafana. */
+.monitor-grade {
+  display: grid; gap: .6rem; grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: stretch;
+}
+.monitor-quadro {
+  position: relative; min-width: 0; margin: 0;
+  background: var(--mon-quadro); border: 1px solid var(--mon-borda); border-radius: 4px;
+  padding: .55rem .75rem .7rem; color: var(--mon-texto);
+}
+.monitor-vazio h2 { color: var(--mon-texto); }
+.monitor-titulo-linha { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.monitor-titulo {
+  margin: 0; font-family: var(--fonte-texto); font-size: .88rem; font-weight: 600;
+  color: var(--mon-texto); letter-spacing: 0; line-height: 1.3;
+}
+.monitor-sub { display: block; font-size: .78rem; color: var(--mon-texto-suave); line-height: 1.35; }
+.monitor-centro { text-align: center; }
+
+/* O "i" de cada quadro. O alvo de toque tem 44px, o círculo desenhado tem 20. */
+.monitor-info { margin: 0; flex: 0 0 auto; }
+.monitor-info > summary {
+  min-height: 44px; min-width: 44px; margin: -.55rem -.6rem -.55rem 0; justify-content: center;
+  list-style: none; font-weight: 600;
+}
+.monitor-info > summary::-webkit-details-marker { display: none; }
+.monitor-info > summary > span[aria-hidden] {
+  display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px;
+  border-radius: 50%; border: 1px solid var(--mon-texto-suave); color: var(--mon-texto-suave);
+  font: italic 700 .72rem/1 Georgia, serif;
+}
+.monitor-info[open] > summary > span[aria-hidden],
+.monitor-info > summary:hover > span[aria-hidden] { border-color: var(--mon-texto); color: var(--mon-texto); }
+/* O quadro com o "i" aberto passa na frente dos vizinhos, senão o texto some atrás do
+   quadro de baixo. */
+.monitor-quadro:has(.monitor-info[open]) { z-index: 6; }
+.monitor-info-texto {
+  position: absolute; z-index: 5; left: .5rem; right: .5rem; top: 2.4rem;
+  padding: .65rem .8rem; border-radius: 4px; font-size: .82rem; line-height: 1.45;
+  background: #2a2520; border: 1px solid #4a4038; color: var(--mon-texto);
+  box-shadow: 0 .4rem 1.2rem rgba(0, 0, 0, .45);
+}
+
+/* Os números do topo. O tamanho sai da largura do QUADRO (cqi), não da tela. */
+.monitor-numero {
+  grid-column: span 2; container-type: inline-size;
+  display: flex; flex-direction: column; gap: .1rem; min-height: 8.6rem; padding-bottom: 0;
+  --mon-cor: var(--mon-azul);
+}
+.monitor-numero .monitor-titulo { color: var(--mon-texto); }
+/* Título de duas linhas ("Cobertura do estoque") não pode empurrar o número dele para
+   baixo do dos vizinhos: a linha do título tem sempre a altura de duas. */
+.monitor-numero .monitor-titulo-linha { min-height: 2.45rem; align-items: flex-start; }
+/* O tamanho do número é a largura do quadro dividida pelas letras dele (--letras vem do
+   Python): "R$ 1.538.337,98" saía cortado no tamanho de "16.361". */
+.monitor-valor, .monitor-palavra {
+  font-size: 1.5rem;
+  font-size: clamp(.9rem, calc(155cqi / var(--letras, 8)), 2.1rem);
+  font-weight: 600; line-height: 1.15;
+  font-variant-numeric: tabular-nums; color: var(--mon-texto); white-space: nowrap;
+}
+/* A caixa do número tem a mesma altura em todo quadro e o número senta no pé dela: o
+   número menor não sobe a linha de baixo, e as seis linhas "12 meses até" ficam alinhadas. */
+.monitor-valor { display: flex; align-items: flex-end; min-height: 2.5rem; }
+.monitor-palavra { display: flex; align-items: center; gap: .4rem; min-height: 2.5rem; }
+.monitor-palavra-icone {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 2px solid currentColor;
+  font-size: .85rem; font-weight: 700;
+}
+.monitor-numero .monitor-sub { margin-top: .1rem; }
+.monitor-variacao { font-weight: 700; }
+.monitor-bom { --mon-cor: var(--mon-verde); }
+.monitor-ruim { --mon-cor: var(--mon-vermelho); }
+.monitor-atencao { --mon-cor: var(--mon-laranja); }
+.monitor-bom .monitor-valor, .monitor-bom .monitor-palavra, .monitor-bom .monitor-variacao { color: var(--mon-verde); }
+.monitor-ruim .monitor-valor, .monitor-ruim .monitor-palavra, .monitor-ruim .monitor-variacao { color: var(--mon-vermelho); }
+.monitor-atencao .monitor-valor, .monitor-atencao .monitor-palavra, .monitor-atencao .monitor-variacao { color: var(--mon-laranja); }
+/* O minigráfico encosta no pé do quadro, de borda a borda, como no Grafana. */
+.monitor-faisca {
+  display: block; width: calc(100% + 1.5rem); height: 2.3rem; margin: auto -.75rem 0;
+  border-radius: 0 0 3px 3px;
+}
+.monitor-faisca-linha {
+  fill: none; stroke: var(--mon-cor); stroke-width: 1.6; vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+.monitor-faisca-area { fill: var(--mon-cor); opacity: .16; }
+a.monitor-situacao { text-decoration: none; color: var(--mon-texto); padding-bottom: .7rem; }
+a.monitor-situacao:hover { border-color: var(--mon-texto-suave); }
+a.monitor-situacao .monitor-sub { margin-top: auto; }
+
+/* A linha do tempo e a coluna do mostrador e das roscas. */
+.monitor-meses { grid-column: span 8; display: flex; flex-direction: column; }
+.monitor-coluna { grid-column: span 4; display: grid; gap: .6rem; min-width: 0; }
+.monitor-tempo {
+  display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); grid-template-rows: 1fr auto;
+  flex: 1 1 auto; min-height: 17rem; margin-top: .5rem;
+}
+.monitor-tempo-eixo { position: relative; grid-row: 1; grid-column: 1; }
+.monitor-tempo-eixo span {
+  position: absolute; right: .5rem; transform: translateY(50%);
+  font-size: .72rem; color: var(--mon-texto-suave); white-space: nowrap;
+}
+.monitor-tempo-desenho { position: relative; grid-row: 1; grid-column: 2; min-height: 13rem; }
+.monitor-tempo-desenho svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.monitor-tempo-grade { stroke: var(--mon-grade); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.monitor-tempo-area { fill: url(#monitor-degrade-meses); }
+.monitor-tempo-agora, .monitor-tempo-antes, .monitor-tempo-parcial {
+  fill: none; stroke-width: 2.2; vector-effect: non-scaling-stroke; stroke-linejoin: round;
+}
+.monitor-tempo-agora { stroke: var(--mon-verde); }
+.monitor-tempo-parcial { stroke: var(--mon-verde); stroke-dasharray: 6 5; }
+.monitor-tempo-antes { stroke: var(--mon-laranja); opacity: .9; }
+/* A dica de cada mês: uma coluna invisível por cima do desenho, com o valor no title. */
+.monitor-tempo-dicas {
+  position: absolute; inset: 0; display: grid; margin: 0; padding: 0; list-style: none;
+}
+.monitor-tempo-dicas li:hover { background: rgba(255, 255, 255, .05); }
+.monitor-tempo-meses {
+  grid-row: 2; grid-column: 2; display: grid; margin: .35rem 0 0; padding: 0; list-style: none;
+  text-align: center; font-size: .72rem; color: var(--mon-texto-suave);
+}
+.monitor-tempo-meses li { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.monitor-tempo-meses small { font-size: .7rem; font-weight: 600; }
+.monitor-mes-curto { display: none; }
+.monitor-variacao-bom { color: var(--mon-verde); }
+.monitor-variacao-ruim { color: var(--mon-vermelho); }
+.monitor-variacao-neutro { color: var(--mon-texto-suave); }
+.monitor-legenda-linhas {
+  display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; margin: .5rem 0 0 4.6rem;
+  font-size: .78rem; color: var(--mon-texto-suave);
+}
+.monitor-legenda-linhas span { display: inline-flex; align-items: center; gap: .4rem; }
+.monitor-legenda-linhas i { display: inline-block; width: 1.4rem; height: 0; border-top: 3px solid var(--mon-verde); }
+.monitor-legenda-linhas .monitor-traco-antes { border-top-color: var(--mon-laranja); }
+.monitor-legenda-linhas .monitor-traco-parcial { border-top: 3px dashed var(--mon-verde); }
+
+/* O mostrador da margem: meia-volta, como o "Disponibilidade" do modelo. */
+.monitor-mostrador { position: relative; width: min(100%, 15rem); margin: .3rem auto 0; }
+.monitor-mostrador svg { display: block; width: 100%; height: auto; }
+.monitor-mostrador-fundo, .monitor-mostrador-valor { fill: none; stroke-width: 11; stroke-linecap: butt; }
+.monitor-mostrador-fundo { stroke: var(--mon-grade); }
+.monitor-mostrador-valor { stroke: var(--mon-azul); }
+.monitor-mostrador-numero {
+  position: absolute; left: 0; right: 0; bottom: .1rem; text-align: center;
+  font-size: clamp(1.4rem, 9cqi, 2rem); font-weight: 600; color: var(--mon-texto);
+}
+
+/* As roscas com a legenda ao lado. */
+.monitor-rosca { display: flex; align-items: center; gap: .9rem; margin-top: .45rem; }
+.monitor-rosca-desenho { position: relative; flex: 0 0 6.4rem; width: 6.4rem; }
+.monitor-rosca-desenho svg { display: block; width: 100%; height: auto; transform: none; }
+.monitor-rosca-fundo { fill: none; stroke: var(--mon-grade); stroke-width: 5.5; }
+.monitor-rosca-fatia { fill: none; stroke-width: 5.5; }
+.monitor-rosca-centro {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; line-height: 1.1;
+}
+.monitor-rosca-centro strong { font-size: .98rem; }
+.monitor-rosca-centro small { font-size: .66rem; color: var(--mon-texto-suave); }
+.monitor-legenda {
+  flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; list-style: none; font-size: .78rem;
+  container-type: inline-size;
+}
+/* Nome e valor na mesma linha quando cabem; quando não cabem, o valor desce para a linha
+   de baixo, encostado à direita. Antes o nome era cortado ("C", "Vende...") e a forma de
+   pagamento ficava sem nome. */
+.monitor-legenda li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .45rem; padding: .14rem 0;
+  line-height: 1.3;
+}
+.monitor-legenda i { flex: 0 0 .7rem; height: .7rem; border-radius: 2px; align-self: flex-start; margin-top: .2rem; }
+.monitor-legenda-nome { flex: 1 1 auto; min-width: 0; }
+.monitor-legenda-valor {
+  margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--mon-texto);
+}
+.monitor-legenda-valor small { color: var(--mon-texto-suave); }
+/* Legenda estreita (celular, quadro pequeno): todo valor em reais ou em produtos desce
+   para baixo do nome, e não só o que não coube. Um sim e outro não parecia desalinhado. */
+@container (max-width: 18rem) {
+  .monitor-legenda-reais .monitor-legenda-valor,
+  .monitor-legenda-contagem .monitor-legenda-valor { flex-basis: 100%; margin-left: 0; padding-left: 1.15rem; }
+}
+
+/* Quatro quadros pequenos: dia da semana, hora, forma de pagamento e grupos. */
+.monitor-quarto { grid-column: span 3; }
+.monitor-colunas {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: .35rem;
+  margin: .5rem 0 0; padding: 0; list-style: none; height: 11rem;
+}
+.monitor-colunas li { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.monitor-colunas-fatia { font-size: .7rem; color: var(--mon-texto-suave); font-variant-numeric: tabular-nums; }
+.monitor-colunas-trilho {
+  flex: 1 1 auto; width: 100%; display: flex; align-items: flex-end;
+  border-bottom: 1px solid var(--mon-grade);
+}
+.monitor-colunas-barra {
+  display: block; width: 100%; min-height: 2px; border-radius: 2px 2px 0 0;
+  background: var(--mon-azul);
+}
+.monitor-colunas-barra-hora { background: var(--mon-roxo); }
+.monitor-colunas-nome {
+  margin-top: .25rem; font-size: .74rem; text-align: center; line-height: 1.2;
+  max-width: 100%; overflow-wrap: anywhere;
+}
+.monitor-colunas-nome small { display: block; font-size: .64rem; color: var(--mon-texto-suave); }
+/* As barras sentam todas na mesma linha de base: com cada coluna sozinha, o nome de duas
+   linhas ("Fim do dia / 17h em diante") encurtava só a barra dele, e barra de base
+   diferente não se compara (a mesma lição do mês parcial no gráfico de antes). A grade de
+   fora manda a altura das três faixas — porcentagem, barra e nome — em todas as colunas. */
+@supports (grid-template-rows: subgrid) {
+  .monitor-colunas { grid-template-rows: auto minmax(0, 1fr) auto; gap: 0 .35rem; }
+  .monitor-colunas li { display: grid; grid-row: span 3; grid-template-rows: subgrid; justify-items: center; }
+  .monitor-colunas-trilho { align-self: stretch; }
+}
+
+/* O que fazer agora, no lugar dos "Problemas recentes" do modelo. */
+.monitor-problemas { grid-column: span 8; }
+.monitor-lista-problemas { margin: .45rem 0 0; padding: 0; list-style: none; font-size: .84rem; }
+.monitor-lista-problemas li {
+  display: grid; grid-template-columns: 6.6rem minmax(0, 1fr) auto; gap: .3rem .9rem;
+  align-items: center; padding: .45rem .2rem; border-top: 1px solid var(--mon-grade);
+}
+.monitor-lista-problemas li.monitor-lista-cabeca {
+  border-top: 0; padding-top: 0; font-size: .74rem; color: var(--mon-texto-suave); font-weight: 600;
+}
+.monitor-problema strong { display: block; font-weight: 600; }
+.monitor-problema small { display: block; color: var(--mon-texto-suave); font-size: .78rem; line-height: 1.35; }
+.monitor-lista-problemas a { white-space: nowrap; font-size: .82rem; }
+.monitor-selo {
+  display: inline-block; padding: .1rem .5rem; border-radius: 3px; font-size: .74rem; font-weight: 700;
+  color: #1b1713; background: var(--mon-azul);
+}
+.monitor-selo-ruim { background: var(--mon-vermelho); color: #fff; }
+.monitor-selo-atencao { background: var(--mon-laranja); }
+.monitor-selo-neutro { background: #3a332c; color: var(--mon-texto); }
+
+/* Barras deitadas: curva ABC e campeões, como o "Top 5" do modelo. */
+.monitor-abc { grid-column: span 4; }
+.monitor-abc-frase { margin: .4rem 0 .2rem; font-size: .84rem; color: var(--mon-texto-suave); }
+.monitor-abc-frase strong { color: var(--mon-texto); }
+.monitor-metade { grid-column: span 6; }
+.monitor-barras { margin: .4rem 0 0; padding: 0; list-style: none; font-size: .82rem; }
+/* A coluna do valor tem largura fixa: com "auto", cada linha media a sua e as barras
+   terminavam cada uma num lugar, o que desmente a comparação entre elas. */
+.monitor-barras li {
+  display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) 7.6rem; gap: .15rem .7rem;
+  align-items: center; padding: .28rem 0;
+}
+.monitor-barras-nome { min-width: 0; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.monitor-barras-nome small {
+  display: block; color: var(--mon-texto-suave); font-size: .72rem;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.monitor-barras-trilho { height: .8rem; border-radius: 2px; background: var(--mon-grade); overflow: hidden; }
+.monitor-barras-preenchida { display: block; height: 100%; background: var(--mon-verde); }
+.monitor-barras-margem { background: var(--mon-azul); }
+.monitor-abc-a { background: var(--mon-verde); }
+.monitor-abc-b { background: var(--mon-amarelo); }
+.monitor-abc-c { background: var(--mon-laranja); }
+.monitor-barras-valor { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; text-align: right; }
+.monitor-abc .monitor-barras li { grid-template-columns: minmax(0, 1fr) 8.6rem; }
+.monitor-abc .monitor-barras-nome { grid-column: 1 / -1; white-space: normal; }
+.monitor-rodape { margin: .8rem 0 0; font-size: .78rem; color: var(--mon-texto-suave); }
+
+/* O valor de cada mês, recolhido embaixo da linha do tempo. */
+.monitor-detalhe { margin: .5rem 0 0; }
+.monitor-detalhe > summary {
+  list-style: none; gap: .45rem; font-size: .82rem; color: #8ab8ff;
+}
+.monitor-detalhe > summary::-webkit-details-marker { display: none; }
+.monitor-detalhe > summary::before { content: "\25B8"; color: var(--mon-texto-suave); }
+.monitor-detalhe[open] > summary::before { content: "\25BE"; }
+.monitor-tabela-area { position: relative; overflow-x: auto; max-width: 100%; }
+.monitor-tabela { font-size: .8rem; }
+.monitor-tabela th, .monitor-tabela td {
+  padding: .32rem .5rem; border-bottom: 1px solid var(--mon-grade); vertical-align: middle;
+}
+.monitor-tabela thead th {
+  background: transparent; color: var(--mon-texto-suave); font-size: .72rem;
+  text-transform: none; letter-spacing: 0; border-bottom-color: var(--mon-borda);
+}
+.monitor-tabela tbody tr:nth-child(even) { background: rgba(255, 255, 255, .025); }
+.monitor-tabela tbody tr:hover { background: rgba(255, 255, 255, .06); }
+.monitor-tabela tbody th { font-weight: 600; }
+.monitor-tabela tbody th small { display: block; font-weight: 400; font-size: .7rem; color: var(--mon-texto-suave); }
+.monitor-tabela-nota { margin: .4rem 0 0; font-size: .74rem; color: var(--mon-texto-suave); }
+
+/* Tela de notebook: os seis números em duas fileiras de três, senão o faturamento não
+   cabe com letra que se leia. */
+@media (max-width: 80rem) {
+  .monitor-numero { grid-column: span 4; min-height: 7.8rem; }
+}
+
+/* Tela média: três números por fileira, a coluna do mostrador deita embaixo da linha do
+   tempo, e os quadros pequenos ficam dois a dois. */
+@media (max-width: 64rem) {
+  .monitor-numero { grid-column: span 4; }
+  .monitor-meses, .monitor-coluna, .monitor-problemas, .monitor-abc { grid-column: span 12; }
+  .monitor-coluna { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .monitor-quarto, .monitor-metade { grid-column: span 6; }
+}
+/* Celular: dois números por fileira (a situação e o faturamento inteiros), o resto em
+   uma coluna. A grade é minmax(0, 1fr), nunca 1fr (lição de CSS já paga). */
+@media (max-width: 40rem) {
+  .monitor-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+  .monitor-numero { grid-column: span 1; min-height: 7.6rem; }
+  .monitor-situacao, .monitor-numero:nth-child(2) { grid-column: span 2; }
+  .monitor-meses, .monitor-coluna, .monitor-problemas, .monitor-abc,
+  .monitor-quarto, .monitor-metade { grid-column: span 2; }
+  .monitor-coluna { grid-template-columns: minmax(0, 1fr); }
+  .monitor-tempo { grid-template-columns: 3.4rem minmax(0, 1fr); min-height: 14rem; }
+  .monitor-tempo-eixo span { font-size: .64rem; right: .3rem; }
+  .monitor-legenda-linhas { margin-left: 0; }
+  .monitor-mes-longo { display: none; }
+  .monitor-mes-curto { display: block; }
+  /* Treze meses em 300 px: um nome sim, um não, contando do último, que sempre aparece.
+     A variação de cada mês fica na tabela "Ver o valor de cada mês". */
+  .monitor-tempo-meses li:nth-last-child(even) .monitor-mes-curto { visibility: hidden; }
+  .monitor-tempo-meses small { display: none; }
+  .monitor-tabela { font-size: .74rem; }
+  .monitor-tabela th, .monitor-tabela td { padding: .3rem .28rem; }
+  .monitor-lista-problemas li { grid-template-columns: minmax(0, 1fr) auto; }
+  .monitor-lista-problemas li.monitor-lista-cabeca { display: none; }
+  .monitor-lista-problemas .monitor-problema { grid-column: 1 / -1; grid-row: 2; }
+  .monitor-barras li { grid-template-columns: minmax(0, 1fr) 7.6rem; }
+  .monitor-abc .monitor-barras li { grid-template-columns: minmax(0, 1fr) 8.6rem; }
+  .monitor-barras-nome { grid-column: 1 / -1; white-space: normal; }
+  .monitor-filtros .monitor-variavel { flex: 1 1 100%; }
+  /* min-width 0: sem ele o campo do fornecedor ficava da largura do nome mais comprido
+     e a seta saía da tela. */
+  .monitor-filtros select { flex: 1 1 0%; min-width: 0; max-width: none; }
+  .monitor-dados { max-width: none; width: 100%; }
+}

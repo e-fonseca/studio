@@ -421,20 +421,16 @@ def _hora(momento, dia):
     return f"{local:%H:%M}" if local.date() == dia else f"{local:%d/%m %H:%M}"
 
 
-# Os nomes do SET como a loja fala deles, e a ordem em que o Edson os pediu.
-NOME_DA_FORMA = {"PIX": "PIX", "CARTAO DEBITO": "Cartão de débito",
-                 "CARTAO CREDITO": "Cartão de crédito"}
-
-
 def _formas_fora_da_gaveta(caixa):
     """PIX, débito e crédito nessa ordem, depois o que mais o SET tiver, do maior valor."""
+    ordem_pedida = list(dinheiro.NOME_DA_FORMA)
     linhas = []
     for nome, valor in (caixa.por_forma or {}).items():
         if dinheiro.classificar(nome) == "dinheiro":
             continue
         chave = dinheiro._chave(nome)
-        rotulo = NOME_DA_FORMA.get(chave, nome or "sem forma gravada")
-        ordem = list(NOME_DA_FORMA).index(chave) if chave in NOME_DA_FORMA else len(NOME_DA_FORMA)
+        rotulo = dinheiro.nome_da_forma(nome)
+        ordem = ordem_pedida.index(chave) if chave in ordem_pedida else len(ordem_pedida)
         if dinheiro.classificar(nome) == "desconhecida":
             rotulo += " (forma que o sistema não conhece, fora da conta do dinheiro)"
         linhas.append((ordem, -Decimal(valor or 0), rotulo, Decimal(valor or 0)))

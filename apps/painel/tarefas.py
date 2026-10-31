@@ -51,6 +51,11 @@ class Tarefa:
     def endereco(self):
         return reverse(self.rota) + (self.parametros or "")
 
+    @property
+    def gravidade(self):
+        """A palavra do nível, para o quadro de problemas do Dashboard."""
+        return NOME_DO_NIVEL.get(self.nivel, "")
+
 
 @dataclass
 class Agenda:
@@ -220,6 +225,60 @@ def montar(estado, importacao=None, resumo_financeiro=None, lista=None, usuario=
 
     agenda.tarefas.sort(key=lambda t: PESO.get(t.nivel, 3))
     return para(agenda, usuario)
+
+
+# O nome de cada nível no quadro de problemas do Dashboard, que é a lista desta mesma
+# agenda com a gravidade escrita ao lado, como o "Problemas recentes" do Grafana.
+NOME_DO_NIVEL = {URGENTE: "Urgente", ATENCAO: "Atenção", NORMAL: "Para fazer"}
+
+
+@dataclass
+class Situacao:
+    """O quadro "Situação da loja" do Dashboard: a agenda resumida numa palavra.
+
+    A palavra é a do item mais grave da lista que ESTA pessoa vê, e a frase embaixo
+    conta quantos há de cada nível. Não é um juízo novo sobre a loja: é a mesma agenda
+    da Visão geral, com as mesmas regras e as mesmas permissões.
+    """
+
+    nivel: str = "bom"
+    palavra: str = "Tudo em dia"
+    urgentes: int = 0
+    atencao: int = 0
+    para_fazer: int = 0
+
+    @property
+    def frase(self):
+        partes = []
+        if self.urgentes:
+            partes.append(f"{self.urgentes} urgente{'' if self.urgentes == 1 else 's'}")
+        if self.atencao:
+            partes.append(f"{self.atencao} de atenção")
+        if self.para_fazer:
+            partes.append(f"{self.para_fazer} para fazer")
+        return " · ".join(partes) if partes else "Nada pedindo ação agora."
+
+    @property
+    def letras(self):
+        """Para o quadro escolher o tamanho da palavra, como nos números (o símbolo do
+        lado conta como duas letras)."""
+        return len(self.palavra) + 2
+
+
+def situacao(agenda):
+    urgentes = sum(1 for t in agenda.tarefas if t.nivel == URGENTE)
+    atencao = sum(1 for t in agenda.tarefas if t.nivel == ATENCAO)
+    para_fazer = sum(1 for t in agenda.tarefas if t.nivel == NORMAL)
+    if urgentes:
+        nivel, palavra = "ruim", "Urgente"
+    elif atencao:
+        nivel, palavra = "atencao", "Atenção"
+    else:
+        # Só tarefa sem pressa (prazo de fornecedor, contagem aberta) não é problema: a
+        # loja está em dia, e a frase embaixo diz o que há para fazer quando der.
+        nivel, palavra = "bom", "Tudo em dia"
+    return Situacao(nivel=nivel, palavra=palavra, urgentes=urgentes, atencao=atencao,
+                    para_fazer=para_fazer)
 
 
 def para(agenda, usuario):

@@ -165,7 +165,10 @@ class TestFiltrosDasContasAPagar(TestCase):
     """Os filtros que a gerência pediu: atrasados, do dia, prestes, a vencer e futura."""
 
     def setUp(self):
-        self.hoje = date(2026, 9, 20)
+        # O dia de hoje de verdade, e não uma data fixa: a tela conta o atraso pelo relógio,
+        # e com 20/09/2026 a conta "LA NA FRENTE" (40 dias depois) venceu em 30/10/2026 e
+        # o teste da tela passou a falhar sozinho em 31/10/2026, sem mudança nenhuma no código.
+        self.hoje = timezone.localdate()
         self.importacao = Importacao.objects.create(
             origem=Importacao.Origem.BANCO,
             situacao=Importacao.Situacao.CONCLUIDA,

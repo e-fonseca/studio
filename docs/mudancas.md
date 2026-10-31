@@ -7,6 +7,29 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.41.0 — 31/10/2026
+
+Pedido dele, com o print de um painel do Grafana: *"adaptar os recursos de grafana no
+dashbord / a visualização fica bem bonita e facil de entender"*.
+
+- **O Dashboard ganhou o jeito do Grafana**, na mesma tela e no mesmo menu: fundo escuro,
+  quadros numa grade, o número grande na cor da situação (verde bom, laranja atenção,
+  vermelho ruim) com um minigráfico do período embaixo, o faturamento mês a mês em linha
+  (este ano e o ano passado), a margem num mostrador, roscas para ruptura, estoque
+  parado, forma de pagamento e grupos, e colunas para dia da semana e hora.
+- **Situação da loja**, o primeiro quadro: a palavra do item mais grave de "O que fazer
+  agora" (Urgente, Atenção ou Tudo em dia). Clicar leva à lista.
+- **O que fazer agora** também no Dashboard, com a gravidade escrita ao lado de cada item.
+  É a mesma lista da Visão geral, e cada um vê só o que o seu perfil abre.
+- As explicações de cada quadro foram para o **"i"** no canto, e o valor de cada mês, para
+  **"Ver o valor de cada mês"** embaixo da linha. Nada saiu da tela.
+- A forma de pagamento aparece com o nome da loja ("Cartão de crédito", "Dinheiro"), igual
+  ao e-mail do caixa.
+- Não é o Grafana instalado: seria um programa a mais no servidor, com senha e permissão à
+  parte e as contas copiadas, que um dia discordariam das do sistema. Ficaram de fora o
+  mapa do modelo e a atualização a cada 10 segundos.
+- Traz junto tudo da 1.40.2 à 1.40.6.
+
 ## 1.40.6 — 29/10/2026
 
 Pedido dele, antes de instalar a 1.40.5: *"inserir o total de vendas do dia, somando

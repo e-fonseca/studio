@@ -52,6 +52,20 @@ SEM_DINHEIRO = {
 }
 
 
+# Os nomes do SET como a loja fala deles, na ordem em que o Edson os pediu no e-mail do
+# caixa (29/10/2026). O dinheiro não está aqui porque o SET o chama de vários jeitos e
+# `classificar` já sabe todos: `nome_da_forma` devolve "Dinheiro" para qualquer um deles.
+NOME_DA_FORMA = {"PIX": "PIX", "CARTAO DEBITO": "Cartão de débito",
+                 "CARTAO CREDITO": "Cartão de crédito", "PRAZO": "A prazo"}
+
+
+def nome_da_forma(nome):
+    """"Cartão de crédito" no lugar de "CARTAO CREDITO", e "Dinheiro" no lugar de "AVISTA"."""
+    if classificar(nome) == "dinheiro":
+        return "Dinheiro"
+    return NOME_DA_FORMA.get(_chave(nome), nome or "sem forma gravada")
+
+
 def _chave(nome):
     """Sem acento, sem espaço sobrando e em maiúsculas, para comparar nome do SET."""
     texto = unicodedata.normalize("NFKD", (nome or "").strip().upper())

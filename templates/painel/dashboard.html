@@ -1,248 +1,363 @@
 {% extends "base.html" %}
 {% load cabana %}
+{% block classe_corpo %}corpo-monitor{% endblock %}
 {% block conteudo %}
+{% comment %}
+Dashboard no jeito do Grafana (1.41.0), pedido do Edson em 31/10/2026 com um print de
+modelo: "a visualização fica bem bonita e fácil de entender". Quadros escuros numa grade,
+o número grande na cor da situação, o minigráfico embaixo, a linha do tempo, o mostrador
+e as roscas, e a lista do que fazer com a gravidade escrita. As contas são as mesmas de
+antes (apps/painel/dashboard.py); as explicações longas foram para o "i" de cada quadro.
+{% endcomment %}
+<div class="monitor">
 
-<section class="abertura abertura-{{ estado.nivel }}">
+<header class="monitor-cabeca">
   <div>
     <h1>Dashboard</h1>
-    <p class="abertura-sub">Venda, margem, estoque e curva ABC, do jeito que o varejo olha</p>
+    <p class="monitor-cabeca-sub">Venda, margem e estoque da loja, em quadros</p>
   </div>
-  <div class="abertura-dados">
-    <strong>{{ estado.titulo }}</strong>
-    <span>{{ estado.detalhe }}</span>
-  </div>
-</section>
+  <p class="monitor-dados monitor-dados-{{ estado.nivel }}">
+    <i aria-hidden="true"></i>
+    <span><strong>{{ estado.titulo }}</strong>
+      <small>{{ estado.detalhe }}</small></span>
+  </p>
+</header>
 
 {% if not d.tem_dados %}
-<section class="cartao cartao-atencao">
+<section class="monitor-quadro monitor-vazio">
   <h2>Ainda não há dados para montar o dashboard</h2>
   <p>Os gráficos saem da última importação concluída. Assim que uma importação terminar,
      tudo aparece aqui.</p>
 </section>
 {% else %}
 
-<form method="get" class="filtros" role="search">
-  <label>Período da venda
+<form method="get" class="monitor-filtros" role="search">
+  <label class="monitor-variavel"><span>Período</span>
     <select name="periodo">
       {% for valor, rotulo, dias in periodos %}
       <option value="{{ valor }}" {% if valor == d.periodo %}selected{% endif %}>{{ rotulo }}</option>
       {% endfor %}
     </select></label>
-  <label>Grupo de produto
+  <label class="monitor-variavel"><span>Grupo</span>
     <select name="grupo">
       <option value="">Todos</option>
       {% for nome in d.grupos_disponiveis %}
       <option value="{{ nome }}" {% if nome == d.filtro_grupo %}selected{% endif %}>{{ nome }}</option>
       {% endfor %}
     </select></label>
-  <label>Fornecedor
+  <label class="monitor-variavel"><span>Fornecedor</span>
     <select name="fornecedor">
       <option value="">Todos</option>
       {% for nome in d.fornecedores_disponiveis %}
       <option value="{{ nome }}" {% if nome == d.filtro_fornecedor %}selected{% endif %}>{{ nome }}</option>
       {% endfor %}
     </select></label>
-  <button type="submit" class="botao secundario">Filtrar</button>
+  <button type="submit" class="monitor-botao">Filtrar</button>
   {% if d.filtrou_produto or d.periodo != "12m" %}
-  <a href="{% url 'painel:dashboard' %}">Limpar filtros</a>
+  <a class="monitor-limpar" href="{% url 'painel:dashboard' %}">Limpar filtros</a>
   {% endif %}
+  <p class="monitor-filtros-nota">Grupo e fornecedor filtram os quadros de produto e de
+    estoque. O SET registra a venda inteira e não o item vendido, então filtrar por grupo
+    ou por fornecedor não mexe neles: a venda é sempre a loja toda.</p>
 </form>
 
-<h2 class="secao-titulo">A venda no período</h2>
-<p class="ajuda">{{ d.rotulo_periodo }} até {{ d.ate|date:"d/m/Y" }}, com a seta comparando
-  com os {{ d.rotulo_periodo|lower }} anteriores. São {{ d.vendas_no_periodo|contagem }} vendas.
-  O SET registra a venda inteira e não o item vendido, então estes quatro números são
-  sempre da loja toda: filtrar por grupo ou por fornecedor não mexe neles.</p>
-<div class="cartoes-numero cartoes-quatro">
+<div class="monitor-grade">
+
+  {% comment %}Primeira fileira: os seis números, como a fileira de cima do Grafana.{% endcomment %}
+  <a class="monitor-quadro monitor-numero monitor-situacao monitor-{{ situacao.nivel }}" href="#o-que-fazer">
+    <div class="monitor-titulo-linha"><h2 class="monitor-titulo">Situação da loja</h2></div>
+    <strong class="monitor-palavra" style="--letras: {{ situacao.letras }}">{{ situacao.palavra }}
+      <span class="monitor-palavra-icone" aria-hidden="true">{% if situacao.nivel == "bom" %}✓{% elif situacao.nivel == "atencao" %}!{% else %}✕{% endif %}</span></strong>
+    <span class="monitor-sub">{{ situacao.frase }}</span>
+  </a>
+
   {% for k in d.kpis_da_venda %}
-  <div class="cartao-numero nivel-{{ k.nivel }}" title="{{ k.explicacao }}">
-    <span class="cartao-titulo">{{ k.rotulo }}</span>
-    <strong class="cartao-valor">{% include "painel/_valor_kpi.html" %}</strong>
-    {% if k.variacao != None %}
-    <span class="cartao-variacao variacao-{{ k.nivel }}">
-      {% if k.variacao > 0 %}▲{% elif k.variacao < 0 %}▼{% else %}■{% endif %}
-      {{ k.variacao|floatformat:"-1" }}%
-      <small>contra os {{ k.comparado_com }}</small>
-    </span>
-    {% endif %}
-    <span class="cartao-rodape">{{ k.explicacao }}</span>
-  </div>
-  {% endfor %}
-</div>
-
-<h2 class="secao-titulo">O estoque e a margem</h2>
-<p class="ajuda">Sempre sobre os últimos 12 meses, porque é assim que a venda por produto
-  vem da importação.
-  {% if d.filtrou_produto %}Filtrado: {{ d.produtos_no_filtro|contagem }} produto{{ d.produtos_no_filtro|pluralize }}{% if d.filtro_grupo %} do grupo {{ d.filtro_grupo }}{% endif %}{% if d.filtro_fornecedor %} de {{ d.filtro_fornecedor }}{% endif %}.{% else %}Toda a loja: {{ d.produtos_no_filtro|contagem }} produtos.{% endif %}</p>
-<div class="cartoes-numero cartoes-quatro">
-  {% for k in d.kpis_do_estoque %}
-  <div class="cartao-numero" title="{{ k.explicacao }}">
-    <span class="cartao-titulo">{{ k.rotulo }}</span>
-    <strong class="cartao-valor">{% include "painel/_valor_kpi.html" %}</strong>
-    <span class="cartao-rodape">{{ k.explicacao }}</span>
-  </div>
-  {% endfor %}
-</div>
-
-{% if d.meses %}
-<h2 class="secao-titulo">Faturamento mês a mês</h2>
-<p class="ajuda">Cada mês tem duas barras lado a lado: a cheia é este ano e a clara é o
-  mesmo mês do ano passado. Barra deste ano mais baixa que a clara é mês que vendeu menos
-  que no ano anterior. O último mês ainda está correndo: a barra é listrada e a comparação
-  é com o mesmo pedaço do ano passado, não com o mês inteiro.</p>
-<section class="cartao grafico-colunas">
-  <p class="legenda">
-    <span><i class="cor-venda"></i> Este ano</span>
-    <span><i class="marca-ano-passado"></i> Mesmo mês do ano passado</span>
-  </p>
-  <ul class="colunas">
-    {% for m in d.meses %}
-    <li class="coluna-mes{% if m.variacao != None and m.variacao < 0 %} coluna-mes-abaixo{% endif %}{% if m.parcial %} coluna-mes-parcial{% endif %}">
-      <span class="coluna-valor">{{ m.valor|reais }}</span>
-      {% comment %}As duas barras dividem o mesmo trilho e a mesma escala, por isso a
-      maior delas encosta no topo. Antes o ano passado era um risco pontilhado: ele
-      mandava na altura do gráfico sem aparecer como barra, então o mês mais forte do
-      ano ficava em três quartos do trilho e o gráfico parecia cortado.
-      {% endcomment %}
-      <span class="coluna-trilho">
-        <span class="coluna-barra coluna-barra-agora" style="height: {{ m.altura }}%"
-              title="{{ m.rotulo }}: {{ m.valor|reais }}{% if m.parcial %}, até o dia {{ m.dia_parcial }}{% endif %}"></span>
-        {% if m.altura_ano_passado != None %}
-        <span class="coluna-barra coluna-barra-antes" style="height: {{ m.altura_ano_passado }}%"
-              title="{{ m.rotulo|slice:':3' }} do ano passado{% if m.parcial %}, até o dia {{ m.dia_parcial }}{% endif %}: {{ m.valor_ano_passado|reais }}"></span>
-        {% else %}
-        <span class="coluna-barra coluna-barra-sem" title="Sem número do ano passado para comparar"></span>
-        {% endif %}
-      </span>
-      <span class="coluna-rotulo">{{ m.rotulo }}</span>
-      {% comment %}Sempre no ar, mesmo vazio: as colunas são alinhadas por baixo, e
-      uma linha a mais só na coluna do mês parcial levantava o trilho dela 14px — a
-      barra ficava fora da linha de base das outras e deixava de ser comparável.
-      {% endcomment %}
-      <span class="coluna-parcial">{% if m.parcial %}{{ m.ate_o_dia }}{% endif %}</span>
-      <span class="coluna-extra">{% if m.variacao != None %}{% if m.variacao > 0 %}+{% endif %}{{ m.variacao|floatformat:"-0" }}%{% else %}—{% endif %}</span>
-    </li>
-    {% endfor %}
-  </ul>
-</section>
-{% endif %}
-
-<div class="duas-colunas">
-  {% if d.grupos %}
-  <section class="cartao">
-    <h2>De onde vem o faturamento</h2>
-    <p class="ajuda">Participação de cada grupo de produto nos 12 meses.</p>
-    <div class="rosca-area">
-      {# Rosca em SVG, sem biblioteca: o sistema roda na loja e não depende da internet. #}
-      <svg class="rosca" viewBox="0 0 42 42" role="img" aria-label="Participação por grupo de produto">
-        <circle class="rosca-fundo" cx="21" cy="21" r="15.9155"></circle>
-        {% for g in d.grupos %}
-        <circle class="rosca-fatia" cx="21" cy="21" r="15.9155"
-                style="stroke: var({{ g.cor }}); stroke-dasharray: {{ g.traco }}; stroke-dashoffset: {{ g.giro }}"></circle>
-        {% endfor %}
-      </svg>
-      <ul class="rosca-legenda">
-        {% for g in d.grupos %}
-        <li>
-          <i style="background: var({{ g.cor }})"></i>
-          <span class="rosca-nome">{{ g.nome }}</span>
-          <span class="rosca-valor">{{ g.fatia }}%</span>
-        </li>
-        {% endfor %}
-      </ul>
+  <div class="monitor-quadro monitor-numero monitor-{{ k.nivel }}">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">{{ k.rotulo }}</h2>
+      {% include "painel/_monitor_info.html" with nome=k.rotulo texto=k.explicacao %}
     </div>
+    <strong class="monitor-valor" style="--letras: {{ k.letras }}">{{ k.texto }}</strong>
+    <span class="monitor-sub">{% if k.variacao != None %}<span class="monitor-variacao">{% if k.variacao > 0 %}▲{% elif k.variacao < 0 %}▼{% else %}■{% endif %} {{ k.variacao|floatformat:"-1" }}%</span> contra os {{ k.comparado_com }}{% else %}{{ d.rotulo_periodo }} até {{ d.ate|date:"d/m/Y" }}{% endif %}</span>
+    {% if k.faisca.tem %}
+    <svg class="monitor-faisca" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+      <path class="monitor-faisca-area" d="{{ k.faisca.area }}"></path>
+      <path class="monitor-faisca-linha" d="{{ k.faisca.linha }}"></path>
+    </svg>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% for k in d.kpis_do_estoque %}{% if k.chave == "cobertura" %}
+  <div class="monitor-quadro monitor-numero monitor-{{ k.nivel }}">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">{{ k.rotulo }}</h2>
+      {% include "painel/_monitor_info.html" with nome=k.rotulo texto=k.explicacao %}
+    </div>
+    <strong class="monitor-valor" style="--letras: {{ k.letras }}">{{ k.texto }}</strong>
+    <span class="monitor-sub">{% if k.nivel == "atencao" %}acima de 3 meses é dinheiro parado{% else %}de venda, no ritmo de 12 meses{% endif %}</span>
+  </div>
+  {% endif %}{% endfor %}
+
+  {% comment %}Segunda fileira: a linha do tempo à esquerda e, à direita, o mostrador e
+  as duas roscas, como o mapa e os três quadros de situação do modelo.{% endcomment %}
+  {% if d.linha_dos_meses.tem %}
+  {% with g=d.linha_dos_meses %}
+  <section class="monitor-quadro monitor-meses" id="mes-a-mes">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">Faturamento mês a mês</h2>
+      {% include "painel/_monitor_info.html" with nome="o faturamento mês a mês" texto="Cada mês tem dois pontos: a linha verde é este ano e a laranja é o mesmo mês do ano passado. Linha verde abaixo da laranja é mês que vendeu menos que no ano anterior. O último mês ainda está correndo: o trecho dele é tracejado e a comparação é com o mesmo pedaço do ano passado, não com o mês inteiro. O valor de cada mês aparece com o mouse em cima e na tabela logo abaixo do gráfico." %}
+    </div>
+    <div class="monitor-tempo">
+      <div class="monitor-tempo-eixo" aria-hidden="true">
+        {% for m in g.marcas %}<span style="bottom: {{ m.altura }}%">{{ m.rotulo }}</span>{% endfor %}
+      </div>
+      <div class="monitor-tempo-desenho">
+        <svg viewBox="0 0 1000 300" preserveAspectRatio="none" role="img"
+             aria-label="Faturamento dos últimos {{ g.colunas }} meses, com o mesmo mês do ano passado">
+          <defs>
+            <linearGradient id="monitor-degrade-meses" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" style="stop-color: var(--mon-verde); stop-opacity: .32"></stop>
+              <stop offset="1" style="stop-color: var(--mon-verde); stop-opacity: 0"></stop>
+            </linearGradient>
+          </defs>
+          {% for m in g.marcas %}<line class="monitor-tempo-grade" x1="0" x2="1000" y1="{{ m.y }}" y2="{{ m.y }}"></line>{% endfor %}
+          <path class="monitor-tempo-area" d="{{ g.agora_area }}"></path>
+          {% if g.antes %}<path class="monitor-tempo-antes" d="{{ g.antes }}"></path>{% endif %}
+          <path class="monitor-tempo-agora" d="{{ g.agora }}"></path>
+          {% if g.parcial %}<path class="monitor-tempo-parcial" d="{{ g.parcial }}"></path>{% endif %}
+        </svg>
+        <ol class="monitor-tempo-dicas" style="grid-template-columns: repeat({{ g.colunas }}, minmax(0, 1fr))">
+          {% for m in d.meses %}<li title="{{ m.rotulo }}: {{ m.valor|reais }}{% if m.parcial %} até o dia {{ m.dia_parcial }}{% endif %}{% if m.valor_ano_passado != None %} · ano passado: {{ m.valor_ano_passado|reais }}{% endif %}"></li>{% endfor %}
+        </ol>
+      </div>
+      <ol class="monitor-tempo-meses" style="grid-template-columns: repeat({{ g.colunas }}, minmax(0, 1fr))">
+        {% for m in d.meses %}
+        <li><span class="monitor-mes-longo">{{ m.rotulo }}</span><span class="monitor-mes-curto">{{ m.rotulo|slice:":3" }}</span>
+          <small class="monitor-variacao-{% if m.variacao == None %}neutro{% elif m.variacao > 0 %}bom{% elif m.variacao < 0 %}ruim{% else %}neutro{% endif %}">{% if m.variacao != None %}{% if m.variacao > 0 %}+{% endif %}{{ m.variacao|floatformat:"0" }}%{% else %}—{% endif %}</small></li>
+        {% endfor %}
+      </ol>
+    </div>
+    <p class="monitor-legenda-linhas">
+      <span><i class="monitor-traco-agora" aria-hidden="true"></i> Este ano</span>
+      <span><i class="monitor-traco-antes" aria-hidden="true"></i> Mesmo mês do ano passado</span>
+      {% with ultimo=d.meses|last %}{% if ultimo.parcial %}<span><i class="monitor-traco-parcial" aria-hidden="true"></i> {{ ultimo.rotulo }} ainda corre ({{ ultimo.ate_o_dia }})</span>{% endif %}{% endwith %}
+    </p>
+    {% comment %}O gráfico de barras de antes escrevia o valor em cima de cada mês; a linha
+    só mostra no mouse, e o celular não tem mouse. Os números continuam aqui, recolhidos.
+    {% endcomment %}
+    <details class="monitor-detalhe">
+      <summary>Ver o valor de cada mês</summary>
+      <div class="monitor-tabela-area">
+        <table class="monitor-tabela">
+          <thead><tr><th scope="col">Mês</th><th scope="col" class="numerico">Este ano</th><th scope="col" class="numerico">Ano passado</th><th scope="col" class="numerico">Variação</th></tr></thead>
+          <tbody>
+            {% for m in d.meses %}
+            <tr>
+              <th scope="row">{{ m.rotulo }}{% if m.parcial %}<small>{{ m.ate_o_dia }}</small>{% endif %}</th>
+              <td class="numerico">{{ m.valor|reais }}</td>
+              <td class="numerico">{% if m.valor_ano_passado != None %}{{ m.valor_ano_passado|reais }}{% else %}—{% endif %}</td>
+              <td class="numerico monitor-variacao-{% if m.variacao == None %}neutro{% elif m.variacao > 0 %}bom{% elif m.variacao < 0 %}ruim{% else %}neutro{% endif %}">{% if m.variacao != None %}{% if m.variacao > 0 %}+{% endif %}{{ m.variacao|floatformat:"-1" }}%{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% with ultimo=d.meses|last %}{% if ultimo.parcial %}<p class="monitor-tabela-nota">{{ ultimo.rotulo }} ainda corre: este ano e o ano passado vão só até o dia {{ ultimo.dia_parcial }}, para a comparação ser do mesmo pedaço.</p>{% endif %}{% endwith %}
+    </details>
   </section>
+  {% endwith %}
   {% endif %}
 
+  <div class="monitor-coluna">
+    {% for k in d.kpis_do_estoque %}{% if k.chave == "margem" %}
+    <section class="monitor-quadro monitor-margem">
+      <div class="monitor-titulo-linha">
+        <h2 class="monitor-titulo">Margem bruta</h2>
+        {% include "painel/_monitor_info.html" with nome=k.rotulo texto=k.explicacao %}
+      </div>
+      <div class="monitor-mostrador">
+        <svg viewBox="0 0 120 66" role="img" aria-label="Margem bruta de {{ d.margem|floatformat:'-1' }}%">
+          <path class="monitor-mostrador-fundo" d="M10 60 A50 50 0 0 1 110 60" pathLength="100"></path>
+          <path class="monitor-mostrador-valor" d="M10 60 A50 50 0 0 1 110 60" pathLength="100"
+                style="stroke-dasharray: {{ d.margem_traco }}"></path>
+        </svg>
+        <strong class="monitor-mostrador-numero">{{ d.margem|floatformat:"-1" }}%</strong>
+      </div>
+      <p class="monitor-sub monitor-centro">do que vende fica depois do custo · 12 meses</p>
+    </section>
+    {% endif %}{% endfor %}
+
+    {% if d.rosca_da_ruptura.tem %}
+    <section class="monitor-quadro">
+      <div class="monitor-titulo-linha">
+        <h2 class="monitor-titulo">Produtos que venderam no ano</h2>
+        {% for k in d.kpis_do_estoque %}{% if k.chave == "ruptura" %}{% include "painel/_monitor_info.html" with nome="a ruptura" texto=k.explicacao %}{% endif %}{% endfor %}
+      </div>
+      {% include "painel/_monitor_rosca.html" with rosca=d.rosca_da_ruptura formato="contagem" descricao="Produtos que venderam no ano, com e sem saldo no SET" %}
+    </section>
+    {% endif %}
+
+    {% if d.rosca_do_estoque.tem %}
+    <section class="monitor-quadro">
+      <div class="monitor-titulo-linha">
+        <h2 class="monitor-titulo">Estoque ao custo</h2>
+        {% for k in d.kpis_do_estoque %}{% if k.chave == "parado" %}{% include "painel/_monitor_info.html" with nome="o estoque parado" texto=k.explicacao %}{% endif %}{% endfor %}
+      </div>
+      {% include "painel/_monitor_rosca.html" with rosca=d.rosca_do_estoque formato="reais" descricao="Estoque ao custo: o que vendeu no ano e o que está parado" %}
+    </section>
+    {% endif %}
+  </div>
+
+  {% comment %}Terceira fileira: quando e como a loja vende, quatro quadros pequenos como
+  os de CPU, memória, disco e rede do modelo.{% endcomment %}
+  <section class="monitor-quadro monitor-quarto">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">Dia da semana</h2>
+      {% include "painel/_monitor_info.html" with nome="o dia da semana" texto="Quanto do faturamento do período saiu em cada dia da semana. Sempre a loja toda: o SET não traz o item da venda." %}
+    </div>
+    {% if d.dias_da_semana %}
+    <ol class="monitor-colunas">
+      {% for b in d.dias_da_semana %}
+      <li title="{{ b.nome }}: {{ b.valor|reais }} ({{ b.fatia }}% do período)">
+        <span class="monitor-colunas-fatia">{{ b.fatia|floatformat:"0" }}%</span>
+        <span class="monitor-colunas-trilho"><span class="monitor-colunas-barra" style="height: {{ b.largura }}%"></span></span>
+        <span class="monitor-colunas-nome">{{ b.curto }}</span>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}<p class="monitor-sub">Sem venda no período.</p>{% endif %}
+  </section>
+
+  <section class="monitor-quadro monitor-quarto">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">Hora do dia</h2>
+      {% include "painel/_monitor_info.html" with nome="a hora do dia" texto="Quanto do faturamento do período saiu em cada faixa do dia, pela hora que o SET gravou na venda." %}
+    </div>
+    {% if d.horas %}
+    <ol class="monitor-colunas">
+      {% for b in d.horas %}
+      <li title="{{ b.nome }}: {{ b.valor|reais }} ({{ b.fatia }}% do período)">
+        <span class="monitor-colunas-fatia">{{ b.fatia|floatformat:"0" }}%</span>
+        <span class="monitor-colunas-trilho"><span class="monitor-colunas-barra monitor-colunas-barra-hora" style="height: {{ b.largura }}%"></span></span>
+        <span class="monitor-colunas-nome">{{ b.curto }}<small>{{ b.complemento }}</small></span>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}<p class="monitor-sub">O SET não trouxe a hora da venda no período.</p>{% endif %}
+  </section>
+
+  <section class="monitor-quadro monitor-quarto">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">Forma de pagamento</h2>
+      {% include "painel/_monitor_info.html" with nome="a forma de pagamento" texto="Quanto do faturamento do período entrou por cada forma de pagamento. AVISTA, no SET, é o dinheiro." %}
+    </div>
+    {% if d.rosca_das_formas.tem %}
+    {% include "painel/_monitor_rosca.html" with rosca=d.rosca_das_formas formato="reais" descricao="Faturamento do período por forma de pagamento" %}
+    {% else %}<p class="monitor-sub">O SET não trouxe forma de pagamento no período.</p>{% endif %}
+  </section>
+
+  <section class="monitor-quadro monitor-quarto">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">De onde vem o faturamento</h2>
+      {% include "painel/_monitor_info.html" with nome="os grupos" texto="Participação de cada grupo de produto no faturamento dos 12 meses. Os oito maiores aparecem pelo nome; os outros somam numa fatia só." %}
+    </div>
+    {% if d.rosca_dos_grupos.tem %}
+    {% include "painel/_monitor_rosca.html" with rosca=d.rosca_dos_grupos formato="fatia" descricao="Participação de cada grupo de produto no faturamento" %}
+    {% else %}<p class="monitor-sub">Nenhum produto com venda no recorte escolhido.</p>{% endif %}
+  </section>
+
+  {% comment %}Quarta fileira: o que fazer, com a gravidade escrita, no lugar dos
+  "Problemas recentes" do modelo. É a MESMA lista da Visão geral.{% endcomment %}
+  <section class="monitor-quadro monitor-problemas" id="o-que-fazer">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">O que fazer agora</h2>
+      {% include "painel/_monitor_info.html" with nome="o que fazer agora" texto="A mesma lista da Visão geral, que o sistema monta sozinho a cada importação: só entra o que tem ação, cada item traz o número que o justifica, e a ordem é de urgência. Você vê só o que o seu perfil pode abrir." %}
+    </div>
+    {% if agenda.tem_tarefas %}
+    <ol class="monitor-lista-problemas">
+      <li class="monitor-lista-cabeca" aria-hidden="true"><span>Gravidade</span><span>O que fazer</span><span></span></li>
+      {% for t in agenda.tarefas %}
+      <li>
+        <span><span class="monitor-selo monitor-selo-{{ t.nivel }}">{{ t.gravidade }}</span></span>
+        <span class="monitor-problema"><strong>{{ t.titulo }}</strong><small>{{ t.detalhe }}</small></span>
+        <a href="{{ t.endereco }}">{{ t.rotulo_do_link }} <span aria-hidden="true">→</span></a>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <p class="monitor-sub">Nada pedindo ação agora.</p>
+    {% endif %}
+  </section>
+
   {% if d.abc %}
-  <section class="cartao">
-    <h2>Quais produtos sustentam a loja</h2>
-    <p class="ajuda">É a curva ABC: os produtos que venderam no ano, do que mais fatura
-      para o que menos fatura, repartidos em três grupos. A barra de cada grupo é a fatia
-      dele no faturamento.</p>
+  <section class="monitor-quadro monitor-abc">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">Quais produtos sustentam a loja</h2>
+      {% include "painel/_monitor_info.html" with nome="a curva ABC" texto="É a curva ABC: os produtos que venderam no ano, do que mais fatura para o que menos fatura, repartidos em três grupos. A barra de cada grupo é a fatia dele no faturamento. O grupo A nunca pode faltar; cada peça do C na prateleira é caixa parado." %}
+    </div>
     {% with a=d.abc.0 %}
-    <p class="abc-frase"><strong>{{ a.produtos|contagem }} produtos</strong>
+    <p class="monitor-abc-frase"><strong>{{ a.produtos|contagem }} produtos</strong>
       ({{ a.fatia_dos_produtos }}% dos que venderam no ano) fazem
       <strong>{{ a.fatia_da_receita }}% do faturamento</strong>.</p>
     {% endwith %}
-    {% comment %}
-      A mesma lista de barras das outras caixas da tela, de propósito: o desenho em duas
-      faixas repartidas que estava aqui foi o que o Edson chamou de confuso em
-      08/10/2026, e esta lista ele já lê sem explicação nenhuma.
-    {% endcomment %}
-    <ul class="barras-lista barras-lista-grafico">
+    <ul class="monitor-barras">
       {% for c in d.abc %}
-      <li>
-        <span class="barras-nome"><strong>{{ c.letra }} — {{ c.titulo }}</strong>
-          <small>{{ c.produtos|contagem }} produtos ({{ c.fatia_dos_produtos }}% dos que
-            venderam) · {{ c.fatia_da_receita }}% do faturamento. {{ c.explicacao }}</small></span>
-        <span class="barras-trilho"><span class="barras-preenchida"
-              style="width: {{ c.largura_receita }}%"></span></span>
-        <span class="barras-valor">{{ c.receita|reais }}</span>
+      <li title="{{ c.explicacao }}">
+        <span class="monitor-barras-nome">{{ c.letra }} — {{ c.titulo }}
+          <small>{{ c.produtos|contagem }} produtos · {{ c.fatia_da_receita }}% do faturamento</small></span>
+        <span class="monitor-barras-trilho"><span class="monitor-barras-preenchida monitor-abc-{{ c.letra|lower }}" style="width: {{ c.largura_receita }}%"></span></span>
+        <span class="monitor-barras-valor">{{ c.receita|reais }}</span>
       </li>
       {% endfor %}
     </ul>
   </section>
   {% endif %}
-</div>
 
-<div class="duas-colunas">
-  <section class="cartao">
-    <h2>Campeões de faturamento</h2>
-    <p class="ajuda">Os {{ d.campeoes_faturamento|length }} que mais venderam em reais nos 12 meses.</p>
+  {% comment %}Quinta fileira: os campeões em barras, como o "Top 5" do modelo.{% endcomment %}
+  <section class="monitor-quadro monitor-metade">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">Campeões de faturamento</h2>
+      {% include "painel/_monitor_info.html" with nome="os campeões de faturamento" texto="Os produtos que mais venderam em reais nos 12 meses. A barra é contra o primeiro da lista." %}
+    </div>
     {% if d.campeoes_faturamento %}
-    <ul class="barras-lista">
+    <ul class="monitor-barras">
       {% for c in d.campeoes_faturamento %}
       <li>
-        <span class="barras-nome">{{ c.descricao|default:c.codigo }}
+        <span class="monitor-barras-nome">{{ c.descricao|default:c.codigo }}
           <small>{{ c.unidades|floatformat:"-2" }} un{% if c.grupo %} · {{ c.grupo }}{% endif %}</small></span>
-        <span class="barras-valor">{{ c.valor|reais }}</span>
+        <span class="monitor-barras-trilho"><span class="monitor-barras-preenchida" style="width: {{ c.largura }}%"></span></span>
+        <span class="monitor-barras-valor">{{ c.valor|reais }}</span>
       </li>
       {% endfor %}
     </ul>
-    {% else %}
-    <p>Nenhum produto com venda no recorte escolhido.</p>
-    {% endif %}
+    {% else %}<p class="monitor-sub">Nenhum produto com venda no recorte escolhido.</p>{% endif %}
   </section>
 
-  <section class="cartao">
-    <h2>Campeões de margem</h2>
-    <p class="ajuda">Quanto cada produto deixou em reais depois do custo, nos 12 meses. É
-      outra lista: vender muito e deixar pouco acontece.</p>
+  <section class="monitor-quadro monitor-metade">
+    <div class="monitor-titulo-linha">
+      <h2 class="monitor-titulo">Campeões de margem</h2>
+      {% include "painel/_monitor_info.html" with nome="os campeões de margem" texto="Quanto cada produto deixou em reais depois do custo, nos 12 meses. É outra lista: vender muito e deixar pouco acontece." %}
+    </div>
     {% if d.campeoes_margem %}
-    <ul class="barras-lista">
+    <ul class="monitor-barras">
       {% for c in d.campeoes_margem %}
       <li>
-        <span class="barras-nome">{{ c.descricao|default:c.codigo }}
+        <span class="monitor-barras-nome">{{ c.descricao|default:c.codigo }}
           <small>margem de {{ c.margem }}%{% if c.grupo %} · {{ c.grupo }}{% endif %}</small></span>
-        <span class="barras-valor">{{ c.valor|reais }}</span>
+        <span class="monitor-barras-trilho"><span class="monitor-barras-preenchida monitor-barras-margem" style="width: {{ c.largura }}%"></span></span>
+        <span class="monitor-barras-valor">{{ c.valor|reais }}</span>
       </li>
       {% endfor %}
     </ul>
-    {% else %}
-    <p>Sem custo no cadastro para calcular margem no recorte escolhido.</p>
-    {% endif %}
+    {% else %}<p class="monitor-sub">Sem custo no cadastro para calcular margem no recorte escolhido.</p>{% endif %}
   </section>
-</div>
 
-<h2 class="secao-titulo">Quando e como a loja vende</h2>
-<p class="ajuda">{{ d.rotulo_periodo }} até {{ d.ate|date:"d/m/Y" }}. Sempre a loja toda,
-  pelo mesmo motivo: o SET não traz o item da venda.</p>
-<div class="tres-colunas">
-  <section class="cartao">
-    <h2>Dia da semana</h2>
-    {% include "painel/_barras.html" with barras=d.dias_da_semana vazio="Sem venda no período." %}
-  </section>
-  <section class="cartao">
-    <h2>Forma de pagamento</h2>
-    {% include "painel/_barras.html" with barras=d.formas vazio="O SET não trouxe forma de pagamento no período." %}
-  </section>
-  <section class="cartao">
-    <h2>Hora do dia</h2>
-    {% include "painel/_barras.html" with barras=d.horas vazio="O SET não trouxe a hora da venda no período." %}
-  </section>
 </div>
+<p class="monitor-rodape">{% if d.filtrou_produto %}Quadros de produto e estoque filtrados: {{ d.produtos_no_filtro|contagem }} produto{{ d.produtos_no_filtro|pluralize }}{% if d.filtro_grupo %} do grupo {{ d.filtro_grupo }}{% endif %}{% if d.filtro_fornecedor %} de {{ d.filtro_fornecedor }}{% endif %}.{% else %}Quadros de produto e estoque: toda a loja, {{ d.produtos_no_filtro|contagem }} produtos, sobre os últimos 12 meses.{% endif %}
+  Venda: {{ d.rotulo_periodo|lower }} até {{ d.ate|date:"d/m/Y" }}, {{ d.vendas_no_periodo|contagem }} vendas.</p>
 {% endif %}
+</div>
 {% endblock %}
 
 {% block ajuda %}
@@ -250,27 +365,27 @@
 [
   {
     "titulo": "Dashboard",
-    "texto": "Os gráficos da loja num lugar só: quanto vendeu, quanto sobra depois do custo, quanto está parado na prateleira e quais produtos sustentam o faturamento."
+    "texto": "Os números da loja em quadros, no jeito do Grafana: a cor do número diz a situação, verde é bom, laranja pede atenção e vermelho pede ação. O i no canto de cada quadro explica de onde vem o número."
   },
   {
-    "seletor": ".filtros",
+    "seletor": ".monitor-filtros",
     "titulo": "Os filtros",
-    "texto": "Período muda os blocos de venda. Grupo e fornecedor mudam os blocos de produto e de estoque. O SET não traz o item da venda, então os blocos de venda são sempre a loja toda."
+    "texto": "Período muda os quadros de venda. Grupo e fornecedor mudam os quadros de produto e de estoque. O SET não traz o item da venda, então a venda é sempre a loja toda."
   },
   {
-    "seletor": ".cartoes-quatro",
-    "titulo": "Os números do topo",
-    "texto": "A seta compara com o período anterior de igual tamanho. Verde é melhorou, vermelho é piorou."
+    "seletor": ".monitor-situacao",
+    "titulo": "Situação da loja",
+    "texto": "A palavra do item mais grave da lista O que fazer agora, que fica mais abaixo. Clique para ir até ela."
   },
   {
-    "seletor": ".grafico-colunas",
+    "seletor": "#mes-a-mes",
     "titulo": "Mês a mês",
-    "texto": "Cada mês tem duas barras: a cheia é este ano e a clara é o mesmo mês do ano passado. As duas estão na mesma escala, então a maior delas encosta no topo. A última é listrada porque o mês ainda está correndo, e aí a comparação é com o mesmo pedaço do ano passado."
+    "texto": "A linha verde é este ano e a laranja é o mesmo mês do ano passado. O último trecho é tracejado porque o mês ainda está correndo, e aí a comparação é com o mesmo pedaço do ano passado."
   },
   {
-    "seletor": ".abc-frase",
-    "titulo": "Quais produtos sustentam a loja",
-    "texto": "É a curva ABC em três linhas. O grupo A faz os primeiros 80% do faturamento e nunca pode faltar; o C faz os últimos 5% e cada peça dele na prateleira é caixa parado. A frase de cima é o resumo: poucos produtos fazem quase todo o dinheiro."
+    "seletor": "#o-que-fazer",
+    "titulo": "O que fazer agora",
+    "texto": "A mesma lista da Visão geral, com a gravidade escrita ao lado de cada item e o link que resolve."
   }
 ]
 </script>

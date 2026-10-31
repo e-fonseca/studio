@@ -23,18 +23,28 @@ Duas restrições do dado mandam no desenho da tela, e ela diz as duas em voz al
 
 Os gráficos são SVG desenhado aqui, sem biblioteca: o sistema roda na loja e não
 depende de baixar nada da internet.
+
+Desde a 1.41.0 a tela tem o jeito do Grafana, que o Edson mandou de modelo em
+31/10/2026 ("a visualização fica bem bonita e fácil de entender"): quadros escuros,
+número grande com a cor da situação, minigráfico embaixo de cada número, linha do
+tempo, mostrador e rosca, e a lista do que fazer com a gravidade de cada item. As
+contas não mudaram; o que este arquivo ganhou foi a GEOMETRIA desses desenhos
+(`Faisca`, `GraficoDeLinha`, `Rosca`), feita aqui e não no template porque o Django
+escreve número com vírgula, e coordenada com vírgula não desenha nada.
 """
 
 import calendar
 from dataclasses import dataclass, field
 from datetime import timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django.db.models import Count, F, Q, Sum
 from django.db.models.functions import Substr
 
+from apps.caixa.dinheiro import nome_da_forma
 from apps.compras.sugestoes import so_mercadoria
 from apps.core import curva_abc
+from apps.core.templatetags.cabana import contagem, reais
 from apps.importacao.models import ProdutoImportado, VendaImportada
 
 ZERO = Decimal("0")
@@ -65,6 +75,18 @@ QUANTOS_GRUPOS = 8
 # Faixas de hora do dia, no formato que a loja fala.
 FAIXAS_DE_HORA = ((8, 11, "Manhã (8h-11h)"), (11, 14, "Meio-dia (11h-14h)"),
                   (14, 17, "Tarde (14h-17h)"), (17, 24, "Fim do dia (17h em diante)"))
+
+# O rótulo curto de cada faixa, para caber embaixo da coluna do gráfico.
+ROTULO_CURTO_DA_HORA = {"Manhã (8h-11h)": ("Manhã", "8h-11h"),
+                        "Meio-dia (11h-14h)": ("Meio-dia", "11h-14h"),
+                        "Tarde (14h-17h)": ("Tarde", "14h-17h"),
+                        "Fim do dia (17h em diante)": ("Fim do dia", "17h em diante")}
+# A cobertura acima disto fica na cor de atenção. É o "uns três meses" que a explicação
+# do número já dizia desde a 1.18.0; o quadro só passou a pintar o que o texto dizia.
+COBERTURA_DE_ATENCAO = Decimal("3")
+# Até 31 dias o minigráfico tem um ponto por dia; acima disso, um por semana. Ponto por
+# dia num ano inteiro seria um serrote: a loja vende quase metade no domingo.
+DIAS_POR_PONTO_LONGO = 7
 
 # Cores das fatias, as mesmas variáveis que a Visão geral usa.
 CORES = ("--cor-fatia-1", "--cor-fatia-2", "--cor-fatia-3", "--cor-fatia-4",
@@ -110,6 +132,53 @@ def _variacao(agora, antes):
     return ((_decimal(agora) - _decimal(antes)) * CEM / _decimal(antes)).quantize(Decimal("0.1"))
 
 
+def _coordenada(numero):
+    """Número para dentro de um desenho SVG: ponto decimal, uma casa, nunca vírgula."""
+    return f"{float(numero):.1f}"
+
+
+@dataclass
+class Faisca:
+    """O minigráfico embaixo do número grande, como no Grafana.
+
+    Mostra a FORMA do período, não a escala: vai do menor ao maior valor da própria
+    série, para uma semana fraca aparecer como vale. O número que vale é o de cima; o
+    desenho só diz se o período subiu, caiu ou oscilou. Coordenadas em 0..100 × 0..32,
+    esticadas pelo CSS (`preserveAspectRatio="none"`).
+    """
+
+    linha: str = ""
+    area: str = ""
+    pontos: int = 0
+    por: str = ""  # "dia" ou "semana", para a ajuda dizer o que cada ponto é
+
+    @property
+    def tem(self):
+        return bool(self.linha)
+
+
+ALTURA_DA_FAISCA = 32
+
+
+def _faisca(valores, por="dia"):
+    if len(valores) < 2:
+        return Faisca()
+    numeros = [float(valor or 0) for valor in valores]
+    menor, maior = min(numeros), max(numeros)
+    alto, baixo = 3.0, ALTURA_DA_FAISCA - 1.0
+    passo = 100.0 / (len(numeros) - 1)
+    pontos = []
+    for posicao, numero in enumerate(numeros):
+        if maior == menor:
+            y = (alto + baixo) / 2
+        else:
+            y = baixo - (numero - menor) / (maior - menor) * (baixo - alto)
+        pontos.append((posicao * passo, y))
+    linha = "M" + " L".join(f"{_coordenada(x)} {_coordenada(y)}" for x, y in pontos)
+    area = f"{linha} L100.0 {ALTURA_DA_FAISCA}.0 L0.0 {ALTURA_DA_FAISCA}.0 Z"
+    return Faisca(linha=linha, area=area, pontos=len(numeros), por=por)
+
+
 @dataclass
 class Kpi:
     """Um número grande do topo, com a comparação já pronta."""
@@ -123,13 +192,40 @@ class Kpi:
     explicacao: str = ""
     # Quando subir é ruim (ruptura, capital parado), o verde e o vermelho trocam.
     subir_e_bom: bool = True
+    faisca: Faisca = field(default_factory=Faisca)
+    # Número sem comparação que tem um limite já escrito na explicação ("acima de uns
+    # três meses, é dinheiro parado"): passou dele, o número fica na cor de atenção.
+    atencao_acima_de: Decimal | None = None
 
     @property
     def nivel(self):
+        if self.atencao_acima_de is not None and self.valor > self.atencao_acima_de:
+            return "atencao"
         if self.variacao is None or self.variacao == ZERO:
             return "neutro"
         subiu = self.variacao > ZERO
         return "bom" if subiu == self.subir_e_bom else "ruim"
+
+    @property
+    def texto(self):
+        """O número como aparece no quadro: R$ 1.538.337,98, 16.361, 2,4%, 12,4 meses."""
+        if self.formato == "reais":
+            return reais(self.valor)
+        if self.formato in ("porcento", "meses"):
+            numero = Decimal(self.valor).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+            numero = numero.quantize(Decimal("1")) if numero == numero.to_integral() else numero
+            escrito = f"{numero}".replace(".", ",")
+            if self.formato == "porcento":
+                return f"{escrito}%"
+            return f"{escrito} {'mês' if numero == 1 else 'meses'}"
+        return contagem(self.valor)
+
+    @property
+    def letras(self):
+        """Quantas letras o número ocupa. O quadro do Dashboard tem a largura de
+        "16.361", e "R$ 1.538.337,98" saía cortado no fim (1.41.0): o CSS divide a
+        largura do quadro por este número para escolher o tamanho da letra."""
+        return len(self.texto)
 
 
 @dataclass
@@ -163,6 +259,146 @@ class Fatia:
     traco: str = ""
     giro: str = ""
     largura: int = 0
+    # Embaixo da coluna do gráfico só cabe uma palavra: "Dom", "Manhã".
+    curto: str = ""
+    complemento: str = ""
+    quantos: int = 0
+
+
+@dataclass
+class Rosca:
+    """Uma rosca com legenda, como os quadros "Status dos Hosts" do Grafana."""
+
+    fatias: list = field(default_factory=list)
+    centro: str = ""          # o número grande no furo
+    centro_legenda: str = ""  # a palavra embaixo dele
+
+    @property
+    def tem(self):
+        return bool(self.fatias)
+
+
+def _fatiar(fatias, total):
+    """Porcentagem, traço e giro de cada fatia, em cima do círculo de perímetro 100.
+
+    O traço começa no topo (giro 25) e anda no sentido do relógio. Fica em texto com
+    ponto decimal porque vai dentro de um `style=`.
+    """
+    giro = Decimal("25")
+    for fatia in fatias:
+        fatia.fatia = _porcento(fatia.valor, total)
+        fatia.traco = f"{fatia.fatia} {CEM - fatia.fatia}"
+        fatia.giro = str(giro)
+        giro = giro - fatia.fatia
+        if giro < ZERO:
+            giro += CEM
+    return fatias
+
+
+@dataclass
+class GraficoDeLinha:
+    """Faturamento mês a mês em linhas: este ano e o mesmo mês do ano passado.
+
+    Antes eram duas barras por mês. A linha é o desenho do Grafana que o Edson mandou
+    de modelo, e lê-se do mesmo jeito: a de cima vendeu mais. Cada mês fica no MEIO da
+    sua coluna (`(posição + 0,5) / meses`), para o ponto cair em cima do nome do mês,
+    que é texto da página e não do desenho — texto dentro de SVG esticado sai torto.
+    """
+
+    agora: str = ""
+    agora_area: str = ""
+    parcial: str = ""        # o trecho do mês que ainda corre, tracejado
+    antes: str = ""
+    marcas: list = field(default_factory=list)  # as linhas de grade, de baixo para cima
+    colunas: int = 0
+
+    @property
+    def tem(self):
+        return bool(self.agora)
+
+
+LARGURA_DA_LINHA, ALTURA_DA_LINHA = 1000, 300
+
+
+@dataclass
+class Marca:
+    """Uma linha de grade do eixo: o rótulo, a altura em % (página) e o y (desenho)."""
+
+    rotulo: str
+    altura: int
+    y: str
+
+
+def _escala(maior):
+    """O topo do eixo num número redondo (100 mil, 175 mil) e o passo das marcas."""
+    maior = float(maior or 0)
+    if maior <= 0:
+        return 1.0, 0.25
+    bruto = maior / 4
+    potencia = 10 ** len(str(int(bruto))) / 10
+    for multiplo in (1, 2, 2.5, 5, 10):
+        passo = multiplo * potencia
+        if passo >= bruto:
+            break
+    topo = passo * -(-maior // passo)
+    return topo, passo
+
+
+def _reais_curto(valor):
+    """"R$ 150 mil" no eixo: o valor inteiro está no nome do mês, ao passar o mouse."""
+    valor = float(valor)
+    if valor >= 1_000_000:
+        texto = f"{valor / 1_000_000:.1f}".rstrip("0").rstrip(".")
+        return f"R$ {texto.replace('.', ',')} mi"
+    if valor >= 1000:
+        texto = f"{valor / 1000:.1f}".rstrip("0").rstrip(".")
+        return f"R$ {texto.replace('.', ',')} mil"
+    return f"R$ {int(valor)}"
+
+
+def _grafico_de_linha(meses):
+    if len(meses) < 2:
+        return GraficoDeLinha()
+    maior = max(max(m.valor, m.valor_ano_passado or ZERO) for m in meses)
+    topo, passo = _escala(maior)
+    quantos = len(meses)
+
+    def ponto(posicao, valor):
+        x = (posicao + 0.5) / quantos * LARGURA_DA_LINHA
+        y = ALTURA_DA_LINHA - float(valor) / topo * ALTURA_DA_LINHA
+        return f"{_coordenada(x)} {_coordenada(y)}"
+
+    # O mês que ainda corre sai da linha cheia e vira um trecho tracejado: ele tem só
+    # os dias até o corte, e ligado com a linha cheia pareceria um tombo nas vendas.
+    ultimo_cheio = quantos - 2 if meses[-1].parcial else quantos - 1
+    agora = "M" + " L".join(ponto(i, m.valor) for i, m in enumerate(meses[:ultimo_cheio + 1]))
+    area = (f"{agora} L{ponto(ultimo_cheio, 0)} L{ponto(0, 0)} Z")
+    parcial = ""
+    if meses[-1].parcial and ultimo_cheio >= 0:
+        parcial = f"M{ponto(ultimo_cheio, meses[ultimo_cheio].valor)} L{ponto(quantos - 1, meses[-1].valor)}"
+
+    # O ano passado pode ter buraco (mês sem número): a linha para ali e recomeça.
+    trechos, atual = [], []
+    for posicao, mes in enumerate(meses):
+        if mes.valor_ano_passado is None:
+            if atual:
+                trechos.append(atual)
+            atual = []
+            continue
+        atual.append(ponto(posicao, mes.valor_ano_passado))
+    if atual:
+        trechos.append(atual)
+    antes = " ".join("M" + " L".join(trecho) for trecho in trechos if len(trecho) > 1)
+
+    marcas = []
+    valor = 0.0
+    while valor <= topo + 0.001:
+        altura = valor / topo
+        marcas.append(Marca(_reais_curto(valor), int(round(altura * 100)),
+                            _coordenada(ALTURA_DA_LINHA - altura * ALTURA_DA_LINHA)))
+        valor += passo
+    return GraficoDeLinha(agora=agora, agora_area=area, parcial=parcial, antes=antes,
+                          marcas=marcas, colunas=quantos)
 
 
 @dataclass
@@ -173,6 +409,8 @@ class Campeao:
     valor: Decimal
     unidades: Decimal = ZERO
     margem: Decimal | None = None
+    # Barra do quadro, de 0 a 100, contra o primeiro da lista. Inteiro: vai num style=.
+    largura: int = 0
 
 
 @dataclass
@@ -210,6 +448,14 @@ class Dashboard:
     abc: list = field(default_factory=list)
     campeoes_faturamento: list = field(default_factory=list)
     campeoes_margem: list = field(default_factory=list)
+    linha_dos_meses: GraficoDeLinha = field(default_factory=GraficoDeLinha)
+    # O lado do estoque em desenho: o mostrador da margem e as duas roscas.
+    margem: Decimal = ZERO
+    margem_traco: str = "0 100"
+    rosca_da_ruptura: Rosca = field(default_factory=Rosca)
+    rosca_do_estoque: Rosca = field(default_factory=Rosca)
+    rosca_das_formas: Rosca = field(default_factory=Rosca)
+    rosca_dos_grupos: Rosca = field(default_factory=Rosca)
     dias_da_semana: list = field(default_factory=list)
     formas: list = field(default_factory=list)
     horas: list = field(default_factory=list)
@@ -240,6 +486,49 @@ def _resumo_das_vendas(importacao, desde, ate):
     }
 
 
+def _serie(importacao, ate, dias):
+    """O período em pontos para os minigráficos: um por dia até 31 dias, um por semana acima.
+
+    As semanas contam para trás a partir do corte, então a última é sempre inteira; o
+    pedaço de semana que sobra no começo do período fica de fora do desenho, senão o
+    minigráfico começaria com um tombo que é só falta de dias.
+    """
+    tamanho = 1 if dias <= 31 else DIAS_POR_PONTO_LONGO
+    quantos = dias // tamanho
+    comeco = ate - timedelta(days=quantos * tamanho - 1)
+    pontos = [{"faturamento": ZERO, "vendas": 0, "desconto": ZERO} for _ in range(quantos)]
+    linhas = (VendaImportada.objects
+              .filter(importacao=importacao, data__gte=comeco, data__lte=ate)
+              .values("data").order_by()
+              .annotate(valor=Sum("valor"), quantas=Count("id"), desconto=Sum("desconto")))
+    for linha in linhas:
+        posicao = quantos - 1 - (ate - linha["data"]).days // tamanho
+        if 0 <= posicao < quantos:
+            pontos[posicao]["faturamento"] += _decimal(linha["valor"])
+            pontos[posicao]["vendas"] += linha["quantas"]
+            pontos[posicao]["desconto"] += _decimal(linha["desconto"])
+    return pontos, ("dia" if tamanho == 1 else "semana")
+
+
+def _faiscas_da_venda(pontos, por):
+    """Os quatro minigráficos do topo, na ordem dos números."""
+    tickets, descontos = [], []
+    ultimo_ticket = ZERO
+    for ponto in pontos:
+        # Dia sem venda não tem ticket: repete o anterior em vez de despencar a zero,
+        # que desenharia uma queda de ticket que não aconteceu.
+        if ponto["vendas"]:
+            ultimo_ticket = ponto["faturamento"] / ponto["vendas"]
+        tickets.append(ultimo_ticket)
+        descontos.append(_porcento(ponto["desconto"], ponto["faturamento"]))
+    return {
+        "faturamento": _faisca([p["faturamento"] for p in pontos], por),
+        "vendas": _faisca([p["vendas"] for p in pontos], por),
+        "ticket": _faisca(tickets, por),
+        "desconto": _faisca(descontos, por),
+    }
+
+
 def _kpis_da_venda(importacao, desde, ate, dias):
     """Os quatro números da venda, cada um contra o período anterior de igual tamanho."""
     agora = _resumo_das_vendas(importacao, desde, ate)
@@ -251,7 +540,7 @@ def _kpis_da_venda(importacao, desde, ate, dias):
             return ZERO
         return (dados["faturamento"] / dados["vendas"]).quantize(Decimal("0.01"))
 
-    return agora, [
+    kpis = [
         Kpi("faturamento", "Faturamento", agora["faturamento"], "reais",
             _variacao(agora["faturamento"], antes["faturamento"]), comparado,
             "Soma das vendas do período, como o SET registrou: é o total da venda, já "
@@ -270,6 +559,11 @@ def _kpis_da_venda(importacao, desde, ate, dias):
             comparado,
             "Quanto do faturamento saiu em desconto no período.", subir_e_bom=False),
     ]
+    pontos, por = _serie(importacao, ate, dias)
+    faiscas = _faiscas_da_venda(pontos, por)
+    for kpi in kpis:
+        kpi.faisca = faiscas.get(kpi.chave, Faisca())
+    return agora, kpis
 
 
 def _produtos(importacao, grupo, fornecedor):
@@ -315,14 +609,17 @@ def _kpis_do_estoque(consulta):
     parado = _decimal(so_mercadoria(consulta.filter(vendas_12m__lte=0, estoque__gt=0)).aggregate(
         valor=Sum(F("estoque") * F("custo")))["valor"])
     negativos = consulta.filter(estoque__lt=0).count()
+    numeros = {"margem": margem, "estoque_ao_custo": estoque_ao_custo, "parado": parado,
+               "com_venda": com_venda, "sem_saldo": sem_saldo}
 
-    return quantos, [
+    return quantos, numeros, [
         Kpi("margem", "Margem bruta", margem, "porcento", None, "",
             "Quanto sobra da venda depois do custo da mercadoria, pelos valores do cadastro "
             "do SET, pesado pelo que cada produto vendeu em 12 meses."),
         Kpi("cobertura", "Cobertura do estoque", cobertura, "meses", None, "",
             "Quantos meses de venda o estoque de hoje aguenta, no ritmo dos últimos 12 meses. "
-            "Acima de uns três meses, é dinheiro parado na prateleira."),
+            "Acima de uns três meses, é dinheiro parado na prateleira.",
+            atencao_acima_de=COBERTURA_DE_ATENCAO),
         Kpi("ruptura", "Ruptura", _porcento(sem_saldo, com_venda), "porcento", None, "",
             f"{_milhar(sem_saldo)} de {_milhar(com_venda)} produtos que venderam no ano "
             "estão sem saldo no SET. "
@@ -423,21 +720,14 @@ def _grupos(consulta):
     principais = linhas[:QUANTOS_GRUPOS]
     resto = sum((_decimal(linha["valor"]) for linha in linhas[QUANTOS_GRUPOS:]), ZERO)
     fatias = [
-        Fatia(nome=(linha["grupo"] or "sem grupo"), valor=_decimal(linha["valor"]))
-        for linha in principais
+        Fatia(nome=(linha["grupo"] or "sem grupo"), valor=_decimal(linha["valor"]),
+              cor=CORES[posicao % len(CORES)])
+        for posicao, linha in enumerate(principais)
     ]
     if resto:
-        fatias.append(Fatia(nome=f"outros {len(linhas) - QUANTOS_GRUPOS} grupos", valor=resto))
-    giro = Decimal("25")  # o traço começa no topo da rosca, como na Visão geral
-    for posicao, fatia in enumerate(fatias):
-        fatia.fatia = _porcento(fatia.valor, total)
-        fatia.cor = CORES[posicao % len(CORES)]
-        fatia.traco = f"{fatia.fatia} {CEM - fatia.fatia}"
-        fatia.giro = str(giro)
-        giro = giro - fatia.fatia
-        if giro < ZERO:
-            giro += CEM
-    return fatias
+        fatias.append(Fatia(nome=f"outros {len(linhas) - QUANTOS_GRUPOS} grupos", valor=resto,
+                            cor=CORES[len(fatias) % len(CORES)]))
+    return _fatiar(fatias, total)
 
 
 def _abc(consulta):
@@ -501,6 +791,10 @@ def _campeoes(consulta):
         .values("codigo", "descricao", "grupo", "ganho", "receita_12m", "vendas_12m")
         .order_by("-ganho")[:QUANTOS_CAMPEOES]
     ]
+    for lista in (por_faturamento, por_margem):
+        maior = max((campeao.valor for campeao in lista), default=ZERO)
+        for campeao in lista:
+            campeao.largura = _largura(campeao.valor, maior)
     return por_faturamento, por_margem
 
 
@@ -533,12 +827,21 @@ def _recortes_da_venda(importacao, desde, ate):
          for numero, nome in enumerate(DIAS_DA_SEMANA)],
         lambda linha: linha["nome"],
     )
+    for dia in dias:
+        dia.curto = dia.nome[:3]
 
-    formas = _barras(
-        list(vendas.exclude(forma_pagamento="").values("forma_pagamento")
-             .annotate(valor=Sum("valor"), quantas=Count("id")).order_by("-valor")),
-        lambda linha: linha["forma_pagamento"],
-    )
+    # "Cartão de crédito" e "Dinheiro", e não "CARTAO CREDITO" e "AVISTA": os nomes do SET
+    # viram os da loja pela mesma função do e-mail do caixa. Dois nomes do SET para a
+    # mesma forma (AVISTA e DINHEIRO) somam numa linha só.
+    por_forma = {}
+    for linha in (vendas.exclude(forma_pagamento="").values("forma_pagamento").order_by()
+                  .annotate(valor=Sum("valor"), quantas=Count("id"))):
+        nome = nome_da_forma(linha["forma_pagamento"])
+        atual = por_forma.setdefault(nome, {"nome": nome, "valor": ZERO, "quantas": 0})
+        atual["valor"] += _decimal(linha["valor"])
+        atual["quantas"] += linha["quantas"]
+    formas = _barras(sorted(por_forma.values(), key=lambda linha: -linha["valor"]),
+                     lambda linha: linha["nome"])
 
     # A hora vem como texto "HH:MM:SS" do SET; os dois primeiros dígitos bastam.
     cru = (vendas.exclude(hora="").annotate(hh=Substr("hora", 1, 2)).values("hh")
@@ -559,6 +862,8 @@ def _recortes_da_venda(importacao, desde, ate):
         [somas[nome] for _, _, nome in FAIXAS_DE_HORA if nome in somas],
         lambda linha: linha["nome"],
     )
+    for hora in horas:
+        hora.curto, hora.complemento = ROTULO_CURTO_DA_HORA.get(hora.nome, (hora.nome, ""))
     return dias, formas, horas
 
 
@@ -594,11 +899,62 @@ def montar(importacao, periodo=PERIODO_PADRAO, grupo="", fornecedor=""):
     painel.vendas_no_periodo = resumo["vendas"]
 
     consulta = _produtos(importacao, painel.filtro_grupo, painel.filtro_fornecedor)
-    painel.produtos_no_filtro, painel.kpis_do_estoque = _kpis_do_estoque(consulta)
+    painel.produtos_no_filtro, numeros, painel.kpis_do_estoque = _kpis_do_estoque(consulta)
 
     painel.meses = _meses(importacao)
+    painel.linha_dos_meses = _grafico_de_linha(painel.meses)
     painel.grupos = _grupos(consulta)
     painel.abc = _abc(consulta)
     painel.campeoes_faturamento, painel.campeoes_margem = _campeoes(consulta)
     painel.dias_da_semana, painel.formas, painel.horas = _recortes_da_venda(importacao, desde, ate)
+    _desenhos_do_estoque(painel, numeros)
+    painel.rosca_das_formas = _rosca_das_formas(painel.formas)
+    painel.rosca_dos_grupos = Rosca(fatias=painel.grupos)
     return painel
+
+
+def _desenhos_do_estoque(painel, numeros):
+    """O mostrador da margem e as roscas de ruptura e de estoque parado.
+
+    São os mesmos números dos cartões de estoque (`_kpis_do_estoque`), só desenhados:
+    a rosca da ruptura reparte os produtos que venderam no ano entre com saldo e sem
+    saldo; a do estoque reparte o dinheiro na prateleira entre o que girou e o parado.
+    """
+    margem = numeros["margem"]
+    painel.margem = margem
+    painel.margem_traco = f"{min(max(margem, ZERO), CEM)} 100"
+
+    com_venda, sem_saldo = numeros["com_venda"], numeros["sem_saldo"]
+    if com_venda:
+        painel.rosca_da_ruptura = Rosca(
+            fatias=_fatiar([
+                Fatia("Com saldo no SET", Decimal(com_venda - sem_saldo), cor="--mon-verde",
+                      quantos=com_venda - sem_saldo),
+                Fatia("Sem saldo no SET", Decimal(sem_saldo), cor="--mon-vermelho",
+                      quantos=sem_saldo),
+            ], Decimal(com_venda)),
+            centro=f"{_porcento(sem_saldo, com_venda)}%".replace(".", ","),
+            centro_legenda="sem saldo",
+        )
+
+    total, parado = numeros["estoque_ao_custo"], numeros["parado"]
+    if total:
+        girou = max(total - parado, ZERO)
+        painel.rosca_do_estoque = Rosca(
+            fatias=_fatiar([
+                Fatia("Vendeu no ano", girou.quantize(Decimal("0.01")), cor="--mon-verde"),
+                Fatia("Parado sem vender", parado.quantize(Decimal("0.01")), cor="--mon-laranja"),
+            ], total),
+            centro=f"{_porcento(parado, total)}%".replace(".", ","),
+            centro_legenda="parado",
+        )
+
+
+def _rosca_das_formas(formas):
+    """A forma de pagamento em rosca, com as mesmas fatias da lista de barras."""
+    if not formas:
+        return Rosca()
+    total = sum((forma.valor for forma in formas), ZERO)
+    fatias = [Fatia(forma.nome, forma.valor, cor=CORES[posicao % len(CORES)])
+              for posicao, forma in enumerate(formas)]
+    return Rosca(fatias=_fatiar(fatias, total))

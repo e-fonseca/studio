@@ -53,6 +53,18 @@ class ClassificarForma(TestCase):
         self.assertEqual(dinheiro.classificar("VOUCHER REFEICAO"), "desconhecida")
         self.assertEqual(dinheiro.classificar(""), "desconhecida")
 
+    def test_nome_da_forma_e_o_da_loja(self):
+        """O e-mail do caixa e o Dashboard escrevem a forma do mesmo jeito (1.41.0)."""
+        self.assertEqual(dinheiro.nome_da_forma("AVISTA"), "Dinheiro")
+        self.assertEqual(dinheiro.nome_da_forma("dinheiro"), "Dinheiro")
+        self.assertEqual(dinheiro.nome_da_forma("CARTAO CREDITO"), "Cartão de crédito")
+        self.assertEqual(dinheiro.nome_da_forma("Cartão Débito"), "Cartão de débito")
+        self.assertEqual(dinheiro.nome_da_forma("PIX"), "PIX")
+        self.assertEqual(dinheiro.nome_da_forma("PRAZO"), "A prazo")
+        # Forma que a loja não conhece sai com o nome do SET, sem chute.
+        self.assertEqual(dinheiro.nome_da_forma("VOUCHER REFEICAO"), "VOUCHER REFEICAO")
+        self.assertEqual(dinheiro.nome_da_forma(""), "sem forma gravada")
+
 
 class GavetaDoTurno(TestCase):
     @classmethod

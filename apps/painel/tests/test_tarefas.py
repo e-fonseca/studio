@@ -153,3 +153,38 @@ class TestNaTelaDeAbertura(BaseTarefas):
         Importacao.objects.all().delete()
         resposta = self.client.get(reverse("painel:geral"))
         self.assertEqual(resposta.status_code, 200)
+
+
+class TestSituacaoDaLoja(TestCase):
+    """O quadro "Situação da loja" do Dashboard: a palavra do item mais grave da agenda."""
+
+    def tarefa(self, nivel):
+        return tarefas.Tarefa(chave=nivel, titulo="t", detalhe="d", rota="painel:geral", nivel=nivel)
+
+    def test_um_urgente_basta_para_a_loja_ficar_em_urgente(self):
+        agenda = tarefas.Agenda(tarefas=[self.tarefa(tarefas.ATENCAO), self.tarefa(tarefas.URGENTE)])
+        situacao = tarefas.situacao(agenda)
+        self.assertEqual((situacao.nivel, situacao.palavra), ("ruim", "Urgente"))
+        self.assertEqual(situacao.frase, "1 urgente · 1 de atenção")
+
+    def test_sem_urgente_o_de_atencao_manda(self):
+        agenda = tarefas.Agenda(tarefas=[self.tarefa(tarefas.ATENCAO), self.tarefa(tarefas.ATENCAO)])
+        situacao = tarefas.situacao(agenda)
+        self.assertEqual((situacao.nivel, situacao.palavra), ("atencao", "Atenção"))
+        self.assertEqual(situacao.frase, "2 de atenção")
+
+    def test_so_tarefa_sem_pressa_e_loja_em_dia(self):
+        """Prazo de fornecedor e contagem aberta não são problema: a frase diz o que há."""
+        situacao = tarefas.situacao(tarefas.Agenda(tarefas=[self.tarefa(tarefas.NORMAL)]))
+        self.assertEqual((situacao.nivel, situacao.palavra), ("bom", "Tudo em dia"))
+        self.assertEqual(situacao.frase, "1 para fazer")
+
+    def test_agenda_vazia(self):
+        situacao = tarefas.situacao(tarefas.Agenda())
+        self.assertEqual(situacao.palavra, "Tudo em dia")
+        self.assertEqual(situacao.frase, "Nada pedindo ação agora.")
+
+    def test_cada_nivel_tem_a_gravidade_em_palavra(self):
+        self.assertEqual(self.tarefa(tarefas.URGENTE).gravidade, "Urgente")
+        self.assertEqual(self.tarefa(tarefas.ATENCAO).gravidade, "Atenção")
+        self.assertEqual(self.tarefa(tarefas.NORMAL).gravidade, "Para fazer")

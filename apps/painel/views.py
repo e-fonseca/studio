@@ -17,6 +17,7 @@ from apps.tempo import indicador as indicador_do_tempo
 
 from . import dashboard as dashboard_servicos
 from . import servicos as painel_servicos
+from . import tarefas
 from . import ticket as ticket_servicos
 from . import vendas_do_dia as vendas_servicos
 
@@ -128,12 +129,17 @@ def dashboard(request):
         grupo=(request.GET.get("grupo") or "").strip(),
         fornecedor=(request.GET.get("fornecedor") or "").strip(),
     )
+    # A lista do que fazer é a da Visão geral, guardada por importação e filtrada pela
+    # permissão de quem olha: o quadro de problemas e a palavra da situação saem dela.
+    agenda = painel_servicos.agenda_da_importacao(estado.importacao, estado, usuario=request.user)
     return render(request, "painel/dashboard.html", {
         "titulo": "Dashboard",
         "estado": estado,
         "esconder_aviso_dados": True,
         "d": painel_dashboard,
         "periodos": dashboard_servicos.PERIODOS,
+        "agenda": agenda,
+        "situacao": tarefas.situacao(agenda),
     })
 
 

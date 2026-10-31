@@ -1,4 +1,4 @@
-# Dashboard (1.18.0, redesenhos da 1.20.1 e da 1.20.2)
+# Dashboard (1.18.0, redesenhos da 1.20.1, da 1.20.2 e da 1.41.0)
 
 Tela em `/sistema/painel/dashboard/`, código em `apps/painel/dashboard.py`.
 
@@ -20,7 +20,65 @@ gráfico bonito, mas os números que mudam uma decisão de compra.
    calculados na importação, sobre uma janela fixa. Por isso os blocos de produto (curva
    ABC, grupos, campeões, margem, cobertura, ruptura) não acompanham o filtro de período.
 
-## O que cada número é
+## O jeito do Grafana (1.41.0)
+
+Em 31/10/2026 o Edson mandou o print de um painel do Grafana (um "Datacenter, visão
+geral") com o pedido: *"adaptar os recursos de grafana no dashbord / a visualização fica
+bem bonita e facil de entender"*. O que veio do modelo foi o **desenho**; as contas são
+as mesmas de antes e nenhum número da tela mudou.
+
+**Por que não instalar o Grafana de verdade.** Seria um serviço novo no servidor da
+loja, com login e permissões à parte (e o vendedor não pode ver dinheiro: a regra
+moraria em dois lugares), as contas reescritas em SQL — e regra repetida é regra que
+diverge, como o "parado" já mostrou — e um programa a mais para atualizar. O desenho cabe
+no próprio sistema, na mesma tela, no mesmo endereço e no mesmo menu.
+
+O que a tela ganhou, quadro a quadro:
+
+| Do modelo | Na Cabana |
+| --- | --- |
+| Fileira de números com minigráfico | Situação da loja, Faturamento, Vendas, Ticket médio, Desconto dado e Cobertura do estoque. O número sai na cor da situação (verde bom, laranja atenção, vermelho ruim, azul neutro) e o minigráfico embaixo é o período dia a dia, ou semana a semana acima de 31 dias |
+| "Status geral" | **Situação da loja**: a palavra do item mais grave de "O que fazer agora" (Urgente, Atenção ou Tudo em dia), com a contagem embaixo. Não é regra nova: é a mesma agenda da Visão geral, filtrada pela permissão de quem olha |
+| Série temporal | **Faturamento mês a mês** em linha: verde este ano, laranja o mesmo mês do ano passado, o mês que ainda corre num trecho tracejado |
+| Mostrador "Disponibilidade" | **Margem bruta** em meia-volta |
+| Roscas de status | **Produtos que venderam no ano** (com e sem saldo no SET), **Estoque ao custo** (vendeu no ano e parado), **Forma de pagamento** e **De onde vem o faturamento** (grupos) |
+| CPU, memória, disco, rede | **Dia da semana** e **Hora do dia** em colunas |
+| "Problemas recentes" | **O que fazer agora**, com a gravidade escrita num selo (Urgente, Atenção, Para fazer) e o link que resolve |
+| "Top 5" | Curva ABC e campeões de faturamento e de margem em barras deitadas |
+
+Ficou de fora o **mapa** do modelo (não há equivalente numa loja só) e a **atualização a
+cada 10 segundos** (os dados mudam três vezes por dia, na importação).
+
+**As explicações foram para o "i".** Cada quadro tem um "i" no canto, como no Grafana, e
+o texto que antes ficava em cima de cada bloco está inteiro lá dentro. Recolher não é
+apagar (lição da 1.35.0). O valor exato de cada mês, que as barras de antes escreviam em
+cima de cada coluna, está em **"Ver o valor de cada mês"**, embaixo da linha: a linha só
+mostra o valor com o mouse em cima, e o celular não tem mouse.
+
+### Onde mora cada desenho
+
+- `Faisca`, `GraficoDeLinha`, `Rosca`/`_fatiar` e o mostrador (`margem_traco`) são feitos
+  em `dashboard.py`, não no template, porque coordenada com vírgula não desenha nada e o
+  Django escreve número com vírgula. Toda coordenada passa por `_coordenada` (ponto, uma
+  casa).
+- O minigráfico vai do menor ao maior valor **da própria série**: mostra a forma do
+  período, não a escala. O número que vale é o de cima. Dia sem venda repete o ticket do
+  dia anterior, em vez de desenhar uma queda de ticket que não aconteceu.
+- `_serie` conta as semanas para trás a partir do corte: a última é sempre inteira, e o
+  pedaço de semana que sobra no começo do ano fica fora do desenho.
+- O eixo da linha termina num número redondo (`_escala`) e escreve "R$ 100 mil" e
+  "R$ 1,5 mi" (`_reais_curto`). Os rótulos são texto da página, ao lado do desenho, e não
+  texto dentro do SVG: o SVG é esticado (`preserveAspectRatio="none"`) e texto esticado
+  sai torto. Pelo mesmo motivo as linhas usam `vector-effect: non-scaling-stroke`.
+- O tamanho do número grande é a largura do quadro dividida pelas letras dele:
+  `Kpi.texto` escreve o número, `Kpi.letras` conta, e o CSS faz
+  `calc(155cqi / var(--letras))`. "R$ 1.538.337,98" saía cortado no tamanho de "16.361".
+- A forma de pagamento usa `nome_da_forma` de `apps/caixa/dinheiro.py`, a mesma do e-mail
+  do caixa: "Cartão de crédito" e "Dinheiro", e AVISTA e DINHEIRO somam numa fatia só.
+- A cor de fundo e as cores de situação (`--mon-*`) valem só dentro de
+  `body.corpo-monitor`, ligado pelo bloco `classe_corpo` do template. As cores de fatia
+  (`--cor-fatia-*`) são trocadas ali dentro por cores que aparecem no fundo escuro.
+
 
 | Número | Conta |
 | --- | --- |
@@ -90,6 +148,11 @@ produtos (31,1% dos que venderam no ano) fazem 80,0% do faturamento**.
 
 ## Mês a mês
 
+Desde a 1.41.0 é uma linha, e não mais duas barras por mês (ver "O jeito do Grafana"
+acima). A regra do mês que corre não mudou: na linha ele é o trecho tracejado, e na
+tabela "Ver o valor de cada mês" ele diz "até dia N". O que está abaixo sobre barras e
+colunas é a história da 1.20.x, que explica por que a escala é o maior dos dois anos.
+
 Vem de `importacao.detalhe["vendas_mes"]`, e não da tabela de vendas, porque o detalhe
 guarda 25 meses e a tabela 12 — sem os 25 não daria para comparar com o mesmo mês do ano
 passado, que é a comparação que o varejo usa. A tela mostra 13 meses: um ano fechado mais
@@ -156,9 +219,26 @@ elas se colam e parecem uma barra larga só.
   certo, conferidos em pixel. Hoje a coluna do gráfico é `.coluna-mes`. Classe nova pede
   nome próprio: o arquivo é um só e quem repete nome herda estilo sem pedir.
 
+- **1.41.0, quatro defeitos que só o print pegou.** `.corpo-monitor a` pintou de azul o
+  menu de cima, que é de todas as telas: a cor de link vale só em `.monitor a`. O
+  `overflow: hidden` do quadro do número (para o minigráfico encostar nas bordas)
+  cortava o texto do "i" no meio; o quadro com o "i" aberto sobe na frente dos vizinhos
+  (`:has(.monitor-info[open])`). A legenda da rosca cortava o nome ("C", "Vende...") para
+  caber o valor: agora o valor desce para a linha de baixo. E na Hora do dia o rótulo de
+  duas linhas ("Fim do dia / 17h em diante") encurtava só a barra dele, tirando-a da
+  linha de base das outras: a grade das colunas usa `subgrid`, e as três faixas
+  (porcentagem, barra, nome) têm a mesma altura em todas as colunas.
+- No celular, o campo do fornecedor ficava da largura do nome mais comprido e a seta saía
+  da tela: `select` dentro de flex precisa de `min-width: 0`.
+
 ## Para acrescentar um número
 
 Um `Kpi` novo entra na lista de `_kpis_da_venda` ou de `_kpis_do_estoque`, com `formato`
 ("reais", "porcento", "meses" ou "numero"), a `explicacao` em linguagem de loja e
-`subir_e_bom=False` quando subir é piora. O template não precisa mudar: ele percorre a
-lista e `templates/painel/_valor_kpi.html` resolve o formato.
+`subir_e_bom=False` quando subir é piora. `Kpi.texto` escreve o número no formato (desde a
+1.41.0 é ele, e não mais um template de `if`s, porque o tamanho da letra depende de
+quantas letras o número tem). Número sem comparação que tem um limite escrito na
+explicação leva `atencao_acima_de`, e passa a laranja acima dele, como a cobertura acima
+de 3 meses. Na fileira de cima do Dashboard entram os quatro da venda e a cobertura; os
+outros números do estoque são desenhados (mostrador e roscas), e um número novo do
+estoque pede quadro próprio no template.
