@@ -422,13 +422,42 @@ def _gravar_vendas(importacao, vendas):
             **{chave: valor for chave, valor in dados.items() if chave != "linhas"},
         ))
     VendaImportada.objects.bulk_create(cabecalhos, batch_size=1000)
-    itens = [
-        ItemVendaImportada(venda=venda, **linha)
-        for venda, dados in zip(cabecalhos, vendas)
-        for linha in dados.get("linhas", ())
-    ]
+    anteriores = _tabela_de_antes(importacao)
+    itens = []
+    for venda, dados in zip(cabecalhos, vendas):
+        for linha in dados.get("linhas", ()):
+            if linha.get("preco_tabela_do_cadastro") and dados.get("id_set", 0) > 0:
+                antes = anteriores.get((dados["id_set"], linha["codigo"]))
+                if antes is not None:
+                    linha = {**linha, "preco_tabela": antes}
+            itens.append(ItemVendaImportada(venda=venda, **linha))
     ItemVendaImportada.objects.bulk_create(itens, batch_size=1000)
     return len(cabecalhos), len(itens)
+
+
+def _tabela_de_antes(importacao):
+    """O preço de tabela que a importação anterior tirou do cadastro, item a item.
+
+    Desde julho de 2026 o SET não grava o preço de tabela na venda, e o sistema usa o do
+    cadastro (1.46.0). Mas cada importação lê o cadastro DE NOVO: se o preço do produto
+    subiu na semana seguinte, a venda da semana passada pareceria vendida com desconto.
+    Na cópia de 20/09/2026, nos itens de junho que ainda tinham o preço gravado, o
+    cadastro de hoje dava 235 cortes de preço onde houve 73.
+
+    Por isso o preço do cadastro fica o da PRIMEIRA importação que viu a venda — horas
+    depois dela, com a importação três vezes ao dia — e passa de uma foto para a seguinte.
+    """
+    anterior = (Importacao.objects.filter(situacao=Importacao.Situacao.CONCLUIDA)
+                .exclude(pk=importacao.pk).first())
+    if anterior is None:
+        return {}
+    return {
+        (id_venda, codigo): preco
+        for id_venda, codigo, preco in ItemVendaImportada.objects
+        .filter(venda__importacao=anterior, preco_tabela_do_cadastro=True, preco_tabela__isnull=False)
+        .values_list("venda__id_set", "codigo", "preco_tabela")
+        if id_venda and id_venda > 0
+    }
 
 
 def _gravar_vendas_por_mes(importacao, linhas):

@@ -34,7 +34,7 @@ abaixo), cada uma um assunto:
 | **Compras** | Lista de compra, **Compra guiada** (1.45.0), Pedidos, Fornecedores, Indicadores de compra (desde a 1.40.1; Antes de comprar, Sugestões, Sugestões da equipe e Últimas compras abrem pela fileira "Também em Compras", logo abaixo do título da Lista) |
 | **Vendas** | Vendas do dia, Margem, Ticket médio, Clientes (o Dashboard morava aqui até a 1.42.0) |
 | **Estoque** | Consulta, Inventário |
-| **Dinheiro** | Financeiro, Caixa, Conciliação |
+| **Dinheiro** | Financeiro, Caixa, **Descontos e metas** (1.46.0), Conciliação |
 | **Sistema** | Importações, Dados da empresa, Base de processos, Usuários, Alertas, Backup, Certificado, Auditoria |
 
 A segunda fileira do topo mostra **só as telas do assunto aberto**. Então a pessoa vê
@@ -73,6 +73,14 @@ opção a visão geral."*
   `servicos.dashboard_da_importacao`). Guardado, abre com 36 consultas em cerca de 0,13 s
   na máquina de desenvolvimento; sem guardar eram 90 consultas e 1,3 s. Com filtro de grupo
   ou fornecedor, a conta é feita na hora, como antes.
+
+## Descontos e metas (1.46.0)
+
+Entrou em **Dinheiro**, logo depois do Caixa, e não em Vendas: o pedido dele foi *"no
+financeiro do caixa"*, e é o desconto que sai do caixa que a tela confere. A tela das regras
+(Regras e metas) é irmã dela: abre pelo botão no alto e deixa "Descontos e metas" aceso,
+sem entrada própria no menu. Abre só com a permissão Controlar descontos e metas, que na
+instalação fica só com o Administrador gerência.
 
 ## Onde isto mora
 

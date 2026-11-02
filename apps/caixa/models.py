@@ -15,6 +15,7 @@ dinheiro. É justamente o que alguém abre o caixa para conferir, e é pouco.
 
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import models
 
 from apps.importacao.models import Importacao
@@ -141,3 +142,123 @@ class MovimentoCaixa(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_display()} de {self.valor}"
+
+
+class RegraDeDesconto(models.Model):
+    """As regras de pagamento e as metas da loja, como a gerência passou à equipe.
+
+    Pedido do Edson em 02/11/2026, com a mensagem que vai para o grupo da loja: no Pix ou
+    no dinheiro, 7% de desconto; no crédito, até 3x sem desconto; "qualquer condição
+    diferente precisa de aprovação no grupo antes de ser confirmada ao cliente", e quem
+    autoriza é Miranda, Henriett ou Edson. A meta do sábado e do feriado é R$ 12.000, a do
+    domingo R$ 18.000; batida, cada funcionário que trabalhou no dia ganha R$ 30, e mais
+    R$ 10 a cada R$ 1.000 acima dela.
+
+    Fica no banco, e não no código, porque é a gerência que muda: a porcentagem, a meta e
+    o prêmio mudam com a estação, e quem muda não pode depender de programador. É uma
+    linha só (`atual`). A tela de descontos confere cada venda contra o que está aqui.
+    """
+
+    desconto_a_vista = models.DecimalField(
+        "desconto no Pix ou no dinheiro (%)", max_digits=5, decimal_places=2, default=Decimal("7.00"))
+    desconto_no_debito = models.DecimalField(
+        "desconto no cartão de débito (%)", max_digits=5, decimal_places=2, default=Decimal("0"),
+        help_text="As regras não falam do débito: com zero, débito com desconto precisa de aprovação.")
+    desconto_no_credito = models.DecimalField(
+        "desconto no cartão de crédito (%)", max_digits=5, decimal_places=2, default=Decimal("0"))
+    parcelas_no_credito = models.PositiveSmallIntegerField(
+        "parcelas no crédito sem aprovação", default=3,
+        help_text="O SET não grava em quantas vezes o cartão foi passado: este número vai na regra, mas a tela não o confere.")
+    folga = models.DecimalField(
+        "folga para arredondar (R$)", max_digits=7, decimal_places=2, default=Decimal("1.00"),
+        help_text="Desconto que passa da regra por até este valor é arredondamento, não conta.")
+    quem_autoriza = models.CharField(
+        "quem pode autorizar", max_length=120, default="Miranda, Henriett ou Edson",
+        help_text="Os nomes separados por vírgula ou por \"ou\". São as opções de quem aprovou.")
+
+    meta_sabado = models.DecimalField(
+        "meta do sábado e do feriado (R$)", max_digits=12, decimal_places=2, default=Decimal("12000"))
+    meta_domingo = models.DecimalField(
+        "meta do domingo (R$)", max_digits=12, decimal_places=2, default=Decimal("18000"))
+    premio = models.DecimalField(
+        "prêmio de quem trabalhou, meta batida (R$)", max_digits=9, decimal_places=2,
+        default=Decimal("30"))
+    premio_a_mais = models.DecimalField(
+        "a mais por pessoa a cada passo acima da meta (R$)", max_digits=9, decimal_places=2,
+        default=Decimal("10"))
+    passo = models.DecimalField(
+        "o passo acima da meta (R$)", max_digits=12, decimal_places=2, default=Decimal("1000"))
+    outros_feriados = models.TextField(
+        "feriados da cidade e outros dias de meta", blank=True,
+        help_text="Um por linha: 20/01 vale todo ano, 16/02/2027 vale só aquele dia. "
+                  "Os nacionais, o de São Paulo e os de Embu das Artes o sistema já sabe.")
+
+    atualizada_em = models.DateTimeField("mudada em", auto_now=True)
+    atualizada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", verbose_name="mudada por")
+
+    class Meta:
+        verbose_name = "regra de desconto e meta"
+        verbose_name_plural = "regras de desconto e metas"
+        permissions = [("controlar_descontos",
+                        "Pode ver os descontos de cada venda, registrar a aprovação do grupo "
+                        "e mudar as regras de desconto e as metas")]
+
+    def __str__(self):
+        return "Regras de desconto e metas"
+
+    @classmethod
+    def atual(cls):
+        """A linha única das regras; na primeira vez nasce com as do Edson de 02/11/2026."""
+        regra, _ = cls.objects.get_or_create(pk=1)
+        return regra
+
+    def nomes_de_quem_autoriza(self):
+        """["Miranda", "Henriett", "Edson"] a partir de "Miranda, Henriett ou Edson"."""
+        texto = self.quem_autoriza.replace(";", ",").replace(" ou ", ",").replace(" e ", ",")
+        nomes = [nome.strip() for nome in texto.split(",")]
+        return [nome for nome in dict.fromkeys(nomes) if nome]
+
+
+class DescontoAprovado(models.Model):
+    """A aprovação do grupo para uma venda que saiu da regra, anotada no sistema.
+
+    A regra do Edson é que a condição diferente seja aprovada no grupo ANTES de ser
+    confirmada ao cliente. O SET não tem onde guardar isso; aqui fica quem aprovou, para a
+    venda sair da lista do que ninguém autorizou. A venda é a do SET (IDVENDA), que não
+    muda de uma importação para a outra.
+
+    Nada se apaga: desfazer marca a linha como desfeita e a venda volta para a lista. A
+    auditoria guarda quem anotou e quem desfez.
+    """
+
+    id_venda = models.IntegerField("número interno da venda no SET")
+    numero = models.CharField("número da venda", max_length=40, blank=True)
+    dia = models.DateField("dia da venda")
+    valor_da_venda = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    desconto = models.DecimalField("desconto na hora da aprovação", max_digits=14, decimal_places=2,
+                                   default=0)
+    autorizado_por = models.CharField("quem autorizou", max_length=60)
+    observacao = models.CharField("observação", max_length=200, blank=True)
+    registrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", verbose_name="anotado por")
+    registrado_em = models.DateTimeField("anotado em", auto_now_add=True)
+    desfeito_em = models.DateTimeField("desfeito em", null=True, blank=True)
+    desfeito_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", verbose_name="desfeito por")
+
+    class Meta:
+        ordering = ["-registrado_em"]
+        verbose_name = "desconto aprovado"
+        verbose_name_plural = "descontos aprovados"
+        constraints = [
+            # Uma aprovação valendo por venda; as desfeitas ficam como histórico.
+            models.UniqueConstraint(fields=["id_venda"], condition=models.Q(desfeito_em__isnull=True),
+                                    name="uma_aprovacao_valendo_por_venda"),
+        ]
+
+    def __str__(self):
+        return f"Venda {self.numero or self.id_venda} aprovada por {self.autorizado_por}"

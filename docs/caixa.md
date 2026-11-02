@@ -6,6 +6,9 @@ hora abertura, hora fechamento, dia, operador".
 O sistema **só lê**. Abrir, movimentar e fechar caixa continua sendo no SET; aqui ele
 aparece somado, conferido e filtrável, que é o que o SET não dá numa tela só.
 
+O desconto de cada venda contra as regras da loja, e as metas do fim de semana, ficam na tela
+ao lado, **Descontos e metas** (1.46.0): `descontos-e-metas.md`.
+
 ## De onde vem
 
 Duas tabelas do backup do SET, lidas na importação (`apps/importacao/fontes/firebird.py`,

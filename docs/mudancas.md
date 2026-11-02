@@ -7,6 +7,43 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.46.0 — 02/11/2026
+
+Pedido dele (02/11/2026): as regras de pagamento que a gerência passa à equipe (*"À vista, no
+Pix ou dinheiro: 7% de desconto. Cartão de crédito: em até 3x, sem desconto. Qualquer condição
+diferente precisa de aprovação no grupo antes de ser confirmada ao cliente."*), as metas do
+sábado, do feriado e do domingo, e *"no financeiro do caixa, tentar buscar os descontos de cada
+produto seguindo as regras. ideia é controlar os desconto para que os funcionarios dê desconto
+sem parâmetros só objetivando a premiação. A empresa nao pode se prejudicar financeiro."* Como
+a conta funciona está em `descontos-e-metas.md`; o passo a passo, em
+`manual/descontos-e-metas.md`.
+
+- **Descontos e metas**, a tela nova de Dinheiro, logo depois do Caixa: cada venda com
+  desconto contra as regras da loja, da que mais passou para a que menos passou, com o motivo
+  em português ("Passou R$ 30,00 da regra: no cartão de crédito ela é sem desconto."), os
+  produtos da venda e quem recebeu no caixa.
+- **O desconto que o SET não mostra**: além do desconto do fechamento, o preço do produto
+  mudado no caixa antes de fechar a venda. Em agosto, 71 das 134 vendas fora da regra tinham
+  desconto só assim, e no SET aparecem sem desconto nenhum.
+- **A meta de cada sábado, domingo e feriado**, com o prêmio por pessoa e a conta do dia sem
+  as vendas fora da regra. Em agosto, as três metas batidas dependeram delas: uma não teria
+  sido batida e duas teriam pago menos.
+- **A aprovação do grupo se anota na venda**: quem aprovou e uma observação. A venda sai da
+  lista; Desfazer a devolve, nada é apagado e tudo vai para a auditoria.
+- **Regras e metas** mudam na tela, com os feriados de Embu das Artes já dentro (aniversário
+  da cidade, Sexta-feira da Paixão e Corpus Christi) e um campo para os outros. O débito começa
+  sem desconto, porque a regra não fala dele.
+- **O e-mail Vendas do dia** ganhou a meta do dia e as vendas fora da regra, com o link da
+  tela.
+- **A importação passa a ler do SET** o total dos produtos antes do desconto, quem recebeu no
+  caixa, as partes do pagamento e, em cada item, o preço cobrado e o de tabela. Desde julho o
+  SET não grava o preço de tabela na venda: vale o do cadastro, guardado o primeiro que o
+  sistema viu, para um aumento de preço depois da venda não parecer desconto.
+- **Permissão nova, Controlar descontos e metas**, que entra só no Administrador gerência.
+- **Filtro e cartões não ficam mais colados** no Caixa, no Ticket médio, em Vendas do dia e em
+  Comparar, e a última linha das tabelas com o nome na primeira coluna perdeu o risco que
+  sobrava embaixo dele.
+
 ## 1.45.0 — 02/11/2026
 
 Pedido dele (02/11/2026, com dois prints): *"remover linha branca em volta do logotipo / no

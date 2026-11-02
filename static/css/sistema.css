@@ -488,6 +488,9 @@ fieldset label { font-weight: 400; }
    espaço na linha e em cima dele quando não sobrava, na mesma fileira. Em coluna, rótulo e
    campo andam juntos e todas as telas de filtro ficam iguais. */
 .filtros label { margin: 0; display: flex; flex-direction: column; gap: .15rem; }
+/* No Caixa, no Ticket médio, em Vendas do dia, em Comparar e em Descontos os cartões vinham
+   colados no botão Filtrar: 0 px entre um e outro, medido no print de 1600 e de 390. */
+.filtros + .cartoes-numero { margin-top: var(--espaco); }
 
 /* ---------------------------------------------------------------- kanban */
 .kanban { display: grid; grid-template-columns: repeat(4, minmax(15rem, 1fr)); gap: var(--espaco); overflow-x: auto; }
@@ -549,7 +552,9 @@ thead th {
 }
 tbody tr:nth-child(even) { background: var(--cor-zebra); }
 tbody tr:hover { background: var(--cor-primaria-fraca); }
-tbody tr:last-child td { border-bottom: 0; }
+/* O th da linha (o nome do produto, a venda) entra junto: sem ele, a última linha das
+   tabelas com cabeçalho de linha ficava com um risco só embaixo da primeira coluna. */
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 td.numerico, th.numerico { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .paginas { display: flex; gap: var(--espaco); margin-top: var(--espaco); }
 details { margin-top: var(--espaco); }
@@ -3039,4 +3044,90 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
   .guiada-tabela tbody tr.guiada-mudou { box-shadow: inset 4px 0 0 var(--cor-link); }
   .guiada-tabela tr.linha-carro-chefe > th, .guiada-tabela tr.guiada-zerada > th,
   .guiada-tabela tr.guiada-cortada > th, .guiada-tabela tr.guiada-mudou > th { box-shadow: none; }
+}
+
+/* ------------------------------------------- descontos e metas (1.46.0)
+   Pedido de 02/11/2026: o desconto de cada venda contra as regras da loja, a aprovação do
+   grupo e a meta de cada fim de semana. Tudo começa com `descontos-`, pela mesma razão da
+   Compra guiada: nome solto de classe já mudou outra tela sem ninguém ver (1.44.0).
+   A venda fora da regra é CARTÃO, e não linha de tabela, porque tem ação (anotar quem
+   aprovou): tabela com botão rola de lado bem onde estão os botões. */
+.descontos-regra {
+  margin: 0 0 1rem; padding: .6rem .8rem; border-radius: var(--raio);
+  border: 1px solid var(--cor-borda); background: var(--cor-superficie);
+  font-size: .92rem; color: var(--cor-texto-suave);
+}
+.descontos-regra strong { color: var(--cor-texto); }
+.descontos-valor { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.descontos-detalhe {
+  display: block; font-weight: 400; font-size: .85rem; color: var(--cor-texto-suave);
+  white-space: normal;
+}
+/* Duas colunas no computador, e não três: com três o cartão tinha a largura de um celular
+   e a tabela dos produtos rolava de lado dentro dele. */
+.descontos-vendas {
+  display: grid; gap: 1rem; margin-top: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(30rem, 100%), 1fr));
+}
+.descontos-venda {
+  display: flex; flex-direction: column; gap: .45rem; min-width: 0;
+  border: 1px solid var(--cor-borda); border-left: 4px solid var(--cor-erro);
+  border-radius: var(--raio); padding: .9rem 1rem; background: var(--cor-campo);
+}
+.descontos-venda h3 {
+  margin: 0; font-size: 1rem; line-height: 1.3;
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: .2rem .75rem;
+}
+.descontos-pago { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.descontos-quando { margin: .15rem 0 0; font-size: .85rem; color: var(--cor-texto-suave); overflow-wrap: anywhere; }
+.descontos-quando strong { color: var(--cor-texto); font-weight: 600; }
+.descontos-quando span { white-space: nowrap; }
+.descontos-numeros, .descontos-motivo, .descontos-custo { margin: 0; }
+.descontos-porcentagem { font-size: 1.35rem; color: var(--cor-erro); font-variant-numeric: tabular-nums; }
+.descontos-passou { color: var(--cor-erro); font-weight: 600; }
+.descontos-motivo { font-size: .92rem; }
+.descontos-custo { font-size: .88rem; color: var(--cor-alerta); }
+.descontos-itens, .descontos-aprovar { border-top: 1px dashed var(--cor-borda); padding-top: .45rem; }
+.descontos-itens > summary, .descontos-aprovar > summary { cursor: pointer; color: var(--cor-link); font-size: .9rem; }
+.descontos-itens .tabela-rolavel { margin-top: .5rem; }
+/* Dentro do cartão da venda a tabela dos produtos cabe na largura dele: a regra geral
+   (46rem) a fazia rolar de lado em todo cartão, até no computador. */
+.descontos-itens .tabela-rolavel table { min-width: 0; }
+.descontos-itens th, .descontos-itens td { padding: .45rem .6rem; }
+.descontos-aprovar form { display: flex; flex-wrap: wrap; gap: .6rem; align-items: end; margin-top: .6rem; }
+.descontos-aprovar label {
+  display: flex; flex-direction: column; gap: .2rem; flex: 1 1 10rem; min-width: 0; font-size: .85rem;
+}
+.descontos-aprovar .botao { flex: 0 0 auto; }
+.descontos-tipo { display: block; font-size: .85rem; font-weight: 400; color: var(--cor-texto-suave); }
+.descontos-premio strong { color: var(--cor-sucesso); }
+.descontos-fora-no-dia { white-space: normal; min-width: 14rem; }
+.descontos-tabela-metas tr.descontos-meta-ruim > th { box-shadow: inset 4px 0 0 var(--cor-erro); }
+.descontos-tabela-metas tr.descontos-meta-atencao > th { box-shadow: inset 4px 0 0 var(--cor-alerta); }
+.descontos-tabela-metas tr.descontos-meta-bom > th { box-shadow: inset 4px 0 0 var(--cor-sucesso); }
+.descontos-aprovadas > summary { cursor: pointer; }
+.descontos-aprovadas > summary h2 { display: inline; }
+.descontos-desfazer { white-space: nowrap; }
+.descontos-feriados { margin-top: 1rem; }
+.descontos-feriados > summary { cursor: pointer; color: var(--cor-link); }
+.descontos-feriados ul {
+  margin: .6rem 0; padding: 0; list-style: none; display: grid; gap: .2rem 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
+}
+.descontos-feriados li span { display: inline-block; min-width: 9.5rem; color: var(--cor-texto-suave); }
+@media (max-width: 52rem) {
+  .descontos-tabela-metas tbody td.numerico, .descontos-tabela-pessoas tbody td.numerico,
+  .descontos-tabela-produtos tbody td.numerico, .descontos-tabela-itens tbody td.numerico,
+  .descontos-tabela-aprovadas tbody td.numerico { display: inline-block; margin-right: 1.1rem; }
+  /* O fio da meta vai para o cartão inteiro, não para o nome (lição da 1.45.0). */
+  .descontos-tabela-metas tbody tr.descontos-meta-ruim { box-shadow: inset 4px 0 0 var(--cor-erro); }
+  .descontos-tabela-metas tbody tr.descontos-meta-atencao { box-shadow: inset 4px 0 0 var(--cor-alerta); }
+  .descontos-tabela-metas tbody tr.descontos-meta-bom { box-shadow: inset 4px 0 0 var(--cor-sucesso); }
+  .descontos-tabela-metas tr.descontos-meta-ruim > th, .descontos-tabela-metas tr.descontos-meta-atencao > th,
+  .descontos-tabela-metas tr.descontos-meta-bom > th { box-shadow: none; }
+  .descontos-tabela-metas td.descontos-fora-no-dia {
+    min-width: 0; margin-top: .45rem; padding-top: .5rem; border-top: 1px dashed var(--cor-borda);
+  }
+  .descontos-tabela-aprovadas form { margin-top: .4rem; }
+  .descontos-feriados li span { min-width: 0; margin-right: .4rem; }
 }

@@ -742,7 +742,9 @@ class TestVendaImportadaNaoGuardaDadoPessoal(TestCase):
         selects = " ".join(re.findall(r"select\b.*?from\b.*?(?=\"\"\")", codigo,
                                       re.IGNORECASE | re.DOTALL)).upper()
         self.assertIn("V.TOTALVENDA", selects)  # o teste está olhando a consulta certa
-        for proibida in ("NOMECLI", "COMPRADOR", "IDCLIENTE"):
+        # CLIFORNE (ICAIXA) e OBSERVACAO (FATVENDAS), lidas desde a 1.46.0 pelas tabelas
+        # vizinhas, também podem ter nome de cliente.
+        for proibida in ("NOMECLI", "COMPRADOR", "IDCLIENTE", "CLIFORNE", "OBSERVACAO"):
             self.assertNotIn(proibida, selects)
 
 

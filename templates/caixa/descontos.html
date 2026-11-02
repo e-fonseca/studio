@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Descontos e metas</h1>
+  <p>O desconto de cada venda contra as regras da loja, quem recebeu no caixa e a meta de cada
+     sábado, domingo e feriado.</p>
+  <a class="botao secundario" href="{% url 'caixa:regras_de_desconto' %}">Regras e metas</a>
+</div>
+
+<p class="descontos-regra" data-regra-de-hoje>
+  <strong>A regra de hoje:</strong>
+  Pix e dinheiro até {{ regra.desconto_a_vista|quantidade }}%;
+  {% if regra.desconto_no_debito %}débito até {{ regra.desconto_no_debito|quantidade }}%{% else %}débito sem desconto{% endif %};
+  {% if regra.desconto_no_credito %}crédito até {{ regra.desconto_no_credito|quantidade }}%{% else %}crédito em até {{ regra.parcelas_no_credito }}x sem desconto{% endif %}.
+  O resto precisa da aprovação de {{ regra.quem_autoriza }}.
+  Meta: sábado e feriado {{ regra.meta_sabado|reais }}, domingo {{ regra.meta_domingo|reais }}.
+</p>
+
+{% if not t.importacao %}
+<section class="cartao cartao-atencao">
+  <h2>Ainda não há vendas importadas</h2>
+  <p>As vendas vêm do backup do SET. Assim que uma importação concluir, os descontos aparecem aqui.</p>
+</section>
+{% else %}
+
+{% if t.falta_importar %}
+<section class="cartao cartao-atencao">
+  <h2>A próxima importação completa esta tela</h2>
+  <p>Estas vendas vieram de uma importação feita antes desta versão, sem o preço de tabela de cada
+     produto, as partes do pagamento e quem recebeu no caixa. Por enquanto a conta usa só o desconto
+     do fechamento. A importação de hoje traz o resto sozinha.</p>
+</section>
+{% endif %}
+
+<form method="get" class="filtros" role="search">
+  <label>Período
+    <select name="periodo">
+      {% for valor, rotulo in periodos %}
+      <option value="{{ valor }}" {% if valor == t.periodo %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Quem recebeu no caixa
+    <select name="quem">
+      <option value="">Todos</option>
+      {% for nome in t.nomes %}
+      <option value="{{ nome }}" {% if nome == t.filtro_quem %}selected{% endif %}>{{ nome }}</option>
+      {% endfor %}
+    </select></label>
+  <button type="submit" class="botao secundario">Filtrar</button>
+  {% if t.filtrou %}<a href="{% url 'caixa:descontos' %}">Limpar filtros</a>{% endif %}
+</form>
+
+<div class="cartoes-numero">
+  <div class="cartao-numero {% if t.sem_aprovacao %}nivel-ruim{% else %}nivel-bom{% endif %}">
+    <span class="cartao-titulo">Fora da regra, sem aprovação</span>
+    <strong class="cartao-valor">{{ t.sem_aprovacao|length|contagem }}</strong>
+    <span class="cartao-rodape">{% if t.sem_aprovacao %}{{ t.passou_sem_aprovacao|reais }} de desconto além do que a regra deixava.{% else %}Nenhuma venda passou da regra sem alguém do grupo aprovar.{% endif %}{% if t.aprovadas %} {{ t.aprovadas|length|contagem }} aprovada{{ t.aprovadas|length|pluralize }} pelo grupo.{% endif %}</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Vendas com desconto</span>
+    <strong class="cartao-valor">{{ t.com_desconto|contagem }}</strong>
+    <span class="cartao-rodape">De {{ t.vendas|contagem }} vendas ({{ t.fatia_com_desconto|quantidade }}%), {{ t.desconto|reais }} de desconto{% if t.corte_nos_itens %}, {{ t.corte_nos_itens|reais }} disso em preço mudado no caixa{% endif %}. {{ t.rotulo_periodo }}, de {{ t.desde|date:"d/m" }} a {{ t.ate|date:"d/m/Y" }}.</span>
+  </div>
+  <div class="cartao-numero {% if t.metas_batidas %}nivel-bom{% endif %}">
+    <span class="cartao-titulo">Metas batidas</span>
+    <strong class="cartao-valor">{{ t.metas_batidas }} de {{ t.metas|length }}</strong>
+    <span class="cartao-rodape">{% if t.metas %}Sábados, domingos e feriados do período. Prêmio de {{ t.premio_por_pessoa|reais }} por pessoa somando os dias.{% else %}Nenhum sábado, domingo ou feriado com venda no período.{% endif %}</span>
+  </div>
+  <div class="cartao-numero {% if t.metas_que_dependeram %}nivel-ruim{% elif t.metas %}nivel-bom{% endif %}">
+    <span class="cartao-titulo">Meta que dependeu de venda fora da regra</span>
+    <strong class="cartao-valor">{{ t.metas_que_dependeram|length }}</strong>
+    <span class="cartao-rodape">Dias em que, sem as vendas fora da regra, a meta não teria sido batida ou o prêmio seria menor.</span>
+  </div>
+</div>
+
+<section class="cartao" id="fora-da-regra">
+  <h2>Fora da regra, esperando aprovação</h2>
+  {% if t.sem_aprovacao %}
+  <p class="ajuda">Da que mais passou da regra para a que menos passou. Se alguém do grupo aprovou a
+     condição, anote quem foi: a venda sai desta lista e fica registrada. Quem aparece é quem
+     recebeu no caixa do SET, que nem sempre é quem negociou com o cliente.</p>
+  <div class="descontos-vendas">
+    {% for venda in t.fora_na_tela %}
+    <article class="descontos-venda" data-venda="{{ venda.id_set }}">
+      <header>
+        <h3>Venda {{ venda.numero }} <span class="descontos-pago">{{ venda.valor|reais }}</span></h3>
+        <p class="descontos-quando"><span>{{ venda.dia|date:"D d/m" }} às {{ venda.hora|slice:":5" }}&nbsp;·</span> <span>recebeu <strong>{{ venda.quem }}</strong>&nbsp;·</span> <span>{{ venda.formas }}</span></p>
+      </header>
+      <p class="descontos-numeros">{% if venda.tem_desconto %}<strong class="descontos-porcentagem">{{ venda.percentual|quantidade }}%</strong> de desconto, <span class="descontos-valor">{{ venda.desconto|reais }}</span> sobre <span class="descontos-valor">{{ venda.tabela|reais }}</span> de tabela.{% else %}Sem desconto.{% endif %}</p>
+      <p class="descontos-motivo">{% if venda.condicao_diferente %}<span class="descontos-passou">{{ venda.regra_texto }}</span>{% else %}<span class="descontos-passou">Passou <span class="descontos-valor">{{ venda.passou|reais }}</span> da regra:</span> {{ venda.limite_texto }}{% endif %}</p>
+      {% if venda.corte_texto %}<p class="descontos-motivo">{{ venda.corte_texto }}</p>{% endif %}
+      {% if venda.abaixo_do_custo %}<p class="descontos-custo">Saiu por menos do que custou ({{ venda.custo|reais }} de custo).</p>{% endif %}
+      {% if venda.itens %}
+      <details class="descontos-itens">
+        <summary>Os produtos desta venda ({{ venda.itens|length }})</summary>
+        <div class="tabela-rolavel tabela-em-cartao">
+          <table class="descontos-tabela-itens">
+            <caption class="oculto-visualmente">Cada produto da venda {{ venda.numero }}: preço de tabela, o que foi cobrado e o desconto que levou.</caption>
+            <thead><tr>
+              <th scope="col">Produto</th>
+              <th scope="col" class="numerico">Tabela</th>
+              <th scope="col" class="numerico">Cobrado</th>
+              <th scope="col" class="numerico">Desconto</th>
+            </tr></thead>
+            <tbody>
+              {% for item in venda.itens %}
+              <tr>
+                <th scope="row">{{ item.descricao|default:item.codigo }}
+                  <span class="descontos-detalhe">{{ item.codigo }} · {{ item.quantidade|quantidade }} un.{% if item.corte %} · preço mudado no caixa{% if item.tabela_estimada %}, comparado ao cadastro{% endif %}{% endif %}{% if item.sem_comparar %} · {{ item.sem_comparar }}, preço não comparado{% endif %}</span></th>
+                <td class="numerico" data-rotulo="Tabela">{{ item.tabela|reais }}</td>
+                <td class="numerico" data-rotulo="Cobrado">{{ item.pago|reais }}</td>
+                <td class="numerico" data-rotulo="Desconto">{% if item.desconto %}{{ item.desconto|reais }} ({{ item.percentual|quantidade }}%){% else %}—{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </details>
+      {% endif %}
+      <details class="descontos-aprovar">
+        <summary>Foi aprovada no grupo? Anotar</summary>
+        <form method="post" action="{% url 'caixa:aprovar_desconto' %}">
+          {% csrf_token %}
+          <input type="hidden" name="venda" value="{{ venda.id_set }}">
+          <input type="hidden" name="periodo" value="{{ t.periodo }}">
+          <input type="hidden" name="quem" value="{{ t.filtro_quem }}">
+          <label>Quem aprovou
+            <select name="autorizado_por" required>
+              {% for nome in nomes_que_autorizam %}<option value="{{ nome }}">{{ nome }}</option>{% endfor %}
+            </select></label>
+          <label>Observação
+            <input type="text" name="observacao" maxlength="200" placeholder="Ex.: levou 3 peças"></label>
+          <button type="submit" class="botao secundario" data-enviando="Anotando…">Anotar a aprovação</button>
+        </form>
+      </details>
+    </article>
+    {% endfor %}
+  </div>
+  {% if t.fora_escondidas %}<p class="ajuda">E mais {{ t.fora_escondidas|contagem }} venda{{ t.fora_escondidas|pluralize }} que passaram menos da regra. Escolha um período menor ou uma pessoa para ver todas.</p>{% endif %}
+  {% else %}
+  <p>Nenhuma venda deste período passou da regra sem aprovação.</p>
+  {% endif %}
+  {% if t.tem_estimativa %}<p class="ajuda">Desde julho de 2026 o SET não grava o preço de tabela na venda. Onde está escrito "comparado ao cadastro", a comparação é com o preço do produto no cadastro do SET quando a venda entrou no sistema: se o preço subiu entre a venda e a importação, a diferença pode ser só o aumento.</p>{% endif %}
+</section>
+
+<section class="cartao" id="metas">
+  <h2>Metas do período</h2>
+  {% if t.metas %}
+  <p class="ajuda">Prêmio por pessoa que trabalhou no dia: {{ regra.premio|reais }} na meta e
+     {{ regra.premio_a_mais|reais }} a cada {{ regra.passo|reais }} acima dela. O SET não sabe quem
+     trabalhou (freela não tem usuário): os nomes são de quem abriu caixa ou passou venda.</p>
+  <div class="tabela-rolavel tabela-em-cartao descontos-metas">
+    <table class="descontos-tabela-metas">
+      <caption class="oculto-visualmente">A meta de cada sábado, domingo e feriado, o que a loja vendeu e o prêmio por pessoa.</caption>
+      <thead><tr>
+        <th scope="col">Dia</th>
+        <th scope="col" class="numerico">Meta</th>
+        <th scope="col" class="numerico">Vendido</th>
+        <th scope="col" class="numerico">Prêmio por pessoa</th>
+        <th scope="col">Fora da regra no dia</th>
+      </tr></thead>
+      <tbody>
+        {% for dia in t.metas %}
+        <tr class="descontos-meta-{{ dia.nivel|default:'nao' }}">
+          <th scope="row">{{ dia.dia|date:"d/m" }} <span class="descontos-tipo">{{ dia.rotulo }}</span>
+            <span class="descontos-detalhe">{{ dia.quem|join:", "|default:"ninguém no caixa" }}</span></th>
+          <td class="numerico" data-rotulo="Meta">{{ dia.meta|reais }}</td>
+          <td class="numerico" data-rotulo="Vendido">{{ dia.vendido|reais }}
+            <span class="descontos-detalhe">{% if dia.bateu %}bateu{% else %}faltaram <span class="descontos-valor">{{ dia.falta|reais }}</span>{% endif %}</span></td>
+          <td class="numerico descontos-premio" data-rotulo="Prêmio por pessoa">{% if dia.premio %}<strong>{{ dia.premio|reais }}</strong>{% else %}—{% endif %}</td>
+          <td class="descontos-fora-no-dia" data-rotulo="Fora da regra no dia">{% if dia.fora %}{{ dia.fora }} venda{{ dia.fora|pluralize }}, <span class="descontos-valor">{{ dia.vendido_fora|reais }}</span>{% if dia.dependeu_de_fora %}. <strong>Sem elas, o dia ficaria em <span class="descontos-valor">{{ dia.vendido_sem_fora|reais }}</span>: {% if dia.premio_sem_fora %}o prêmio seria <span class="descontos-valor">{{ dia.premio_sem_fora|reais }}</span>{% else %}a meta não teria sido batida{% endif %}.</strong>{% endif %}{% else %}nenhuma{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Nenhum sábado, domingo ou feriado com venda neste período.</p>
+  {% endif %}
+</section>
+
+{% if t.pessoas %}
+<section class="cartao" id="quem">
+  <h2>Por quem recebeu no caixa</h2>
+  <p class="ajuda">Quem registrou o recebimento no SET. O vendedor da venda está vazio no SET desde abril de 2026.</p>
+  <div class="tabela-rolavel tabela-em-cartao">
+    <table class="descontos-tabela-pessoas">
+      <caption class="oculto-visualmente">Vendas, descontos e vendas fora da regra de cada pessoa que recebeu no caixa.</caption>
+      <thead><tr>
+        <th scope="col">Quem</th>
+        <th scope="col" class="numerico">Vendas</th>
+        <th scope="col" class="numerico">Com desconto</th>
+        <th scope="col" class="numerico">Desconto dado</th>
+        <th scope="col" class="numerico">Fora da regra</th>
+        <th scope="col" class="numerico">Passou da regra</th>
+        <th scope="col" class="numerico">Maior desconto</th>
+      </tr></thead>
+      <tbody>
+        {% for pessoa in t.pessoas %}
+        <tr>
+          <th scope="row">{{ pessoa.nome }}</th>
+          <td class="numerico" data-rotulo="Vendas">{{ pessoa.vendas|contagem }}</td>
+          <td class="numerico" data-rotulo="Com desconto">{{ pessoa.com_desconto|contagem }}</td>
+          <td class="numerico" data-rotulo="Desconto dado">{{ pessoa.desconto|reais }}</td>
+          <td class="numerico" data-rotulo="Fora da regra">{{ pessoa.fora|contagem }}</td>
+          <td class="numerico" data-rotulo="Passou da regra">{% if pessoa.passou %}<strong>{{ pessoa.passou|reais }}</strong>{% else %}—{% endif %}</td>
+          <td class="numerico" data-rotulo="Maior desconto">{% if pessoa.maior %}{{ pessoa.maior|quantidade }}%{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if t.produtos %}
+<section class="cartao" id="produtos">
+  <h2>Produtos que mais saíram com desconto</h2>
+  <p class="ajuda">O desconto do fechamento dividido entre os produtos da venda pelo valor de cada um, mais o preço mudado no caixa.</p>
+  <div class="tabela-rolavel tabela-em-cartao">
+    <table class="descontos-tabela-produtos">
+      <caption class="oculto-visualmente">Os produtos com mais desconto no período.</caption>
+      <thead><tr>
+        <th scope="col">Produto</th>
+        <th scope="col" class="numerico">Vezes</th>
+        <th scope="col" class="numerico">Desconto</th>
+        <th scope="col" class="numerico">Sobre a tabela</th>
+        <th scope="col" class="numerico">Preço mudado no caixa</th>
+      </tr></thead>
+      <tbody>
+        {% for produto in t.produtos %}
+        <tr>
+          <th scope="row">{{ produto.descricao|default:produto.codigo }}
+            <span class="descontos-detalhe">{{ produto.codigo }}{% if produto.fora %} · {{ produto.fora }} vez{{ produto.fora|pluralize:"es" }} em venda fora da regra{% endif %}{% if produto.abaixo_do_custo %} · {{ produto.abaixo_do_custo }} abaixo do custo{% endif %}{% if produto.estimado %} · preço comparado ao cadastro{% endif %}</span></th>
+          <td class="numerico" data-rotulo="Vezes">{{ produto.vezes|contagem }}</td>
+          <td class="numerico" data-rotulo="Desconto">{{ produto.desconto|reais }}</td>
+          <td class="numerico" data-rotulo="Sobre a tabela">{{ produto.percentual|quantidade }}%</td>
+          <td class="numerico" data-rotulo="Preço mudado">{% if produto.corte %}{{ produto.corte|reais }}{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if t.aprovadas %}
+<details class="cartao descontos-aprovadas" id="aprovadas">
+  <summary><h2>Aprovadas pelo grupo ({{ t.aprovadas|length }})</h2></summary>
+  <p class="ajuda">Vendas fora da regra que alguém do grupo aprovou. Desfazer devolve a venda para a lista; o registro de quem anotou e de quem desfez fica guardado.</p>
+  <div class="tabela-rolavel tabela-em-cartao">
+    <table class="descontos-tabela-aprovadas">
+      <caption class="oculto-visualmente">Vendas fora da regra com a aprovação anotada.</caption>
+      <thead><tr>
+        <th scope="col">Venda</th>
+        <th scope="col" class="numerico">Desconto</th>
+        <th scope="col">Aprovou</th>
+        <th scope="col">Anotado por</th>
+        <th scope="col"><span class="oculto-visualmente">Ação</span></th>
+      </tr></thead>
+      <tbody>
+        {% for venda in t.aprovadas %}
+        <tr>
+          <th scope="row">{{ venda.numero }} <span class="descontos-detalhe">{{ venda.dia|date:"d/m" }} · {{ venda.quem }} · {{ venda.formas }}</span></th>
+          <td class="numerico" data-rotulo="Desconto">{{ venda.desconto|reais }} ({{ venda.percentual|quantidade }}%)</td>
+          <td data-rotulo="Aprovou"><strong>{{ venda.aprovacao.autorizado_por }}</strong>{% if venda.aprovacao.observacao %} <span class="descontos-detalhe">{{ venda.aprovacao.observacao }}</span>{% endif %}</td>
+          <td data-rotulo="Anotado por">{{ venda.aprovacao.registrado_por|nome_pessoa:"—" }} <span class="descontos-detalhe">{{ venda.aprovacao.registrado_em|date:"d/m/Y H:i" }}</span></td>
+          <td>
+            <form method="post" action="{% url 'caixa:desfazer_aprovacao' venda.aprovacao.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="periodo" value="{{ t.periodo }}">
+              <input type="hidden" name="quem" value="{{ t.filtro_quem }}">
+              <button type="submit" class="botao secundario descontos-desfazer" data-enviando="Desfazendo…">Desfazer</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+{% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Descontos e metas",
+    "texto": "Cada venda do SET é conferida contra a regra da loja: Pix e dinheiro com até 7% de desconto, cartão sem desconto, e o resto só com aprovação do grupo. O sistema só lê o SET; nada aqui muda uma venda."
+  },
+  {
+    "seletor": ".descontos-regra",
+    "titulo": "A regra que vale",
+    "texto": "É a regra que a conta usa. Para mudar a porcentagem, a meta ou o prêmio, use o botão Regras e metas, no alto."
+  },
+  {
+    "seletor": ".cartoes-numero",
+    "titulo": "Os quatro números",
+    "texto": "O primeiro é o que pede ação: vendas que passaram da regra sem ninguém aprovar. O último liga as duas coisas: o dia em que a meta só bateu por causa dessas vendas."
+  },
+  {
+    "seletor": "#fora-da-regra",
+    "titulo": "Desconto escondido no preço",
+    "texto": "O desconto pode ser dado no fechamento ou mudando o preço do produto no caixa. O segundo não aparece como desconto no SET; aqui ele aparece, produto por produto."
+  },
+  {
+    "seletor": "#metas",
+    "titulo": "A meta e o prêmio",
+    "texto": "Sábado, domingo e feriado, com o prêmio por pessoa. Quando a meta só bateu com vendas fora da regra, a linha diz quanto o dia teria vendido sem elas."
+  }
+]
+</script>
+{% endblock %}

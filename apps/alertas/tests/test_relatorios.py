@@ -300,6 +300,28 @@ class VendasDoDiaTest(BaseRelatorio):
         titulos = [b.titulo for b in relatorios.vendas_do_dia(self.importacao).blocos]
         self.assertFalse([t for t in titulos if "abaixo do custo" in t])
 
+    def test_domingo_leva_a_meta_e_a_venda_fora_da_regra(self):
+        """Pedido de 02/11/2026: o e-mail do dia diz a meta e o desconto que passou da regra."""
+        venda = self.venda(valor="85", linhas=[("001", "VASO", "100", "40")])
+        venda.desconto, venda.total_produtos = Decimal("15"), Decimal("100")
+        venda.forma_pagamento, venda.recebido_por = "CARTAO CREDITO", "CAIXA TESTE"
+        venda.save()
+        relatorio = relatorios.vendas_do_dia(self.importacao)
+        meta = next(b for b in relatorio.blocos if b.titulo == "Meta do dia: Domingo")
+        self.assertIn("Vendeu R$ 85,00 de R$ 18.000,00", meta.frase)
+        fora = next(b for b in relatorio.blocos if b.titulo.startswith("Descontos fora da regra"))
+        self.assertEqual(fora.titulo, "Descontos fora da regra: 1 venda(s)")
+        self.assertIn("recebeu Caixa Teste", fora.linhas[0]["quem"])
+        self.assertEqual(fora.linhas[0]["valor"], "R$ 15,00")
+        self.assertIn("no cartão de crédito ela é sem desconto", fora.linhas[0]["o_que"])
+
+    def test_desconto_dentro_da_regra_nao_vira_bloco(self):
+        venda = self.venda(valor="93", linhas=[("001", "VASO", "100", "40")])
+        venda.desconto, venda.total_produtos, venda.forma_pagamento = Decimal("7"), Decimal("100"), "PIX"
+        venda.save()
+        titulos = [b.titulo for b in relatorios.vendas_do_dia(self.importacao).blocos]
+        self.assertFalse([t for t in titulos if t.startswith("Descontos fora da regra")])
+
     def test_vendido_abaixo_do_custo_ganha_um_bloco_proprio(self):
         """É a única coisa aqui que pede ação hoje."""
         self.venda(linhas=[("001", "NO PREJUIZO", "30", "50")])

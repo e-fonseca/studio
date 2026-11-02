@@ -286,6 +286,23 @@ class VendaImportada(models.Model):
     forma_pagamento = models.CharField("forma de pagamento", max_length=60, blank=True)
     vendedor = models.CharField(max_length=200, blank=True)
 
+    # Os três de baixo entraram na 1.46.0, para o controle de desconto (pedido do Edson em
+    # 02/11/2026: "controlar os descontos para que os funcionários não deem desconto sem
+    # parâmetros só objetivando a premiação"). Venda importada antes fica com eles vazios
+    # até a importação seguinte.
+    #
+    # O total dos produtos é o que a venda dava ANTES do desconto dado no fechamento
+    # (VENDAS.TOTALPROD): é a base da porcentagem do desconto.
+    total_produtos = models.DecimalField("total dos produtos, antes do desconto",
+                                         max_digits=14, decimal_places=2, default=0)
+    # Quem registrou o recebimento no caixa do SET (ICAIXA.USUARIO). O vendedor da venda
+    # está vazio desde abril de 2026; o caixa tem o nome em todo recebimento, e é quem
+    # fecha a venda que dá o desconto.
+    recebido_por = models.CharField("quem recebeu no caixa", max_length=50, blank=True)
+    # As partes do pagamento (FATVENDAS), {"PIX": "150.00", "CARTAO CREDITO": "50.00"}. A
+    # venda paga parte no PIX e parte no cartão tem desconto permitido só na parte à vista.
+    formas_pagas = models.JSONField("partes do pagamento", default=dict, blank=True)
+
     class Meta:
         ordering = ["-data", "-id_set"]
         verbose_name = "venda importada"
@@ -350,6 +367,20 @@ class ItemVendaImportada(models.Model):
         help_text="Usado como estimativa quando o SET não gravou o custo da venda.",
     )
     custo_estimado_total = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+
+    # Desde a 1.46.0: o preço cobrado (IVENDAS.VALORPROD) e o de tabela. Mudar o preço do
+    # produto no caixa é desconto que NÃO aparece no desconto da venda; é com os dois que
+    # ele aparece. O SET parou de gravar o preço de tabela no item em julho de 2026
+    # (IVENDAS.PRECOVENDA vazio em 3.563 dos 4.068 itens de julho): aí vale o do cadastro
+    # no momento da importação, e a linha fica marcada como estimada, como o custo.
+    preco_unitario = models.DecimalField("preço cobrado", max_digits=14, decimal_places=4,
+                                         null=True, blank=True)
+    preco_tabela = models.DecimalField("preço de tabela", max_digits=14, decimal_places=4,
+                                       null=True, blank=True)
+    preco_tabela_do_cadastro = models.BooleanField(
+        "preço de tabela tirado do cadastro", default=False,
+        help_text="O SET não gravou o preço de tabela na venda; vale o do cadastro na importação.",
+    )
 
     class Meta:
         ordering = ["id"]

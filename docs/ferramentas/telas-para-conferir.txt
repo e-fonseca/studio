@@ -42,6 +42,9 @@
 /sistema/financeiro/pagamentos/
 /sistema/caixa/
 /sistema/caixa/970/
+/sistema/caixa/descontos/
+/sistema/caixa/descontos/?periodo=mes_passado
+/sistema/caixa/descontos/regras/
 /sistema/conciliacao/
 /sistema/conciliacao/1/
 /sistema/importacao/

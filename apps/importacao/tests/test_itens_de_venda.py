@@ -92,3 +92,94 @@ class GravarVendasTest(TestCase):
         item = ItemVendaImportada.objects.get()
         self.assertEqual(item.custo_total, Decimal("80.00"))
         self.assertEqual(item.lucro, Decimal("170.00"))
+
+
+class PrecoDeTabelaEPagamentoTest(TestCase):
+    """O que a 1.46.0 traz do SET para o controle de desconto (pedido de 02/11/2026)."""
+
+    def test_o_preco_de_tabela_do_item_e_o_do_cadastro_quando_o_set_nao_gravou(self):
+        from apps.importacao.fontes import firebird
+
+        def linhas(sql, parametros):
+            return [(10, "001", 1, 40.0, 20.0, 40.0, 50.0),   # o SET gravou a tabela
+                    (10, "002", 2, 60.0, 10.0, 30.0, None)]   # não gravou: vale o cadastro
+        produtos = {"001": {"descricao": "VASO", "preco_venda": Decimal("55")},
+                    "002": {"descricao": "CESTO", "preco_venda": Decimal("35")}}
+        itens = firebird._ler_itens_de_venda(linhas, CORTE, produtos)[10]
+        self.assertEqual((itens[0]["preco_tabela"], itens[0]["preco_tabela_do_cadastro"]),
+                         (Decimal("50.0"), False))
+        self.assertEqual((itens[1]["preco_tabela"], itens[1]["preco_tabela_do_cadastro"]),
+                         (Decimal("35"), True))
+        self.assertEqual(itens[1]["preco_unitario"], Decimal("30.0"))
+
+    def test_quem_recebeu_e_as_partes_do_pagamento(self):
+        from apps.importacao.fontes import firebird
+
+        def linhas(sql, parametros):
+            texto = sql.lower()
+            if "from icaixa" in texto:
+                return [(10, "CAIXA TESTE "), (10, "OUTRA PESSOA TESTE")]
+            if "from fatvendas" in texto:
+                return [(10, "PIX", 50.0), (10, "CARTAO CREDITO", 43.0), (10, "PIX", 7.0)]
+            return [(10, "10.12", CORTE, "15:00:00", 100.0, 7.0, "PIX", "", 107.0)]
+        venda = firebird._ler_vendas(linhas, CORTE)[0]
+        self.assertEqual(venda["recebido_por"], "CAIXA TESTE")  # o primeiro recebimento
+        self.assertEqual(venda["formas_pagas"], {"PIX": "57.0", "CARTAO CREDITO": "43.0"})
+        self.assertEqual(venda["total_produtos"], Decimal("107.0"))
+
+    def test_a_consulta_nova_nao_le_campo_que_pode_ter_nome_de_cliente(self):
+        """ICAIXA.CLIFORNE e FATVENDAS.OBSERVACAO podem ter nome de cliente: não são lidos."""
+        import inspect
+        import re
+
+        from apps.importacao.fontes import firebird
+
+        codigo = inspect.getsource(firebird._ler_vendas)
+        selects = " ".join(re.findall(r"select\b.*?from\b.*?(?=\"\"\")", codigo,
+                                      re.IGNORECASE | re.DOTALL)).upper()
+        self.assertIn("FROM ICAIXA", selects)
+        self.assertIn("FROM FATVENDAS", selects)
+        for proibida in ("CLIFORNE", "OBSERVACAO", "NOMECLI", "COMPRADOR"):
+            self.assertNotIn(proibida, selects)
+
+
+class PrecoDoCadastroPassaAdianteTest(TestCase):
+    """O preço do cadastro fica o da primeira importação que viu a venda.
+
+    Senão o aumento de preço da semana seguinte faria a venda da semana passada parecer
+    vendida com desconto (na cópia de 20/09/2026: 235 "cortes" em junho onde houve 73).
+    """
+
+    def _importacao(self):
+        return Importacao.objects.create(
+            origem=Importacao.Origem.BANCO, situacao=Importacao.Situacao.CONCLUIDA,
+            iniciada_em=timezone.now(), concluida_em=timezone.now(), data_corte=CORTE,
+            dias_abertos_12m=300, produtos=1,
+        )
+
+    def _linha(self, tabela, do_cadastro=True):
+        linha = _linha("001", valor="40")
+        linha.update({"preco_unitario": Decimal("40"), "preco_tabela": Decimal(tabela),
+                      "preco_tabela_do_cadastro": do_cadastro})
+        return linha
+
+    def test_o_preco_da_importacao_anterior_vale_na_seguinte(self):
+        servicos._gravar_vendas(self._importacao(), [_venda(10, "10", [self._linha("50")])])
+        nova = self._importacao()
+        servicos._gravar_vendas(nova, [_venda(10, "10", [self._linha("60")])])
+        item = ItemVendaImportada.objects.get(venda__importacao=nova)
+        self.assertEqual(item.preco_tabela, Decimal("50"))
+
+    def test_preco_gravado_pelo_set_nao_e_trocado(self):
+        servicos._gravar_vendas(self._importacao(), [_venda(10, "10", [self._linha("50")])])
+        nova = self._importacao()
+        servicos._gravar_vendas(nova, [_venda(10, "10", [self._linha("60", do_cadastro=False)])])
+        self.assertEqual(ItemVendaImportada.objects.get(venda__importacao=nova).preco_tabela,
+                         Decimal("60"))
+
+    def test_venda_nova_fica_com_o_cadastro_de_agora(self):
+        servicos._gravar_vendas(self._importacao(), [_venda(10, "10", [self._linha("50")])])
+        nova = self._importacao()
+        servicos._gravar_vendas(nova, [_venda(11, "11", [self._linha("60")])])
+        self.assertEqual(ItemVendaImportada.objects.get(venda__importacao=nova).preco_tabela,
+                         Decimal("60"))

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Regras de desconto e metas</h1>
+  <p>O que a equipe pode dar sem chamar o grupo, e a meta e o prêmio de cada fim de semana. A tela de
+     descontos confere cada venda com o que estiver aqui.</p>
+  <a class="botao secundario" href="{% url 'caixa:descontos' %}">Voltar aos descontos</a>
+</div>
+
+<form method="post" class="formulario descontos-formulario">
+  {% csrf_token %}
+  {% if form.errors %}<div class="mensagem error" role="alert"><p>Confira os campos marcados: nada foi salvo.</p>{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+  {% for secao in form.secoes %}
+  <section class="cartao descontos-secao">
+    <h2>{{ secao.titulo }}</h2>
+    <p class="ajuda">{{ secao.ajuda }}</p>
+    <div class="campos-em-grade">
+      {% include "_campos.html" with campos=secao.campos largos=secao.largos %}
+    </div>
+    {% if forloop.last %}
+    <details class="descontos-feriados">
+      <summary>Os {{ feriados_do_ano|length }} feriados que o sistema já conhece em {{ ano }}</summary>
+      <ul>
+        {% for dia, nome in feriados_do_ano %}<li><span>{{ dia|date:"d/m" }}, {{ dia|date:"l" }}</span> {{ nome }}</li>{% endfor %}
+      </ul>
+      <p class="ajuda">Nacionais, o de São Paulo (9 de julho) e os de Embu das Artes: o aniversário da
+         cidade (18 de fevereiro), a Sexta-feira da Paixão e Corpus Christi. Carnaval não é feriado em
+         Embu: se a loja quiser meta nele, escreva a data acima.</p>
+    </details>
+    {% endif %}
+  </section>
+  {% endfor %}
+  {% if regra.atualizada_por %}<p class="ajuda">Mudadas por último por {{ regra.atualizada_por|nome_pessoa }} em {{ regra.atualizada_em|date:"d/m/Y H:i" }}.</p>{% endif %}
+  <div class="acoes"><button type="submit" class="botao" data-enviando="Salvando…">Salvar as regras</button></div>
+</form>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Regras de desconto e metas",
+    "texto": "São as regras que a gerência passa à equipe. Mudou aqui, a tela de descontos passa a conferir as vendas com a regra nova, inclusive as que já estão na tela."
+  },
+  {
+    "seletor": ".descontos-secao",
+    "titulo": "O desconto sem aprovação",
+    "texto": "No Pix e no dinheiro, até 7%. No cartão, zero. A folga é para o arredondamento: quem fecha R$ 107,50 em R$ 100,00 no Pix deu 6,98%, e isso não é passar da regra."
+  },
+  {
+    "seletor": ".descontos-feriados",
+    "titulo": "Os feriados",
+    "texto": "A meta do sábado vale também no feriado. O sistema já sabe os nacionais, o de São Paulo e os de Embu das Artes; o que faltar se escreve aqui, uma data por linha."
+  }
+]
+</script>
+{% endblock %}

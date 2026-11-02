@@ -25,7 +25,7 @@ from decimal import Decimal
 
 from django.utils import timezone
 
-from apps.caixa import dinheiro
+from apps.caixa import descontos, dinheiro
 from apps.compras import limite, lista_de_compra, sugestoes
 from apps.financeiro import servicos as financeiro
 from apps.financeiro.models import Lancamento
@@ -412,7 +412,56 @@ def vendas_do_dia(importacao=None, dia=None):
             escondidas=escondidas,
             link=relatorio.caminho, link_rotulo="Abrir a relação do dia",
         ))
+    relatorio.blocos.extend(_descontos_do_dia(importacao, dados.dia))
     return relatorio
+
+
+def _descontos_do_dia(importacao, dia):
+    """A meta do dia, se ele tem meta, e as vendas que passaram da regra de desconto.
+
+    Pedido do Edson em 02/11/2026: "controlar os descontos para que os funcionarios dê
+    desconto sem parâmetros só objetivando a premiação". A conta é a da tela Descontos e
+    metas (`caixa.descontos.do_dia`), chamada daqui, como todo o resto deste arquivo.
+    O e-mail leva só o que pede ação: venda fora da regra que ninguém aprovou.
+    """
+    fora, meta, _ = descontos.do_dia(importacao, dia)
+    caminho = "/sistema/caixa/descontos/"
+    blocos = []
+    if meta is not None:
+        if meta.bateu:
+            frase = (f"Vendeu {_reais(meta.vendido)} de {_reais(meta.meta)}: bateu, e cada pessoa "
+                     f"que trabalhou ganha {_reais(meta.premio)}.")
+        else:
+            frase = f"Vendeu {_reais(meta.vendido)} de {_reais(meta.meta)}: faltaram {_reais(meta.falta)}."
+        if meta.dependeu_de_fora:
+            frase += (f" Atenção: sem as {_numero(meta.fora)} venda(s) fora da regra "
+                      f"({_reais(meta.vendido_fora)}), o dia ficaria em {_reais(meta.vendido_sem_fora)}")
+            frase += (f" e o prêmio seria {_reais(meta.premio_sem_fora)}." if meta.premio_sem_fora
+                      else ", e a meta não teria sido batida.")
+        blocos.append(Bloco(titulo=f"Meta do dia: {meta.rotulo}", frase=frase,
+                            link=caminho, link_rotulo="Abrir os descontos e as metas"))
+    if fora:
+        linhas, escondidas = _recorte([
+            {
+                "quando": venda.hora[:5],
+                "quem": f"Venda {venda.numero}, recebeu {venda.quem}",
+                "o_que": venda.motivo,
+                "valor": _reais(venda.passou) if venda.passou else "condição",
+                "detalhe": "",
+            }
+            for venda in fora
+        ])
+        passou = sum((venda.passou for venda in fora), ZERO)
+        blocos.append(Bloco(
+            titulo=f"Descontos fora da regra: {len(fora)} venda(s)",
+            frase=(f"Passaram {_reais(passou)} do que a regra de desconto deixa, sem aprovação "
+                   "anotada. Se o grupo aprovou, anote na tela para a venda sair da lista."),
+            colunas=["Venda", "Passou da regra"],
+            linhas=linhas,
+            escondidas=escondidas,
+            link=caminho, link_rotulo="Abrir os descontos",
+        ))
+    return blocos
 
 
 def _hora(momento, dia):

@@ -111,6 +111,9 @@ CATALOGO = (
               "Anotar quando uma conta vai ser paga.", dinheiro=True),
     Permissao("caixa.ver_caixa", "Dinheiro", "Ver o caixa",
               "Abertura, sangria e fechamento da gaveta.", dinheiro=True),
+    Permissao("caixa.controlar_descontos", "Dinheiro", "Controlar descontos e metas",
+              "O desconto de cada venda contra as regras, anotar a aprovação do grupo e "
+              "mudar as regras de desconto, as metas e o prêmio.", dinheiro=True),
     Permissao("conciliacao.conciliar_banco", "Dinheiro", "Conciliar o banco",
               "Extrato do banco contra o que o SET diz que foi pago.", dinheiro=True),
     # Base de processos --------------------------------------------------------------

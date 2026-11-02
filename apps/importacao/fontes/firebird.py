@@ -403,8 +403,9 @@ def _ler_itens_de_venda(linhas, inicio, produtos):
     LGPD: aqui não há nada de cliente. Produto, quantidade, valor e custo.
     """
     por_venda = {}
-    for id_venda, codigo, quantidade, valor, custo in linhas("""
-        select v.idvenda, i.nprod, i.qtde, i.valortotal, i.precocusto
+    for id_venda, codigo, quantidade, valor, custo, cobrado, tabela in linhas("""
+        select v.idvenda, i.nprod, i.qtde, i.valortotal, i.precocusto, i.valorprod,
+               i.precovenda
         from ivendas i
         join vendas v on v.nvenda = i.nvenda and v.empresa = i.empresa
         where v.empresa = ? and v.status <> 'Estornado' and v.datavenda > ?
@@ -417,6 +418,15 @@ def _ler_itens_de_venda(linhas, inicio, produtos):
         do_cadastro = ficha.get("custo")
         if not do_cadastro or do_cadastro <= 0:
             do_cadastro = None
+        # O preço de tabela do DIA da venda (IVENDAS.PRECOVENDA), e o do cadastro quando o
+        # SET não o gravou — o que acontece em quase todo item desde julho de 2026.
+        preco_tabela = _decimal(tabela)
+        tabela_do_cadastro = False
+        if not preco_tabela or preco_tabela <= 0:
+            preco_tabela = ficha.get("preco_venda")
+            tabela_do_cadastro = bool(preco_tabela and preco_tabela > 0)
+            if not tabela_do_cadastro:
+                preco_tabela = None
         por_venda.setdefault(int(id_venda or 0), []).append({
             "codigo": codigo,
             "descricao": ficha.get("descricao", ""),
@@ -427,6 +437,9 @@ def _ler_itens_de_venda(linhas, inicio, produtos):
             "custo_total": _centavos(quantidade * custo_unitario) if custo_unitario else None,
             "custo_cadastro_unitario": do_cadastro,
             "custo_estimado_total": _centavos(quantidade * do_cadastro) if do_cadastro else None,
+            "preco_unitario": _decimal(cobrado),
+            "preco_tabela": preco_tabela,
+            "preco_tabela_do_cadastro": tabela_do_cadastro,
         })
     return por_venda
 
@@ -443,18 +456,51 @@ def _ler_vendas(linhas, inicio):
 
     Venda estornada fica de fora, como em todo o resto do sistema: ela foi desfeita e
     contá-la puxaria o ticket médio para baixo sem motivo.
+
+    Desde a 1.46.0 vêm também, para o controle de desconto: o total dos produtos antes do
+    desconto (TOTALPROD), quem recebeu no caixa (o USUARIO do recebimento em ICAIXA, que
+    existe em toda venda, ao contrário do VENDEDOR, vazio desde abril de 2026) e as partes
+    do pagamento (FATVENDAS: 117 vendas em 12 meses foram pagas em mais de uma parte, 88
+    delas em formas diferentes). Das três tabelas sai só forma, valor e o nome de quem estava no caixa: o
+    CLIFORNE de ICAIXA e a OBSERVACAO de FATVENDAS, que podem ter nome de cliente, não são
+    lidos.
     """
+    quem_recebeu = {}
+    for id_venda, usuario in linhas("""
+        select i.idvenda, i.usuario
+        from icaixa i
+        join vendas v on v.idvenda = i.idvenda
+        where v.empresa = ? and v.status <> 'Estornado' and v.datavenda > ? and i.tipo = 'R'
+        order by i.idicaixa
+    """, (EMPRESA, inicio)):
+        # O primeiro recebimento da venda diz quem estava no caixa; a venda dividida tem
+        # um recebimento por parte, e quase sempre da mesma pessoa (1 exceção em 12 meses).
+        quem_recebeu.setdefault(int(id_venda or 0), _texto(usuario, 50))
+    partes = {}
+    for id_venda, forma, valor in linhas("""
+        select f.idvenda, f.formapagto, f.valor
+        from fatvendas f
+        join vendas v on v.idvenda = f.idvenda
+        where v.empresa = ? and v.status <> 'Estornado' and v.datavenda > ?
+    """, (EMPRESA, inicio)):
+        # O VALOR já vem sem o troco: a soma das partes dá o total da venda em 16.309 das
+        # 16.336 vendas de 12 meses.
+        nome = _texto(forma, 60) or "sem forma"
+        da_venda = partes.setdefault(int(id_venda or 0), {})
+        da_venda[nome] = str(Decimal(da_venda.get(nome, "0")) + (_decimal(valor) or Decimal("0")))
+
     vendas = []
-    for id_set, numero, data, hora, valor, desconto, forma, vendedor in linhas("""
+    for id_set, numero, data, hora, valor, desconto, forma, vendedor, produtos in linhas("""
         select v.idvenda, v.nvenda, v.datavenda, v.horavenda, v.totalvenda, v.totaldesc,
-               v.formapagto, v.vendedor
+               v.formapagto, v.vendedor, v.totalprod
         from vendas v
         where v.empresa = ? and v.status <> 'Estornado' and v.datavenda > ?
     """, (EMPRESA, inicio)):
         if data is None:
             continue
+        numero_no_set = int(id_set or 0)
         vendas.append({
-            "id_set": int(id_set or 0),
+            "id_set": numero_no_set,
             "numero": _texto(numero, 40),
             "data": data,
             "hora": _texto(hora, 8),
@@ -465,6 +511,9 @@ def _ler_vendas(linhas, inicio):
             "desconto": _decimal(desconto) or Decimal("0"),
             "forma_pagamento": _texto(forma, 60),
             "vendedor": _texto(vendedor),
+            "total_produtos": _decimal(produtos) or Decimal("0"),
+            "recebido_por": quem_recebeu.get(numero_no_set, ""),
+            "formas_pagas": partes.get(numero_no_set, {}),
         })
     return vendas
 
@@ -953,6 +1002,11 @@ def extrair(copia, biblioteca_cliente=None, progresso=_nada) -> Extracao:
                     if linha["custo_unitario"] is None and linha["custo_estimado_total"] is not None
                 ),
                 "vendas_com_vendedor": sum(1 for v in vendas_do_set if v["vendedor"]),
+                "vendas_com_quem_recebeu": sum(1 for v in vendas_do_set if v["recebido_por"]),
+                "vendas_pagas_em_mais_de_uma_forma": sum(1 for v in vendas_do_set if len(v["formas_pagas"]) > 1),
+                "itens_de_venda_com_tabela_do_cadastro": sum(
+                    1 for v in vendas_do_set for linha in v["linhas"] if linha["preco_tabela_do_cadastro"]
+                ),
                 "produtos_com_codigo_de_barras": sum(1 for p in produtos.values() if p["codigo_barras"]),
                 "clientes_cadastrados": sum(1 for c in clientes if not c["generico"]),
                 "clientes_com_compra_12m": sum(1 for c in clientes if not c["generico"] and c["valor_comprado_12m"]),
