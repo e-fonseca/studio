@@ -10,7 +10,7 @@ def sistema(request):
         "menu_assuntos": assuntos,
         "menu_telas_do_assunto": telas_do_assunto,
         "nome_sistema": "Sistema auxiliar da Cabana do Jacarandá",
-        "aviso_usuario": "Use seu próprio usuário. As ações ficam registradas para conferência e organização do trabalho.",
+        "aviso_usuario": "Use seu próprio usuário. As ações ficam registradas para controle e organização do trabalho.",
         "versao_sistema": versao.atual(),
         "tela_anterior": anterior,
         "tela_proxima": proxima,

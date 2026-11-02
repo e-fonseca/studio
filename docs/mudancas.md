@@ -7,6 +7,64 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.44.0 — 02/11/2026
+
+Pedido dele: o prompt "Implementação do módulo de usuários e controle de acesso do Aux SET",
+com perfis por cargo (*"Gerência, Administrador de acessos, Compras, Estoque, Operador,
+Consulta/Auditoria"*), regras de concessão, sessões, auditoria e *"Comece examinando o
+projeto e apresente um plano curto. Depois implemente em etapas funcionais, mantendo a
+aplicação utilizável."* Esta é a etapa 1 de 4 (`diagnostico-controle-de-acesso.md`); como
+ficou está em `controle-de-acesso.md`, e o passo a passo da gerência em
+`manual/usuarios-e-acessos.md`.
+
+- **Ninguém muda de acesso na atualização.** Os quatro perfis de hoje ficam com o que tinham
+  e as mesmas pessoas. Chegam quatro prontos para usar, sem ninguém dentro: **Administrador
+  de acessos** (cuida de contas sem ver número da loja), **Compras**, **Estoque** e
+  **Consulta e auditoria**. (A decisão do cartão "somar ou trocar pelos seis" seguiu a
+  recomendada, somar, enquanto ele não responde.)
+- **Usuários virou lista e ficha.** A lista tem busca e filtro pela situação (ativos,
+  pendentes de ativação, bloqueados, desligados). A ficha de cada pessoa junta perfis (pode
+  ser mais de um, e a pessoa pode a soma), senha e e-mail, a situação, **o que ela pode de
+  fato** e de qual perfil vem cada coisa, as **sessões abertas** com o aparelho e de onde (e
+  o botão para encerrar uma ou todas) e o **histórico** do acesso dela, inclusive as
+  tentativas de abrir o que não podia.
+- **Perfis e permissões**, uma tela nova dentro de Usuários: a tabela de cada perfil contra as
+  37 permissões, com as de dinheiro e as de administração marcadas; editar o que um perfil
+  pode (com o motivo, que vai para a auditoria); criar perfil para um cargo novo copiando o
+  mais parecido; retirar perfil vazio; e o quadro **O que pede atenção** (quem administra,
+  quem vê dinheiro, quem está sem perfil, as contas técnicas do servidor).
+- **As travas**: ninguém muda o próprio acesso; ninguém dá a outra pessoa acesso a dinheiro
+  ou à administração que não tem (nem mexe na senha de quem tem); a conta técnica do
+  servidor só se mexe no servidor; e **sempre fica alguém administrando**: o sistema não
+  deixa bloquear, encerrar ou tirar o perfil da última pessoa que administra, nem pela data
+  marcada para o acesso acabar. Valem também para o envio montado à mão, porque são
+  conferidas no servidor na hora de gravar.
+- **A senha de novo** para abrir a área de acessos: fica aberta enquanto se usa e fecha com
+  15 minutos parada; cinco senhas erradas encerram a sessão.
+- **Bloqueado é diferente de desligado**: bloquear (férias, afastamento) para o acesso por um
+  tempo, com o motivo, e desbloquear devolve tudo como estava; encerrar é para quem saiu da
+  empresa. Os dois derrubam as sessões abertas na hora.
+- **O "ver os indicadores" foi dividido** em cinco: indicadores, lista de compra, vendas,
+  custo e margem, e importações. Até a 1.43.0 era uma permissão só que abria todo número da
+  loja, e um perfil de Compras veria o lucro. Quem tinha a antiga ganhou as quatro novas na
+  atualização: cada pessoa abre exatamente as telas de antes.
+- **Os grupos antigos** que a reinstalação da 1.4.0 recriou em 22/10 (Gerência, Compras,
+  Estoque, Operadores, Consulta e auditoria, com as permissões do começo e ninguém dentro)
+  foram limpos: os perfis novos com o mesmo nome não herdam o que eles tinham.
+- **Na auditoria, a mais**: tentativa de abrir tela sem permissão (uma por minuto por pessoa
+  e endereço), cada arquivo baixado (planilha, CSV, PDF ou texto com dado da loja), perfil
+  editado com o que entrou e o que saiu, bloqueio, sessão encerrada, a senha confirmada ou
+  errada, e a entrada da conta técnica marcada como tal. Senha nunca.
+- **As frases do prompt**: "Use seu próprio usuário. As ações ficam registradas para controle
+  e organização do trabalho." no alto e na entrada, e "Seu usuário não tem permissão para
+  esta ação. Procure a gerência." no acesso negado.
+- **O instalador não desfaz mais** o que a gerência mudar num perfil: até a 1.43.0 ele
+  regravava cada perfil com o que estava no código a cada atualização.
+- **No servidor**: `recuperar_administrador`, para quando ninguém mais consegue administrar
+  pela tela (reativa a conta, devolve o perfil e pede a senha nova), e
+  `relatorio_de_acessos`, para conferir quem pode o quê sem entrar no sistema.
+- A suíte tem 1.903 testes, 79 a mais que na 1.43.0, e passou inteira.
+
 ## 1.43.0 — 31/10/2026
 
 Pedido dele, com o print do Dashboard e a foto da fachada: *"gostei do visual escuro / na

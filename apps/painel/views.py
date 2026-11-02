@@ -12,6 +12,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.http import HttpResponse
 from django.shortcuts import render
 
+from apps.auditoria.servicos import registrar_arquivo
 from apps.importacao import servicos
 from apps.tempo import indicador as indicador_do_tempo
 
@@ -96,7 +97,7 @@ def completo(request):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("importacao.ver_vendas", raise_exception=True)
 def ticket_medio(request):
     """Quanto o cliente gasta por compra, com os filtros da gerência."""
     estado = servicos.estado_dos_dados()
@@ -157,7 +158,7 @@ def _dia_da_url(texto):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("importacao.ver_vendas", raise_exception=True)
 def vendas_dia(request):
     """O que a loja vendeu num dia, com custo, lucro em reais e em porcentagem."""
     estado = servicos.estado_dos_dados()
@@ -172,7 +173,7 @@ def vendas_dia(request):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("importacao.ver_vendas", raise_exception=True)
 def vendas_dia_arquivo(request):
     """A relação do dia inteira para abrir no Excel.
 
@@ -194,4 +195,5 @@ def vendas_dia_arquivo(request):
             else "vendas-do-dia.csv")
     resposta = HttpResponse("\ufeff" + buffer.getvalue(), content_type="text/csv; charset=utf-8")
     resposta["Content-Disposition"] = f'attachment; filename="{nome}"'
+    registrar_arquivo(request, nome)
     return resposta

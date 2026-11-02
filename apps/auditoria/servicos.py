@@ -46,3 +46,15 @@ def registrar(
         depois=_limpar(depois),
         motivo=motivo,
     )
+
+
+def registrar_arquivo(request, arquivo):
+    """Um arquivo com dados da loja saiu do sistema: CSV, planilha, PDF ou texto (1.44.0).
+
+    O prompt de controle de acesso (02/11/2026) pediu as exportações na auditoria. Fica quem
+    baixou, quando, de onde (o endereço, com o filtro escolhido) e o nome do arquivo, que já
+    diz o dia e o recorte. O conteúdo não: ele é o que está no banco naquela hora.
+    """
+    return registrar("dados.arquivo_baixado", usuario=request.user,
+                     recurso_rotulo=arquivo[:200],
+                     depois={"arquivo": arquivo, "endereco": request.get_full_path()[:300]})

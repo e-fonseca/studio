@@ -69,10 +69,18 @@ class Importacao(models.Model):
         ordering = ["-iniciada_em", "-id"]
         verbose_name = "importação"
         verbose_name_plural = "importações"
+        # Até a 1.43.0 o `ver_painel` abria todo número da loja (37 pontos). Na 1.44.0 ele
+        # ficou com os indicadores, e vendas, margem e importações ganharam permissão
+        # própria, para um perfil de Compras ou de Estoque não levar o lucro da loja junto.
+        # Quem tinha o `ver_painel` ganhou as três na migração contas.0008: ninguém perdeu
+        # acesso. O nome em português de cada uma está em apps/contas/catalogo.py.
         permissions = [
             ("consultar_produtos", "Pode consultar produto e fornecedor no balcão"),
             ("executar_importacao", "Pode disparar a importação dos dados do SET"),
-            ("ver_painel", "Pode ver o painel de compras e estoque"),
+            ("ver_painel", "Pode ver os indicadores da loja"),
+            ("ver_vendas", "Pode ver as vendas do dia e o ticket médio"),
+            ("ver_margem", "Pode ver custo e margem dos produtos"),
+            ("ver_importacoes", "Pode ver o histórico das importações"),
         ]
         indexes = [models.Index(fields=["situacao", "-iniciada_em"])]
 

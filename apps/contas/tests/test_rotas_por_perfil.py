@@ -35,8 +35,9 @@ O que ele NÃO cobre, de propósito
 from django.test import TestCase
 from django.urls import get_resolver
 
-from apps.contas.perfis import ADMINISTRACAO, ADMINISTRATIVO, LIDER, VENDEDOR
-from apps.core.fabricas import SENHA_TESTE, usuario
+from apps.contas.perfis import (ADMIN_ACESSOS, ADMINISTRACAO, ADMINISTRATIVO, COMPRAS, CONSULTA,
+                                ESTOQUE, LIDER, VENDEDOR)
+from apps.core.fabricas import SENHA_TESTE, confirmar_senha, usuario
 
 # A única tela do vendedor, decidida pelo Edson em 07/10/2026: consulta de balcão,
 # sem custo, sem margem e sem valor. As irmãs dela são o autocompletar da mesma tela.
@@ -73,6 +74,11 @@ DE_TODOS = {
 }
 
 FORA_DA_VARREDURA = "/sistema/admin/"
+
+# A área de acessos (1.44.0): o que o Administrador de acessos abre. Nenhuma dessas telas
+# mostra número da loja; é o "acesso financeiro concedido separadamente" do prompt de
+# controle de acesso (02/11/2026).
+DA_AREA_DE_ACESSOS = "/sistema/usuarios/"
 
 
 def _rotas():
@@ -112,7 +118,20 @@ class RotasPorPerfil(TestCase):
         cls.administrativo = usuario("administrativo_varredura", ADMINISTRATIVO)
         cls.lider = usuario("lider_varredura", LIDER)
         cls.vendedor = usuario("vendedor_varredura", VENDEDOR)
+        # Os quatro perfis que vieram com o prompt de controle de acesso (1.44.0), e a conta
+        # sem perfil nenhum, que entra e não pode abrir nada.
+        cls.acessos = usuario("acessos_varredura", ADMIN_ACESSOS)
+        cls.compras = usuario("compras_varredura", COMPRAS)
+        cls.estoque = usuario("estoque_varredura", ESTOQUE)
+        cls.consulta = usuario("consulta_varredura", CONSULTA)
+        cls.sem_perfil = usuario("sem_perfil_varredura")
         cls.rotas = sorted(set(_rotas()))
+
+    def _entrar(self, nome):
+        """Entra e já confirma a senha: sem isso a área de acessos só redirecionaria para a
+        tela da senha, e a varredura não chegaria às telas de verdade."""
+        self.client.login(username=nome, password=SENHA_TESTE)
+        confirmar_senha(self.client)
 
     def test_a_varredura_enxerga_as_telas_do_sistema(self):
         """Se este número cair muito, a varredura parou de achar as rotas."""
@@ -146,11 +165,28 @@ class RotasPorPerfil(TestCase):
                     f"a única tela do vendedor parou de abrir: {rota}",
                 )
 
+    def test_sem_perfil_nao_abre_nada(self):
+        """Conta sem perfil entra (a senha confere) e não abre tela nenhuma da loja."""
+        self._entrar("sem_perfil_varredura")
+        abriram = [rota for rota in self.rotas
+                   if rota not in DE_TODOS and self.client.get(rota).status_code == 200]
+        self.assertEqual(abriram, [], "abriram para quem não tem perfil: " + ", ".join(abriram))
+
+    def test_o_administrador_de_acessos_nao_ve_numero_da_loja(self):
+        """Cuida de contas e senhas; dinheiro, só se a gerência der à parte."""
+        self._entrar("acessos_varredura")
+        abriram = [rota for rota in self.rotas
+                   if rota not in DE_TODOS and not rota.startswith(DA_AREA_DE_ACESSOS)
+                   and self.client.get(rota).status_code == 200]
+        self.assertEqual(abriram, [], "abriram para o Administrador de acessos: " + ", ".join(abriram))
+        self.assertEqual(self.client.get(DA_AREA_DE_ACESSOS).status_code, 200)
+
     def test_nenhuma_rota_quebra_para_nenhum_perfil(self):
         """Erro de programação em tela pouco visitada aparece aqui, não na loja."""
         for nome in ("gerencia_varredura", "lider_varredura", "administrativo_varredura",
-                     "vendedor_varredura"):
-            self.client.login(username=nome, password=SENHA_TESTE)
+                     "vendedor_varredura", "acessos_varredura", "compras_varredura",
+                     "estoque_varredura", "consulta_varredura", "sem_perfil_varredura"):
+            self._entrar(nome)
             quebraram = []
             for rota in self.rotas:
                 resposta = self.client.get(rota)

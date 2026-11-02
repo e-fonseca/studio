@@ -3,156 +3,79 @@
 
 <div class="cabecalho-pagina">
   <h1>Usuários e acessos</h1>
-  <p class="ajuda">Quem entra no sistema e o que cada um pode abrir. Toda mudança aqui fica
-     registrada na auditoria, com quem fez e quando.</p>
+  <p class="ajuda">Quem entra no sistema e com quais perfis. Clique no nome para abrir a ficha
+     da pessoa: perfis, senha, bloqueio, o que ela pode de fato, sessões abertas e histórico.</p>
 </div>
 
+{% if mais_em_acessos %}
+<nav class="mais-em-compras" aria-label="Outras telas de acessos">
+  <span class="ajuda">Também aqui:</span>
+  {% for tela in mais_em_acessos %}<a href="{{ tela.endereco }}" title="{{ tela.ajuda }}">{{ tela.rotulo }}</a>{% endfor %}
+</nav>
+{% endif %}
 
-<section class="cartao">
-  <h2>O que cada perfil pode</h2>
-  <dl class="perfis">
-    {% for perfil in perfis %}
-    <div>
-      <dt>{{ perfil.nome }}</dt>
-      <dd>{{ perfil.descricao }}</dd>
-    </div>
+<section class="cartao" id="pessoas">
+  <h2>Pessoas</h2>
+  <nav class="filtros-ficha" aria-label="Filtrar pela situação">
+    {% for filtro in filtros %}
+    <a class="filtro{% if filtro.ativo %} filtro-ativo{% endif %}" {% if filtro.ativo %}aria-current="true"{% endif %}
+       href="?situacao={{ filtro.chave }}{% if busca %}&amp;q={{ busca|urlencode }}{% endif %}">
+      <span class="filtro-rotulo">{{ filtro.rotulo }}</span>
+      <span class="filtro-numero">{{ filtro.quantos }}</span>
+    </a>
     {% endfor %}
-  </dl>
-</section>
+  </nav>
+  <form method="get" class="filtros busca-de-pessoas" role="search">
+    <input type="hidden" name="situacao" value="{{ situacao }}">
+    <label for="busca-pessoa">Procurar pelo nome, usuário ou e-mail
+      <input type="search" id="busca-pessoa" name="q" value="{{ busca }}" autocomplete="off">
+    </label>
+    <button type="submit" class="botao secundario">Procurar</button>
+    {% if busca %}<a href="?situacao={{ situacao }}">Limpar</a>{% endif %}
+  </form>
 
-<section class="cartao">
-  <h2>Pessoas com acesso</h2>
-  <div class="tabela-rolavel">
-    <table class="tabela-usuarios">
+  {% if pessoas %}
+  <div class="tabela-rolavel tabela-em-cartao">
+    <table class="tabela-usuarios tabela-pessoas">
       <thead>
         <tr>
           <th scope="col">Pessoa</th>
-          <th scope="col">Perfil</th>
-          <th scope="col">Senha</th>
-          <th scope="col">Acesso</th>
+          <th scope="col">Perfis</th>
+          <th scope="col">Situação</th>
+          <th scope="col">Último acesso</th>
         </tr>
       </thead>
       <tbody>
         {% for pessoa in pessoas %}
-        <tr {% if not pessoa.usuario.is_active %}class="linha-desligada"{% endif %}>
-          <td>
-            <strong>{{ pessoa.usuario.first_name|default:pessoa.usuario.get_username }}</strong>
-            <span class="ajuda">entra como {{ pessoa.usuario.get_username }}{% if pessoa.usuario.email %} · {{ pessoa.usuario.email }}{% endif %}{% if pessoa.cpf %} · CPF {{ pessoa.cpf }}{% endif %}</span>
-            {% if pessoa.acesso_ate and pessoa.usuario.is_active %}
-            <span class="etiqueta etiqueta-pendente">acesso até {{ pessoa.acesso_ate|date:"d/m/Y" }}</span>
-            {% endif %}
-            {% if pessoa.sem_email and pessoa.usuario.is_active %}
-            <span class="etiqueta">sem e-mail: não recupera a senha sozinho</span>
-            {% endif %}
-          </td>
-          <td>
-            <form method="post" action="{% url 'contas:alterar_usuario' pessoa.usuario.pk %}" class="formulario-linha">
-              {% csrf_token %}
-              <input type="hidden" name="acao" value="perfil">
-              <label class="oculto-visualmente" for="perfil-{{ pessoa.usuario.pk }}">Perfil de {{ pessoa.usuario.get_username }}</label>
-              <select id="perfil-{{ pessoa.usuario.pk }}" name="perfil">
-                <option value="">Sem acesso a nada</option>
-                {% for perfil in perfis %}
-                <option value="{{ perfil.nome }}" {% if pessoa.perfil == perfil.nome %}selected{% endif %}>{{ perfil.nome }}</option>
-                {% endfor %}
-              </select>
-              <button type="submit" class="botao secundario">Salvar</button>
-            </form>
-          </td>
-          <td>
-            <form method="post" action="{% url 'contas:alterar_usuario' pessoa.usuario.pk %}" class="formulario-linha">
-              {% csrf_token %}
-              <input type="hidden" name="acao" value="senha">
-              <label class="oculto-visualmente" for="senha-{{ pessoa.usuario.pk }}">Nova senha de {{ pessoa.usuario.get_username }}</label>
-              <input type="password" id="senha-{{ pessoa.usuario.pk }}" name="senha"
-                     autocomplete="new-password" placeholder="nova senha">
-              <button type="submit" class="botao secundario">Definir</button>
-            </form>
-            {% if pessoa.sem_senha %}
-            <span class="etiqueta etiqueta-pendente">ainda sem senha, não consegue entrar</span>
-            {% endif %}
-          </td>
-          <td>
-            <form method="post" action="{% url 'contas:alterar_usuario' pessoa.usuario.pk %}" class="formulario-linha">
-              {% csrf_token %}
-              {% if pessoa.usuario.is_active %}
-              <input type="hidden" name="acao" value="desligar">
-              <label class="oculto-visualmente" for="motivo-{{ pessoa.usuario.pk }}">Motivo do desligamento</label>
-              <input type="text" id="motivo-{{ pessoa.usuario.pk }}" name="motivo" placeholder="motivo">
-              <button type="submit" class="botao secundario">Encerrar</button>
-              {% else %}
-              <input type="hidden" name="acao" value="reativar">
-              <span class="ajuda">desligado</span>
-              <button type="submit" class="botao secundario">Liberar de novo</button>
-              {% endif %}
-            </form>
-          </td>
+        <tr class="{% if pessoa.situacao == 'desligado' %}linha-desligada{% endif %}">
+          <th scope="row">
+            <a href="{% url 'contas:ficha' pessoa.usuario.pk %}"><strong>{{ pessoa.nome }}</strong></a>
+            <span class="ajuda">entra como {{ pessoa.usuario.get_username }}{% if pessoa.usuario == user %} · você{% endif %}</span>
+            {% if pessoa.superusuario %}<span class="etiqueta etiqueta-atencao">conta técnica do servidor</span>{% endif %}
+            {% if pessoa.acesso_ate and pessoa.situacao == 'ativo' %}<span class="etiqueta-pendente">acesso até {{ pessoa.acesso_ate|date:"d/m/Y" }}</span>{% endif %}
+            {% if pessoa.sem_email and pessoa.situacao == 'ativo' %}<span class="etiqueta-pendente">sem e-mail: não recupera a senha sozinho</span>{% endif %}
+          </th>
+          <td data-rotulo="Perfis">{% if pessoa.perfis %}{{ pessoa.perfis|join:", " }}{% elif pessoa.superusuario %}todos, por ser a conta técnica{% else %}<span class="valor-ruim">nenhum: entra e não abre nada</span>{% endif %}</td>
+          <td data-rotulo="Situação"><span class="situacao situacao-{{ pessoa.situacao }}">{{ pessoa.situacao_rotulo }}</span></td>
+          <td data-rotulo="Último acesso">{% if pessoa.usuario.last_login %}{{ pessoa.usuario.last_login|date:"d/m/Y H:i" }}{% else %}nunca entrou{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  <p class="ajuda">Encerrar o acesso derruba na hora a sessão que a pessoa tiver aberta. O
-     histórico do que ela fez continua na auditoria: conta não se apaga.</p>
-</section>
-
-{% comment %}A data marcada (1.42.0), pedido do Edson em 31/10/2026: "ficara no lugar da
-barbara ate dia 12/11/2026". Um formulário só, e não um por linha: a tabela já tem três
-ações por pessoa, e uma quarta em cada linha dobrava a altura da tela para uma coisa que se
-faz de vez em quando.{% endcomment %}
-<section class="cartao" id="acesso-com-data">
-  <h2>Acesso com data para acabar</h2>
-  <p class="ajuda">Para quem está saindo da empresa ou cobre alguém por um tempo. O acesso vale
-     até o fim do dia marcado; no dia seguinte a conta se desliga sozinha e a sessão aberta cai,
-     sem ninguém precisar lembrar. Para tirar a data, escolha a pessoa e deixe a data em branco.</p>
-  <form method="post" action="{% url 'contas:prazo_de_acesso' %}" class="formulario-usuario">
-    {% csrf_token %}
-    <div>
-      <label for="prazo-pessoa">Pessoa</label>
-      <select id="prazo-pessoa" name="usuario">
-        {% for pessoa in pessoas %}{% if pessoa.usuario.is_active and pessoa.usuario != user %}
-        <option value="{{ pessoa.usuario.pk }}">{{ pessoa.usuario.get_full_name|default:pessoa.usuario.get_username }}{% if pessoa.acesso_ate %} (hoje até {{ pessoa.acesso_ate|date:"d/m/Y" }}){% endif %}</option>
-        {% endif %}{% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="prazo-data">Último dia de acesso</label>
-      <input type="date" id="prazo-data" name="acesso_ate" min="{{ hoje|date:'Y-m-d' }}">
-    </div>
-    <button type="submit" class="botao">Salvar a data</button>
-  </form>
-</section>
-
-{% comment %}O e-mail para onde vai o código de "Esqueci a minha senha" (1.43.0). Um
-formulário só, como o da data de acesso, pelo mesmo motivo: a tabela já tem três ações por
-pessoa. Cada pessoa também grava o próprio e-mail em "Trocar a minha senha".{% endcomment %}
-<section class="cartao" id="email-de-recuperacao">
-  <h2>E-mail para recuperar a senha</h2>
-  <p class="ajuda">Quem esquece a senha pede, na tela de entrada, um código que chega neste
-     e-mail, e cria a senha nova sem precisar da gerência. Sem e-mail, só a gerência define
-     uma senha nova para a pessoa. Para tirar o e-mail, escolha a pessoa e deixe o campo em branco.</p>
-  <form method="post" action="{% url 'contas:email_de_recuperacao' %}" class="formulario-usuario">
-    {% csrf_token %}
-    <div>
-      <label for="email-pessoa">Pessoa</label>
-      <select id="email-pessoa" name="usuario">
-        {% for pessoa in pessoas %}{% if pessoa.usuario.is_active %}
-        <option value="{{ pessoa.usuario.pk }}">{{ pessoa.usuario.get_full_name|default:pessoa.usuario.get_username }}{% if pessoa.sem_email %} (sem e-mail){% endif %}</option>
-        {% endif %}{% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="email-recuperacao">E-mail</label>
-      <input type="email" id="email-recuperacao" name="email" autocomplete="off" placeholder="nome@exemplo.com.br">
-    </div>
-    <button type="submit" class="botao">Salvar o e-mail</button>
-  </form>
+  {% else %}
+  <p class="vazio">Ninguém {% if busca %}com “{{ busca }}”{% endif %}{% if situacao != 'todos' %} nesta situação{% endif %}.</p>
+  {% endif %}
+  <p class="ajuda">Pendente de ativação é a conta que ainda não tem senha: ninguém entra com ela.
+     Bloqueado é parar por um tempo (férias, afastamento) e voltar com os mesmos perfis.
+     Desligado é quem saiu. Conta não se apaga: o histórico do que a pessoa fez continua na
+     auditoria.</p>
 </section>
 
 <section class="cartao" id="dar-acesso">
   <h2>Dar acesso a mais alguém</h2>
-  <p class="ajuda">A conta nasce sem senha e ninguém entra com ela até você definir uma, logo
-     abaixo, na linha da pessoa. Assim não existe senha provisória circulando.</p>
+  <p class="ajuda">A conta nasce sem senha e ninguém entra com ela até você definir uma, na ficha
+     que abre logo depois. Assim não existe senha provisória circulando.</p>
   <form method="post" action="{% url 'contas:criar_usuario' %}" class="formulario-usuario">
     {% csrf_token %}
     <div>
@@ -161,7 +84,7 @@ pessoa. Cada pessoa também grava o próprio e-mail em "Trocar a minha senha".{%
     </div>
     <div>
       <label for="sobrenome">Sobrenome</label>
-      <input type="text" id="sobrenome" name="sobrenome" placeholder="Ex.: Fonseca" autocomplete="off">
+      <input type="text" id="sobrenome" name="sobrenome" autocomplete="off">
     </div>
     <div>
       <label for="apelido">Usuário de acesso</label>
@@ -173,24 +96,35 @@ pessoa. Cada pessoa também grava o próprio e-mail em "Trocar a minha senha".{%
       <input type="email" id="email" name="email" autocomplete="off" placeholder="nome@exemplo.com.br">
     </div>
     <div>
-      <label for="cpf">CPF</label>
+      <label for="cpf">CPF <small>(opcional)</small></label>
       <input type="text" id="cpf" name="cpf" inputmode="numeric" autocomplete="off"
              maxlength="14" placeholder="000.000.000-00">
-    </div>
-    <div>
-      <label for="perfil-novo">Perfil</label>
-      <select id="perfil-novo" name="perfil">
-        {% for perfil in perfis %}
-        <option value="{{ perfil.nome }}">{{ perfil.nome }}</option>
-        {% endfor %}
-      </select>
     </div>
     <div>
       <label for="acesso-ate-novo">Acesso até <small>(opcional)</small></label>
       <input type="date" id="acesso-ate-novo" name="acesso_ate" min="{{ hoje|date:'Y-m-d' }}">
     </div>
+    <fieldset class="escolha-de-perfis">
+      <legend>Perfis <small>(um ou mais)</small></legend>
+      {% for perfil in perfis %}
+      <label class="perfil-escolha{% if not perfil.pode %} perfil-travado{% endif %}">
+        <input type="checkbox" name="perfis" value="{{ perfil.nome }}" {% if not perfil.pode %}disabled{% endif %}>
+        <span><strong>{{ perfil.nome }}</strong>
+          <span class="ajuda">{% if perfil.pode %}{{ perfil.descricao }}{% else %}{{ perfil.motivo }}{% endif %}</span></span>
+      </label>
+      {% endfor %}
+    </fieldset>
     <button type="submit" class="botao">Criar acesso</button>
   </form>
+</section>
+
+<section class="cartao" id="intranet">
+  <h2>Contas do Aux SET</h2>
+  <p>As contas são do próprio Aux SET: a pessoa entra com o usuário e a senha daqui, e quem sai
+     da empresa é encerrado aqui. A ligação com a intranet da loja ainda não existe; quando
+     existir, o nome e o desligamento passam a vir de lá, e os perfis continuam sendo dados
+     aqui.</p>
+  <p class="ajuda">Use seu próprio usuário. As ações ficam registradas para controle e organização do trabalho.</p>
 </section>
 {% endblock %}
 
@@ -199,32 +133,27 @@ pessoa. Cada pessoa também grava o próprio e-mail em "Trocar a minha senha".{%
 [
   {
     "titulo": "Usuários e acessos",
-    "texto": "Aqui se dá e se tira acesso ao sistema. Só quem tem o perfil de administração abre esta tela."
+    "texto": "Aqui se dá e se tira acesso ao sistema. Para abrir esta área o sistema pede a sua senha de novo, e ela fica aberta por 15 minutos desde o último clique."
   },
   {
-    "seletor": ".perfis",
-    "titulo": "Os quatro perfis",
-    "texto": "Administração vê tudo. A Líder de loja faz o que o administrativo faz e ainda monta o pedido ao fornecedor, que só vale depois que a gerência aprova. O administrativo cuida de contas e fornecedores. O vendedor só consulta produto e fornecedor, sem ver custo nem valores."
+    "seletor": ".filtros-ficha",
+    "titulo": "Situação de cada conta",
+    "texto": "Ativo entra normalmente. Pendente ainda não tem senha. Bloqueado está parado por um tempo e volta com os mesmos perfis. Desligado saiu da empresa."
   },
   {
-    "seletor": ".tabela-usuarios",
-    "titulo": "Mudar o acesso de alguém",
-    "texto": "Cada coluna é uma ação por si: trocar o perfil, definir uma senha nova ou encerrar o acesso. Encerrar derruba a sessão na hora."
+    "seletor": ".tabela-pessoas",
+    "titulo": "A ficha de cada pessoa",
+    "texto": "Clique no nome para abrir a ficha: lá se mudam os perfis, a senha, o e-mail, a data para acabar, se bloqueia ou encerra o acesso, e se veem as sessões abertas e o histórico."
   },
   {
-    "seletor": "#acesso-com-data",
-    "titulo": "Acesso com data para acabar",
-    "texto": "Escolha a pessoa e o último dia. No dia seguinte o sistema encerra o acesso sozinho, como o Encerrar faria."
-  },
-  {
-    "seletor": "#email-de-recuperacao",
-    "titulo": "E-mail para recuperar a senha",
-    "texto": "Quem tem e-mail aqui, quando esquece a senha, recebe um código nele e cria a senha nova sozinho, pela tela de entrada. Sem e-mail, só a gerência define a senha."
+    "seletor": ".mais-em-compras",
+    "titulo": "Perfis e permissões",
+    "texto": "A tabela do que cada perfil pode fazer, e quem está em cada um. Quem edita perfis muda o que cada um pode por lá."
   },
   {
     "seletor": "#dar-acesso",
     "titulo": "Dar acesso a mais alguém",
-    "texto": "A conta nasce sem senha e ninguém entra com ela até você definir uma na linha da pessoa."
+    "texto": "Escolha um ou mais perfis. A conta nasce sem senha e a ficha abre para você definir a senha na hora. Perfil com acesso que você não tem aparece travado: só quem tem aquele acesso pode dá-lo."
   }
 ]
 </script>

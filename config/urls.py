@@ -29,6 +29,9 @@ rotas_sistema = [
     path("admin/", admin.site.urls),
 ]
 
+# Sem permissão: a tela diz só isso, e a tentativa vai para a auditoria (1.44.0).
+handler403 = "apps.core.views.negado"
+
 urlpatterns = [
     path("sistema/", include(rotas_sistema)),
     path("", RedirectView.as_view(url="/sistema/", permanent=False)),

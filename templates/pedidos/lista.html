@@ -3,7 +3,7 @@
 {% block conteudo %}
 <div class="cabecalho-pagina">
   <h1>Pedidos ao fornecedor</h1>
-  <p><a href="{% url 'compras:lista' %}">Voltar à lista de compra</a></p>
+  {% if perms.compras.ver_compras %}<p><a href="{% url 'compras:lista' %}">Voltar à lista de compra</a></p>{% endif %}
 </div>
 
 <section class="cartao">

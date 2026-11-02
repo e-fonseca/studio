@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_http_methods, require_POST
 
-from apps.auditoria.servicos import registrar
+from apps.auditoria.servicos import registrar, registrar_arquivo
 from apps.core import menu, pdf
 from apps.core.templatetags.cabana import quantidade as escrever
 from apps.financeiro import servicos as financeiro
@@ -30,7 +30,7 @@ from .models import DadosDaEmpresa, PoliticaDeCompra, SugestaoDeCompra
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("compras.ver_compras", raise_exception=True)
 def antes_de_comprar(request):
     estado = servicos.estado_dos_dados()
     importacao = estado.importacao
@@ -70,7 +70,7 @@ def _lista_de_compra(request):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("compras.ver_compras", raise_exception=True)
 def lista(request):
     """A lista de compra: o que comprar antes de faltar, e de quem.
 
@@ -121,7 +121,7 @@ def lista(request):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("compras.ver_compras", raise_exception=True)
 def lista_em_arquivo(request):
     """A lista inteira em arquivo, para levar ao fornecedor ou abrir no Excel.
 
@@ -139,11 +139,12 @@ def lista_em_arquivo(request):
     nome = f"lista-de-compra-{lista.data_corte:%Y-%m-%d}.csv" if lista.data_corte else "lista-de-compra.csv"
     resposta = HttpResponse(corpo, content_type="text/csv; charset=utf-8")
     resposta["Content-Disposition"] = f'attachment; filename="{nome}"'
+    registrar_arquivo(request, nome)
     return resposta
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("compras.ver_compras", raise_exception=True)
 def consulta_de_compras(request):
     """Última compra de cada fornecedor e a lista das compras, uma a uma."""
     estado = servicos.estado_dos_dados()
@@ -162,7 +163,7 @@ def consulta_de_compras(request):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("compras.ver_compras", raise_exception=True)
 def compra(request, id_set):
     """Uma compra inteira: o cabeçalho e cada item que veio nela."""
     estado = servicos.estado_dos_dados()
@@ -179,7 +180,7 @@ def compra(request, id_set):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("compras.ver_compras", raise_exception=True)
 def sugestoes(request):
     """Cinco listas curtas: o que repor, o que parar, o que girar, o que vender, quem cobrar."""
     estado = servicos.estado_dos_dados()
@@ -379,7 +380,7 @@ def ajustar_quantidade(request):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("compras.ver_compras", raise_exception=True)
 @require_http_methods(["GET", "POST"])
 def pedido_ao_fornecedor(request):
     """O pedido em PDF, com o timbre da loja, para mandar ao fornecedor.
@@ -531,7 +532,7 @@ def _comparacao(request, quantos=comparacao.POR_PAGINA):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("compras.ver_compras", raise_exception=True)
 def comparar_com_o_ano_passado(request):
     """O que o período vendeu contra o mesmo período do ano passado, produto a produto."""
     estado, dados = _comparacao(request)
@@ -545,7 +546,7 @@ def comparar_com_o_ano_passado(request):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("compras.ver_compras", raise_exception=True)
 def comparacao_em_arquivo(request):
     """A comparação inteira em CSV, com ponto e vírgula e BOM, como os outros arquivos."""
     import csv
@@ -556,6 +557,7 @@ def comparacao_em_arquivo(request):
     escritor = csv.writer(buffer, delimiter=";")
     escritor.writerows(comparacao.em_linhas(dados))
     resposta = HttpResponse("﻿" + buffer.getvalue(), content_type="text/csv; charset=utf-8")
-    resposta["Content-Disposition"] = (
-        f'attachment; filename="comparacao-{dados.meses}-meses.csv"')
+    nome = f"comparacao-{dados.meses}-meses.csv"
+    resposta["Content-Disposition"] = f'attachment; filename="{nome}"'
+    registrar_arquivo(request, nome)
     return resposta

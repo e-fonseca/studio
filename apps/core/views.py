@@ -1,14 +1,41 @@
+import datetime
 import logging
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import connection
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
+from apps.auditoria.models import EventoAuditoria
+from apps.auditoria.servicos import registrar
 from apps.core import atualizacoes, certificado as certificado_servicos, https, menu, versao
 
 logger = logging.getLogger(__name__)
+
+
+def negado(request, exception=None):
+    """A tela de "sem permissão" (403), e a tentativa na auditoria (1.44.0).
+
+    O prompt de controle de acesso pediu que tentativa de abrir o que o perfil não deixa
+    ficasse registrada, e que o recado não contasse nada do que está do outro lado: a tela
+    diz só que o usuário não tem permissão e para procurar a gerência. A mesma pessoa no
+    mesmo endereço conta uma vez por minuto, para um recarregar de página não encher a
+    auditoria.
+    """
+    usuario = getattr(request, "user", None)
+    if usuario is not None and usuario.is_authenticated:
+        endereco = request.path[:200]
+        um_minuto = timezone.now() - datetime.timedelta(seconds=60)
+        repetido = EventoAuditoria.objects.filter(
+            acao="acesso.negado", usuario=usuario, recurso_rotulo=endereco, momento__gte=um_minuto,
+        ).exists()
+        if not repetido:
+            registrar("acesso.negado", usuario=usuario, recurso_rotulo=endereco,
+                      resultado=EventoAuditoria.Resultado.NEGADO,
+                      depois={"endereco": endereco, "metodo": request.method})
+    return render(request, "403.html", status=403)
 
 
 @login_required

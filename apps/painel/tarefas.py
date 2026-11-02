@@ -93,14 +93,14 @@ def _dados_velhos(estado, agenda):
             chave="importar", titulo="Importar os dados do SET",
             detalhe="Nenhuma importação concluída ainda: sem isso nenhuma tela tem número.",
             rota="importacao:historico", nivel=URGENTE, rotulo_do_link="Ver importações",
-            permissao="importacao.ver_painel"))
+            permissao="importacao.ver_importacoes"))
         return
     agenda.tarefas.append(Tarefa(
         chave="importar", titulo="Conferir a importação",
         detalhe=f"{estado.titulo}. Decidir compra por número velho é decidir no escuro.",
         rota="importacao:historico",
         nivel=URGENTE if estado.nivel == "vencido" else ATENCAO,
-        rotulo_do_link="Ver importações", permissao="importacao.ver_painel"))
+        rotulo_do_link="Ver importações", permissao="importacao.ver_importacoes"))
 
 
 def _financeiro(resumo, agenda):
@@ -137,14 +137,14 @@ def _compras(lista, agenda):
                      + (f"Começando pelos {quantos} fornecedores do topo da lista, "
                         f"são {_reais(lista.valor_primeiro)}." if quantos else "")),
             rota="compras:lista", nivel=URGENTE, rotulo_do_link="Ver a lista",
-            permissao="importacao.ver_painel"))
+            permissao="compras.ver_compras"))
     if lista.abaixo_do_minimo:
         agenda.tarefas.append(Tarefa(
             chave="minimo", titulo="Repor o que está abaixo do mínimo",
             detalhe=(f"{lista.abaixo_do_minimo} produtos estão abaixo do mínimo que a própria "
                      "loja cadastrou no SET."),
             rota="compras:lista", parametros="?situacao=abaixo_do_minimo",
-            nivel=ATENCAO, rotulo_do_link="Ver a lista", permissao="importacao.ver_painel"))
+            nivel=ATENCAO, rotulo_do_link="Ver a lista", permissao="compras.ver_compras"))
     if lista.sem_prazo_informado:
         agenda.tarefas.append(Tarefa(
             chave="prazos", titulo="Informar o prazo dos fornecedores",
@@ -172,7 +172,7 @@ def _parado(importacao, agenda):
         detalhe=(f"{resumo['quantos']} produtos têm saldo na prateleira e não venderam "
                  f"nenhuma unidade em 12 meses, segurando {_reais(resumo['total'])} ao custo."),
         rota="compras:sugestoes", nivel=ATENCAO, rotulo_do_link="Ver sugestões",
-        permissao="importacao.ver_painel"))
+        permissao="compras.ver_compras"))
 
 
 def _sugestoes_da_equipe(agenda):

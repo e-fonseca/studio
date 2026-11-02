@@ -33,3 +33,25 @@ def usuario(nome, *perfis, **extra):
     for perfil in perfis:
         u.groups.add(Group.objects.get(name=perfil))
     return get_user_model().objects.get(pk=u.pk)  # recarrega para limpar cache de permissões
+
+
+def confirmar_senha(client):
+    """Marca na sessão do cliente de teste que a senha foi confirmada há pouco.
+
+    A área de acessos (Usuários, ficha, Perfis e permissões) pede a senha de novo antes de
+    abrir (apps/contas/confirmacao.py). O teste que quer a tela em si, e não a confirmação,
+    entra e chama isto; o teste da confirmação passa pela tela da senha de verdade.
+    """
+    from django.utils import timezone  # noqa: PLC0415
+
+    from apps.contas import confirmacao  # noqa: PLC0415
+
+    sessao = client.session
+    sessao[confirmacao.CHAVE] = timezone.now().isoformat()
+    sessao.save()
+
+
+def entrar_na_area_de_acessos(client, nome):
+    """Entra como `nome` e já com a senha confirmada para a área de acessos."""
+    client.login(username=nome, password=SENHA_TESTE)
+    confirmar_senha(client)

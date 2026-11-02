@@ -7,7 +7,7 @@ from django.urls import reverse
 from apps.auditoria.models import EventoAuditoria
 from apps.contas.perfis import ADMINISTRACAO, ADMINISTRATIVO, VENDEDOR
 from apps.contas.servicos import criar_usuario, perfis_do_usuario
-from apps.core.fabricas import SENHA_TESTE, usuario
+from apps.core.fabricas import SENHA_TESTE, confirmar_senha, usuario
 
 SENHA_BOA = "cabana-jacaranda-2026"
 
@@ -22,9 +22,11 @@ class AcessosDaGerenciaTest(TestCase):
             self.assertIn(ADMINISTRACAO, perfis_do_usuario(pessoa))
 
     def test_perfis_antigos_sairam_do_caminho(self):
+        """Gerência e Operadores, do começo, não voltam. Compras e Estoque voltaram na 1.44.0
+        como perfis novos, com o padrão novo (test_perfis_editaveis.py)."""
         from django.contrib.auth.models import Group
 
-        self.assertFalse(Group.objects.filter(name__in=["Gerência", "Compras", "Estoque"]).exists())
+        self.assertFalse(Group.objects.filter(name__in=["Gerência", "Operadores"]).exists())
 
 
 class CriarUsuarioTest(TestCase):
@@ -49,6 +51,7 @@ class TelaDeUsuariosTest(TestCase):
     def setUp(self):
         self.admin = usuario("chefe", ADMINISTRACAO)
         self.client.login(username="chefe", password=SENHA_TESTE)
+        confirmar_senha(self.client)
 
     def test_so_administracao_abre(self):
         self.client.logout()
@@ -59,13 +62,20 @@ class TelaDeUsuariosTest(TestCase):
     def test_lista_mostra_quem_esta_sem_senha(self):
         resposta = self.client.get(reverse("contas:usuarios"))
         self.assertContains(resposta, "henriett")
-        self.assertContains(resposta, "ainda sem senha")
+        self.assertContains(resposta, "Pendente de ativação")
 
-    def test_criar_pela_tela(self):
-        self.client.post(reverse("contas:criar_usuario"),
-                         {"apelido": "vanda", "nome": "Vanda", "perfil": ADMINISTRATIVO})
+    def test_criar_pela_tela_abre_a_ficha_para_a_senha(self):
+        resposta = self.client.post(reverse("contas:criar_usuario"),
+                                    {"apelido": "vanda", "nome": "Vanda", "perfis": [ADMINISTRATIVO]})
         pessoa = get_user_model().objects.get(username="vanda")
         self.assertEqual(perfis_do_usuario(pessoa), [ADMINISTRATIVO])
+        self.assertRedirects(resposta, reverse("contas:ficha", args=[pessoa.pk]))
+
+    def test_criar_com_dois_perfis(self):
+        self.client.post(reverse("contas:criar_usuario"),
+                         {"apelido": "vanda", "nome": "Vanda", "perfis": [VENDEDOR, ADMINISTRATIVO]})
+        pessoa = get_user_model().objects.get(username="vanda")
+        self.assertEqual(perfis_do_usuario(pessoa), [ADMINISTRATIVO, VENDEDOR])
 
     def test_definir_senha_deixa_a_pessoa_entrar(self):
         alvo = get_user_model().objects.get(username="henriett")
@@ -86,7 +96,7 @@ class TelaDeUsuariosTest(TestCase):
     def test_trocar_perfil_e_auditado(self):
         alvo = get_user_model().objects.get(username="moizes")
         self.client.post(reverse("contas:alterar_usuario", args=[alvo.pk]),
-                         {"acao": "perfil", "perfil": VENDEDOR})
+                         {"acao": "perfis", "perfis": [VENDEDOR]})
         self.assertEqual(perfis_do_usuario(alvo), [VENDEDOR])
         evento = EventoAuditoria.objects.filter(acao="acesso.perfil_definido").last()
         self.assertEqual(evento.depois["perfis"], [VENDEDOR])
@@ -94,7 +104,7 @@ class TelaDeUsuariosTest(TestCase):
     def test_nao_da_para_desligar_o_proprio_acesso(self):
         resposta = self.client.post(reverse("contas:alterar_usuario", args=[self.admin.pk]),
                                     {"acao": "desligar", "motivo": "teste"}, follow=True)
-        self.assertContains(resposta, "não pode desligar o seu próprio")
+        self.assertContains(resposta, "Ninguém muda o próprio acesso")
         self.admin.refresh_from_db()
         self.assertTrue(self.admin.is_active)
 

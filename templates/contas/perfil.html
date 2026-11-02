@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <div>
+    <p class="migalhas"><a href="{% url 'contas:usuarios' %}">Usuários e acessos</a> · <a href="{% url 'contas:perfis' %}">Perfis e permissões</a></p>
+    <h1>Perfil {{ grupo.name }}</h1>
+  </div>
+  <p>{% if perfil.padrao %}<span class="etiqueta">vem com o sistema</span>{% endif %}
+     {% if perfil.retirado_em %}<span class="etiqueta etiqueta-atencao">retirado em {{ perfil.retirado_em|date:"d/m/Y" }}</span>{% endif %}</p>
+</div>
+
+{% if motivo_travado %}
+<p class="mensagem info aviso-de-perfil">{{ motivo_travado }}</p>
+{% endif %}
+
+<form method="post" action="{% url 'contas:perfil' grupo.pk %}" class="formulario-de-perfil">
+  {% csrf_token %}
+  <section class="cartao" id="descricao">
+    <h2>O que este perfil faz</h2>
+    {% if editavel %}
+    <label for="descricao-perfil" class="oculto-visualmente">Descrição do perfil</label>
+    <textarea id="descricao-perfil" name="descricao" rows="2" maxlength="600">{{ perfil.descricao }}</textarea>
+    {% else %}
+    <p>{{ perfil.descricao|default:"Sem descrição." }}</p>
+    {% endif %}
+  </section>
+
+  <section class="cartao" id="permissoes">
+    <h2>Permissões</h2>
+    {% if tem_travadas %}<p class="ajuda">As caixas travadas são de dinheiro ou de administração que você não tem: só quem tem pode dar ou tirar.</p>{% endif %}
+    <div class="permissoes-do-perfil">
+      {% for bloco in modulos %}
+      <fieldset class="modulo-de-permissoes">
+        <legend>{{ bloco.modulo }}</legend>
+        {% for linha in bloco.linhas %}
+        <label class="permissao-escolha{% if linha.travada %} permissao-travada{% endif %}">
+          <input type="checkbox" name="permissoes" value="{{ linha.permissao.codigo }}" {% if linha.marcada %}checked{% endif %} {% if linha.travada %}disabled{% endif %}>
+          <span><strong>{{ linha.permissao.nome }}</strong>
+            {% if linha.permissao.dinheiro %}<span class="marca marca-dinheiro">dinheiro</span>{% endif %}
+            {% if linha.permissao.administracao %}<span class="marca marca-administracao">administração</span>{% endif %}
+            <span class="ajuda">{{ linha.permissao.abre }}</span></span>
+        </label>
+        {% endfor %}
+      </fieldset>
+      {% endfor %}
+    </div>
+    {% if fora_do_catalogo %}<p class="ajuda">Este perfil também tem {{ fora_do_catalogo|length }} permissão(ões) dada(s) pelo administrador técnico, que esta tela não mostra e não muda: {{ fora_do_catalogo|join:", " }}.</p>{% endif %}
+  </section>
+
+  {% if editavel %}
+  <section class="cartao" id="salvar">
+    <h2>Salvar</h2>
+    <div class="formulario-ficha">
+      <div class="campo-largo">
+        <label for="motivo-perfil">Por que mudou <small>(fica na auditoria)</small></label>
+        <input type="text" id="motivo-perfil" name="motivo" maxlength="300" placeholder="Ex.: a líder passou a conferir o caixa">
+      </div>
+      <button type="submit" class="botao">Salvar o perfil</button>
+    </div>
+    <p class="ajuda">Vale para todo mundo que está no perfil, a partir do próximo clique de cada um.</p>
+  </section>
+  {% endif %}
+</form>
+
+<section class="cartao" id="quem-esta">
+  <h2>Quem está neste perfil</h2>
+  {% if pessoas %}
+  <ul class="lista-simples">
+    {% for pessoa in pessoas %}
+    <li><a href="{% url 'contas:ficha' pessoa.pk %}">{{ pessoa.get_full_name|default:pessoa.get_username }}</a>{% if not pessoa.is_active %} <span class="ajuda">(sem acesso)</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="vazio">Ninguém.</p>
+  {% endif %}
+  {% if pode_editar and not perfil.retirado_em %}
+  {% if pessoas %}
+  <p class="ajuda">Para retirar este perfil, tire as pessoas dele antes, na ficha de cada uma.</p>
+  {% else %}
+  <form method="post" action="{% url 'contas:retirar_perfil' grupo.pk %}" class="formulario-ficha">
+    {% csrf_token %}
+    <button type="submit" class="botao secundario">Retirar este perfil</button>
+    <p class="ajuda">Ele sai das listas e não se dá mais a ninguém. O histórico continua na auditoria, e dá para trazer de volta.</p>
+  </form>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Um perfil",
+    "texto": "O que este perfil pode fazer e quem está nele."
+  },
+  {
+    "seletor": "#permissoes",
+    "titulo": "Permissões",
+    "texto": "Marque o que o perfil pode e salve, dizendo por quê. Caixa travada é acesso a dinheiro ou à administração que você não tem."
+  },
+  {
+    "seletor": "#quem-esta",
+    "titulo": "Quem está neste perfil",
+    "texto": "Clique no nome para abrir a ficha da pessoa. Perfil só se retira vazio."
+  }
+]
+</script>
+{% endblock %}

@@ -31,12 +31,23 @@ class VinculoIdentidade(models.Model):
     # Encerrar da tela de usuários. É o "registrar delegações temporárias, bloquear
     # desligados e invalidar sessões" do briefing de 05/10/2026.
     acesso_ate = models.DateField("último dia de acesso", null=True, blank=True)
+    # Bloqueio (1.44.0): parada TEMPORÁRIA, diferente de desligado, que é quem saiu da
+    # empresa. Os dois tiram o acesso e derrubam as sessões; a diferença é o que a tela diz
+    # e o que se espera depois (desbloquear volta ao normal; o desligado só volta com
+    # "Liberar de novo"). O motivo também vai para a auditoria; aqui fica para a tela.
+    bloqueado_em = models.DateTimeField(null=True, blank=True)
+    bloqueio_motivo = models.CharField("motivo do bloqueio", max_length=200, blank=True)
     observacao = models.TextField(blank=True)
 
     class Meta:
         verbose_name = "vínculo de identidade"
         verbose_name_plural = "vínculos de identidade"
-        permissions = [("gerenciar_usuarios", "Pode criar, editar e desligar usuários")]
+        permissions = [
+            ("gerenciar_usuarios", "Pode criar, editar e desligar usuários"),
+            # 1.44.0: mudar o que um perfil pode é dar permissão a todo mundo que está nele
+            # de uma vez; fica separado de administrar pessoas.
+            ("editar_perfis", "Pode mudar o que cada perfil pode fazer"),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["origem", "identificador_externo"],
@@ -90,3 +101,56 @@ class CodigoDeRecuperacao(models.Model):
         from django.utils import timezone  # noqa: PLC0415 - o módulo de modelos é carregado cedo
 
         return self.usado_em is None and self.anulado_em is None and timezone.now() <= self.vale_ate
+
+
+class Perfil(models.Model):
+    """O que a tela diz de um perfil (grupo do Django): a explicação e a ordem.
+
+    As permissões ficam no próprio grupo, como sempre: é lá que o Django confere. Este
+    modelo só guarda o que o grupo não tem. Desde a 1.44.0 os perfis se editam pela tela
+    (`apps/contas/perfis.py` diz o padrão de cada um, e o `configurar_perfis` nunca desfaz
+    o que a gerência mudou).
+    """
+
+    grupo = models.OneToOneField("auth.Group", on_delete=models.CASCADE, related_name="perfil")
+    descricao = models.TextField("o que este perfil faz", blank=True)
+    # Veio pronto com o sistema (perfis.PADRAO). Os criados pela tela são False.
+    padrao = models.BooleanField(default=False)
+    ordem = models.PositiveSmallIntegerField(default=100)
+    # Retirado pela gerência: some das listas e ninguém recebe. O grupo continua no banco,
+    # vazio, para a auditoria seguir apontando para ele, e para o configurar_perfis não
+    # criar de novo um perfil padrão que a gerência tirou.
+    retirado_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["ordem", "grupo__name"]
+        verbose_name = "perfil"
+        verbose_name_plural = "perfis"
+
+    def __str__(self):
+        return self.grupo.name
+
+    @property
+    def nome(self):
+        return self.grupo.name
+
+
+class PermissaoOferecida(models.Model):
+    """Lembra que o sistema já deu a um perfil uma permissão do padrão dele.
+
+    É o que deixa o `configurar_perfis` rodar a cada atualização sem desfazer a tela: a
+    permissão do padrão entra no perfil UMA vez. Se a gerência tirar, o registro fica e
+    ela não volta na próxima atualização. Permissão nova de uma versão nova entra uma vez
+    também, e a partir daí é da gerência.
+    """
+
+    grupo = models.ForeignKey("auth.Group", on_delete=models.CASCADE, related_name="+")
+    permissao = models.ForeignKey("auth.Permission", on_delete=models.CASCADE, related_name="+")
+    oferecida_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "permissão oferecida a um perfil"
+        verbose_name_plural = "permissões oferecidas a perfis"
+        constraints = [
+            models.UniqueConstraint(fields=["grupo", "permissao"], name="permissao_oferecida_uma_vez"),
+        ]

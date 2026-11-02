@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <div>
+    <p class="migalhas"><a href="{% url 'contas:usuarios' %}">Usuários e acessos</a></p>
+    <h1>Perfis e permissões</h1>
+  </div>
+  <p class="ajuda">O que cada perfil pode fazer. Uma pessoa pode ter mais de um perfil, e pode a
+     soma deles. Clique no nome do perfil para ver quem está nele{% if pode_editar %} e mudar o que ele pode{% endif %}.</p>
+</div>
+
+<section class="cartao" id="atencao">
+  <h2>O que pede atenção</h2>
+  <ul class="lista-de-impacto">
+    <li><strong>{{ impacto.administradores_completos|length }}</strong>
+      {% if impacto.administradores_completos|length == 1 %}pessoa administra{% else %}pessoas administram{% endif %} pessoas e perfis
+      {% if impacto.administradores_completos %}({% for p in impacto.administradores_completos %}<a href="{% url 'contas:ficha' p.pk %}">{{ p.get_full_name|default:p.get_username }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}){% endif %}.
+      {% if impacto.administradores_completos|length < 2 %}<span class="valor-ruim">Bom ter pelo menos duas, para uma cobrir a outra.</span>{% endif %}</li>
+    <li><strong>{{ impacto.veem_dinheiro|length }}</strong> {% if impacto.veem_dinheiro|length == 1 %}pessoa ativa vê{% else %}pessoas ativas veem{% endif %} algum número de dinheiro.</li>
+    {% if impacto.sem_perfil %}<li class="valor-ruim"><strong>{{ impacto.sem_perfil|length }}</strong> sem perfil nenhum (entra e não abre nada):
+      {% for p in impacto.sem_perfil %}<a href="{% url 'contas:ficha' p.pk %}">{{ p.get_full_name|default:p.get_username }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</li>{% endif %}
+    {% if impacto.individuais %}<li><strong>{{ impacto.individuais|length }}</strong> com permissão individual, fora de perfil (não aparece nesta tabela):
+      {% for p in impacto.individuais %}<a href="{% url 'contas:ficha' p.pk %}">{{ p.get_full_name|default:p.get_username }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</li>{% endif %}
+    {% if impacto.superusuarios %}<li><strong>{{ impacto.superusuarios|length }}</strong> {% if impacto.superusuarios|length == 1 %}conta técnica do servidor, que pode{% else %}contas técnicas do servidor, que podem{% endif %} tudo sem perfil:
+      {% for p in impacto.superusuarios %}{{ p.get_username }}{% if not p.is_active %} (desligada){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}. Use só para consertar o sistema; cada entrada dela fica marcada na auditoria.</li>{% endif %}
+    {% if impacto.perfis_vazios %}<li>Perfis sem ninguém: {{ impacto.perfis_vazios|join:", " }}.</li>{% endif %}
+  </ul>
+</section>
+
+<section class="cartao" id="matriz">
+  <h2>O que cada perfil pode</h2>
+  <p class="ajuda"><span class="marca marca-dinheiro">dinheiro</span> mostra valor, custo, lucro, caixa
+     ou banco. <span class="marca marca-administracao">administração</span> mexe em acessos ou em
+     configurações. Essas duas só se dão a outra pessoa se quem dá também tiver.</p>
+  <p class="ajuda dica-de-rolar">Arraste a tabela para o lado para ver os outros perfis.</p>
+  <div class="tabela-rolavel matriz-rolavel">
+    <table class="matriz-de-permissoes">
+      <thead>
+        <tr>
+          <th scope="col" class="matriz-canto">Permissão</th>
+          {% for coluna in colunas %}
+          <th scope="col"><a href="{% url 'contas:perfil' coluna.grupo.pk %}">{{ coluna.grupo.name }}</a>
+            <span class="ajuda">{{ coluna.pessoas }} {% if coluna.pessoas == 1 %}pessoa{% else %}pessoas{% endif %}</span></th>
+          {% endfor %}
+        </tr>
+      </thead>
+      {% for bloco in modulos %}
+      <tbody>
+        <tr class="matriz-modulo"><th scope="rowgroup" colspan="{{ colunas|length|add:1 }}">{{ bloco.modulo }}</th></tr>
+        {% for linha in bloco.linhas %}
+        <tr>
+          <th scope="row" title="{{ linha.permissao.abre }}">{{ linha.permissao.nome }}
+            {% if linha.permissao.dinheiro %}<span class="marca marca-dinheiro">dinheiro</span>{% endif %}
+            {% if linha.permissao.administracao %}<span class="marca marca-administracao">administração</span>{% endif %}
+            <span class="ajuda">{{ linha.permissao.abre }}</span></th>
+          {% for tem in linha.marcas %}
+          <td class="matriz-marca">{% if tem %}<span class="tem" aria-label="pode">✓</span>{% else %}<span class="nao-tem" aria-label="não pode">·</span>{% endif %}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% endfor %}
+    </table>
+  </div>
+</section>
+
+{% if pode_editar %}
+<section class="cartao" id="criar-perfil">
+  <h2>Criar um perfil</h2>
+  <p class="ajuda">Para um cargo que não cabe nos perfis de hoje. Comece copiando o mais parecido e
+     depois tire ou ponha o que precisar.</p>
+  <form method="post" action="{% url 'contas:criar_perfil' %}" class="formulario-usuario">
+    {% csrf_token %}
+    <div>
+      <label for="perfil-nome">Nome do perfil</label>
+      <input type="text" id="perfil-nome" name="nome" required maxlength="150" placeholder="Ex.: Caixa">
+    </div>
+    <div>
+      <label for="perfil-copiar">Começar copiando</label>
+      <select id="perfil-copiar" name="copiar_de">
+        <option value="">nada, começar vazio</option>
+        {% for coluna in colunas %}<option value="{{ coluna.grupo.pk }}">{{ coluna.grupo.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo-largo">
+      <label for="perfil-descricao">O que ele faz</label>
+      <input type="text" id="perfil-descricao" name="descricao" maxlength="300">
+    </div>
+    <button type="submit" class="botao">Criar o perfil</button>
+  </form>
+</section>
+{% endif %}
+
+{% if retirados %}
+<section class="cartao" id="retirados">
+  <h2>Perfis retirados</h2>
+  <ul class="lista-simples">
+    {% for perfil in retirados %}
+    <li><a href="{% url 'contas:perfil' perfil.grupo.pk %}">{{ perfil.grupo.name }}</a>, retirado em {{ perfil.retirado_em|date:"d/m/Y" }}
+      {% if pode_editar %}<form method="post" action="{% url 'contas:devolver_perfil' perfil.grupo.pk %}" class="formulario-linha formulario-em-linha">{% csrf_token %}<button type="submit" class="botao secundario">Trazer de volta</button></form>{% endif %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "Perfis e permissões",
+    "texto": "Cada perfil é um conjunto de permissões. A pessoa recebe um ou mais perfis na ficha dela, e pode a soma deles."
+  },
+  {
+    "seletor": "#atencao",
+    "titulo": "O que pede atenção",
+    "texto": "Quem administra os acessos, quem vê dinheiro, quem está sem perfil e as contas técnicas do servidor. É o retrato de quem pode o quê."
+  },
+  {
+    "seletor": ".matriz-de-permissoes",
+    "titulo": "A tabela",
+    "texto": "Cada linha é uma permissão, cada coluna um perfil. O tique diz que o perfil pode. Clique no nome do perfil para ver quem está nele e mudar o que ele pode."
+  }
+]
+</script>
+{% endblock %}

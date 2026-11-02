@@ -133,7 +133,12 @@ class AjusteDeCompra(models.Model):
         ordering = ["codigo"]
         verbose_name = "quantidade ajustada"
         verbose_name_plural = "quantidades ajustadas"
-        permissions = [("ajustar_compra", "Mudar a quantidade a comprar na lista")]
+        permissions = [
+            ("ajustar_compra", "Mudar a quantidade a comprar na lista"),
+            # 1.44.0: a lista de compra deixou o `importacao.ver_painel`, que abria todo
+            # número da loja, para um perfil de Compras ver a lista sem ver o lucro.
+            ("ver_compras", "Ver a lista de compra e o que levar ao fornecedor"),
+        ]
 
     def __str__(self):
         return f"{self.codigo}: {self.quantidade}"

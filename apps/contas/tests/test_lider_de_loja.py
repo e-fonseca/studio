@@ -14,7 +14,7 @@ from django.urls import reverse
 
 from apps.contas.perfis import ADMINISTRACAO, ADMINISTRATIVO, DESCRICOES, LIDER, PERFIS
 from apps.core import menu
-from apps.core.fabricas import SENHA_TESTE, usuario
+from apps.core.fabricas import SENHA_TESTE, entrar_na_area_de_acessos, usuario
 
 
 class PermissoesDaLiderTest(TestCase):
@@ -78,12 +78,12 @@ class TelasDaLiderTest(TestCase):
 
     def test_a_gerencia_pode_dar_o_perfil_pela_tela(self):
         gerente = usuario("edson", ADMINISTRACAO)
-        self.client.login(username="edson", password=SENHA_TESTE)
+        entrar_na_area_de_acessos(self.client, "edson")
         tela = self.client.get(reverse("contas:usuarios"))
-        self.assertContains(tela, f'<option value="{LIDER}"')
+        self.assertContains(tela, f'name="perfis" value="{LIDER}"')
         self.assertContains(tela, DESCRICOES[LIDER])
         resposta = self.client.post(reverse("contas:criar_usuario"), {
-            "apelido": "cassia", "nome": "Cássia", "sobrenome": "Teste", "perfil": LIDER,
+            "apelido": "cassia", "nome": "Cássia", "sobrenome": "Teste", "perfis": [LIDER],
         }, follow=True)
         self.assertContains(resposta, "Usuário cassia criado.")
         from django.contrib.auth import get_user_model  # noqa: PLC0415

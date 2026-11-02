@@ -17,7 +17,7 @@ from apps.auditoria.models import EventoAuditoria
 from apps.contas import prazo, servicos
 from apps.contas.models import VinculoIdentidade
 from apps.contas.perfis import ADMINISTRACAO, ADMINISTRATIVO
-from apps.core.fabricas import SENHA_TESTE, usuario
+from apps.core.fabricas import SENHA_TESTE, confirmar_senha, usuario
 
 
 class BasePrazo(TestCase):
@@ -146,49 +146,51 @@ class SemNinguemLembrarTest(BasePrazo):
 
 
 class TelaDeUsuariosTest(BasePrazo):
+    """A data se marca na ficha da pessoa desde a 1.44.0 (antes, num formulário na lista)."""
+
     def setUp(self):
         super().setUp()
         self.client.login(username="edson", password=SENHA_TESTE)
+        confirmar_senha(self.client)
+
+    def _marcar(self, pessoa_pk, texto, **extra):
+        return self.client.post(reverse("contas:alterar_usuario", args=[pessoa_pk]),
+                                {"acao": "prazo", "acesso_ate": texto}, **extra)
 
     def test_marca_a_data_pela_tela(self):
         data = self.hoje + timedelta(days=12)
-        resposta = self.client.post(reverse("contas:prazo_de_acesso"),
-                                    {"usuario": self.barbara.pk, "acesso_ate": data.isoformat()},
-                                    follow=True)
+        resposta = self._marcar(self.barbara.pk, data.isoformat(), follow=True)
         self.assertContains(resposta, f"vai até {data:%d/%m/%Y}")
-        self.assertContains(resposta, f"acesso até {data:%d/%m/%Y}")
+        self.assertContains(resposta, f"{data:%d/%m/%Y}, e no dia seguinte a conta se desliga sozinha")
         self.barbara.vinculo.refresh_from_db()
         self.assertEqual(self.barbara.vinculo.acesso_ate, data)
+        lista = self.client.get(reverse("contas:usuarios"))
+        self.assertContains(lista, f"acesso até {data:%d/%m/%Y}")
 
     def test_data_que_nao_se_le_vira_recado(self):
-        resposta = self.client.post(reverse("contas:prazo_de_acesso"),
-                                    {"usuario": self.barbara.pk, "acesso_ate": "12/11/2026"},
-                                    follow=True)
+        resposta = self._marcar(self.barbara.pk, "12/11/2026", follow=True)
         self.assertContains(resposta, "Não deu para ler a data")
 
     def test_pessoa_que_nao_existe_e_404_e_nao_erro(self):
-        resposta = self.client.post(reverse("contas:prazo_de_acesso"),
-                                    {"usuario": "abc", "acesso_ate": self.hoje.isoformat()})
+        resposta = self._marcar(987654, self.hoje.isoformat())
         self.assertEqual(resposta.status_code, 404)
 
     def test_ninguem_marca_data_no_proprio_acesso(self):
-        resposta = self.client.post(reverse("contas:prazo_de_acesso"),
-                                    {"usuario": self.gerente.pk, "acesso_ate": self.hoje.isoformat()},
-                                    follow=True)
-        self.assertContains(resposta, "seu próprio acesso")
+        resposta = self._marcar(self.gerente.pk, self.hoje.isoformat(), follow=True)
+        self.assertContains(resposta, "Ninguém muda o próprio acesso")
         self.assertIsNone(VinculoIdentidade.objects.filter(usuario=self.gerente)
                           .values_list("acesso_ate", flat=True).first())
 
-    def test_a_tela_so_oferece_quem_pode_receber_data(self):
-        tela = self.client.get(reverse("contas:usuarios"))
-        opcoes = tela.content.decode().split('id="prazo-pessoa"')[1].split("</select>")[0]
-        self.assertIn(f'value="{self.barbara.pk}"', opcoes)
-        self.assertNotIn(f'value="{self.gerente.pk}"', opcoes)
+    def test_a_propria_ficha_nao_oferece_a_data(self):
+        propria = self.client.get(reverse("contas:ficha", args=[self.gerente.pk]))
+        self.assertNotContains(propria, 'name="acesso_ate"')
+        outra = self.client.get(reverse("contas:ficha", args=[self.barbara.pk]))
+        self.assertContains(outra, 'name="acesso_ate"')
 
     def test_a_conta_nova_ja_nasce_com_a_data(self):
         data = self.hoje + timedelta(days=30)
         self.client.post(reverse("contas:criar_usuario"), {
-            "apelido": "temporaria", "nome": "Temporária", "perfil": ADMINISTRATIVO,
+            "apelido": "temporaria", "nome": "Temporária", "perfis": [ADMINISTRATIVO],
             "acesso_ate": data.isoformat(),
         })
         criada = get_user_model().objects.get(username="temporaria")
@@ -199,6 +201,5 @@ class TelaDeUsuariosTest(BasePrazo):
         from apps.contas.perfis import VENDEDOR  # noqa: PLC0415
         usuario("balcao", VENDEDOR)
         self.client.login(username="balcao", password=SENHA_TESTE)
-        resposta = self.client.post(reverse("contas:prazo_de_acesso"),
-                                    {"usuario": self.barbara.pk, "acesso_ate": self.hoje.isoformat()})
+        resposta = self._marcar(self.barbara.pk, self.hoje.isoformat())
         self.assertEqual(resposta.status_code, 403)

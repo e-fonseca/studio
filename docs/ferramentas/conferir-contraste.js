@@ -122,6 +122,13 @@ function medir() {
     await page.fill('input[name=username]', usuario);
     await page.fill('input[name=password]', process.env.CABANA_SENHA);
     await Promise.all([page.waitForNavigation(), page.click('button[type=submit]')]);
+    // A área de acessos (1.44.0) pede a senha de novo antes de abrir. Confirma uma vez em
+    // cada tamanho; para quem não administra, a tela é o 403 e não há o que confirmar.
+    await page.goto(BASE + '/sistema/usuarios/confirmar/');
+    if (await page.locator('form.formulario-senha input[name=senha]').count()) {
+      await page.fill('form.formulario-senha input[name=senha]', process.env.CABANA_SENHA);
+      await Promise.all([page.waitForNavigation(), page.click('form.formulario-senha button[type=submit]')]);
+    }
     for (const rota of rotas) {
       erros.length = 0;
       const resposta = await page.goto(BASE + rota, { waitUntil: 'networkidle', timeout: 90000 });

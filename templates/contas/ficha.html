@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <div>
+    <p class="migalhas"><a href="{% url 'contas:usuarios' %}">Usuários e acessos</a></p>
+    <h1>{{ nome }}</h1>
+  </div>
+  <p><span class="situacao situacao-{{ situacao }}">{{ situacao_rotulo }}</span>
+     {% if alvo.is_superuser %}<span class="etiqueta etiqueta-atencao">conta técnica do servidor</span>{% endif %}</p>
+</div>
+
+<section class="cartao" id="quem-e">
+  <h2>Quem é</h2>
+  <table class="tabela-ficha">
+    <tr><th scope="row">Usuário de acesso</th><td>{{ alvo.get_username }}</td></tr>
+    <tr><th scope="row">Nome</th><td>{{ alvo.get_full_name|default:"—" }}</td></tr>
+    <tr><th scope="row">E-mail para recuperar a senha</th><td>{{ alvo.email|default:"nenhum: se esquecer a senha, só a administração define outra" }}</td></tr>
+    <tr><th scope="row">Conta criada em</th><td>{{ alvo.date_joined|date:"d/m/Y" }}</td></tr>
+    <tr><th scope="row">Último acesso</th><td>{% if alvo.last_login %}{{ alvo.last_login|date:"d/m/Y H:i" }}{% else %}nunca entrou{% endif %}</td></tr>
+    {% if vinculo.acesso_ate %}<tr><th scope="row">Acesso até</th><td>{{ vinculo.acesso_ate|date:"d/m/Y" }}, e no dia seguinte a conta se desliga sozinha</td></tr>{% endif %}
+    {% if situacao == "bloqueado" %}<tr><th scope="row">Bloqueado em</th><td>{{ vinculo.bloqueado_em|date:"d/m/Y H:i" }}: {{ vinculo.bloqueio_motivo }}</td></tr>{% endif %}
+    {% if situacao == "desligado" and vinculo.desligado_em %}<tr><th scope="row">Desligado em</th><td>{{ vinculo.desligado_em|date:"d/m/Y H:i" }}</td></tr>{% endif %}
+  </table>
+  <p class="ajuda">O usuário de acesso e o nome não se mudam por aqui. Quando houver a ligação com a
+     intranet, eles passam a vir de lá.</p>
+</section>
+
+{% if not pode_mexer %}
+<section class="cartao cartao-aviso-acesso" id="nao-pode">
+  <h2>Esta ficha é só para ver</h2>
+  <p>{{ nao_pode }}</p>
+  {% if proprio %}<p>A sua senha e o seu e-mail você troca em <a href="{% url 'contas:trocar_senha' %}">Trocar a minha senha</a>, que pede a senha atual.</p>{% endif %}
+</section>
+{% endif %}
+
+<section class="cartao" id="perfis">
+  <h2>Perfis</h2>
+  {% if pode_mexer %}
+  <form method="post" action="{% url 'contas:alterar_usuario' alvo.pk %}">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="perfis">
+    <fieldset class="escolha-de-perfis">
+      <legend class="oculto-visualmente">Perfis de {{ nome }}</legend>
+      {% for perfil in perfis %}
+      <label class="perfil-escolha{% if not perfil.pode %} perfil-travado{% endif %}">
+        <input type="checkbox" name="perfis" value="{{ perfil.nome }}" {% if perfil.marcado %}checked{% endif %} {% if not perfil.pode %}disabled{% endif %}>
+        {% if not perfil.pode and perfil.marcado %}<input type="hidden" name="perfis" value="{{ perfil.nome }}">{% endif %}
+        <span><strong>{{ perfil.nome }}</strong>
+          <span class="ajuda">{% if perfil.pode %}{{ perfil.descricao }}{% else %}{{ perfil.motivo }}{% endif %}</span></span>
+      </label>
+      {% endfor %}
+    </fieldset>
+    <button type="submit" class="botao">Salvar os perfis</button>
+  </form>
+  <p class="ajuda">Vale a partir do próximo clique da pessoa, sem ela precisar sair. Sem nenhum
+     perfil, ela entra e não abre nada.</p>
+  {% elif perfis_atuais %}
+  <ul class="lista-simples">{% for perfil in perfis_atuais %}<li><strong>{{ perfil.nome }}</strong></li>{% endfor %}</ul>
+  {% elif alvo.is_superuser %}
+  <p>Nenhum perfil: a conta técnica pode tudo sem precisar de perfil.</p>
+  {% else %}
+  <p class="valor-ruim">Nenhum perfil: entra e não abre nada.</p>
+  {% endif %}
+</section>
+
+{% if pode_mexer %}
+<section class="cartao" id="senha">
+  <h2>Senha e e-mail</h2>
+  <form method="post" action="{% url 'contas:alterar_usuario' alvo.pk %}" class="formulario-ficha">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="senha">
+    <div>
+      <label for="senha-nova">Senha nova</label>
+      <input type="password" id="senha-nova" name="senha" autocomplete="new-password" required>
+    </div>
+    <button type="submit" class="botao secundario">Definir a senha</button>
+    <p class="ajuda">Pelo menos 12 letras, números ou símbolos, nada parecido com o nome. As sessões
+       abertas dela caem na hora. {% if situacao == "pendente" %}<strong>Enquanto não tiver senha, a conta não entra.</strong>{% endif %}</p>
+  </form>
+  <form method="post" action="{% url 'contas:alterar_usuario' alvo.pk %}" class="formulario-ficha">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="email">
+    <div>
+      <label for="email-recuperacao">E-mail para recuperar a senha</label>
+      <input type="email" id="email-recuperacao" name="email" value="{{ alvo.email }}" autocomplete="off" placeholder="nome@exemplo.com.br">
+    </div>
+    <button type="submit" class="botao secundario">Salvar o e-mail</button>
+    <p class="ajuda">Quem esquece a senha pede, na tela de entrada, um código que chega neste e-mail.
+       Para tirar o e-mail, deixe o campo em branco.</p>
+  </form>
+</section>
+
+<section class="cartao" id="situacao">
+  <h2>Situação do acesso</h2>
+  {% if situacao == "desligado" %}
+  <form method="post" action="{% url 'contas:alterar_usuario' alvo.pk %}" class="formulario-ficha">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="reativar">
+    <p>O acesso está encerrado. Liberar de novo devolve a conta com os perfis que ela tinha.</p>
+    <button type="submit" class="botao secundario">Liberar de novo</button>
+  </form>
+  {% else %}
+  {% if situacao == "bloqueado" %}
+  <form method="post" action="{% url 'contas:alterar_usuario' alvo.pk %}" class="formulario-ficha">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="desbloquear">
+    <p>Bloqueado desde {{ vinculo.bloqueado_em|date:"d/m/Y" }}: {{ vinculo.bloqueio_motivo }}</p>
+    <button type="submit" class="botao secundario">Desbloquear</button>
+  </form>
+  {% else %}
+  <form method="post" action="{% url 'contas:alterar_usuario' alvo.pk %}" class="formulario-ficha">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="bloquear">
+    <div>
+      <label for="motivo-bloqueio">Bloquear por um tempo: motivo</label>
+      <input type="text" id="motivo-bloqueio" name="motivo" required maxlength="200" placeholder="Ex.: férias até 20/11">
+    </div>
+    <button type="submit" class="botao secundario">Bloquear</button>
+    <p class="ajuda">Para férias e afastamento. A pessoa não entra, as sessões abertas caem, e ao
+       desbloquear ela volta com os mesmos perfis.</p>
+  </form>
+  <form method="post" action="{% url 'contas:alterar_usuario' alvo.pk %}" class="formulario-ficha">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="prazo">
+    <div>
+      <label for="prazo-data">Último dia de acesso</label>
+      <input type="date" id="prazo-data" name="acesso_ate" min="{{ hoje|date:'Y-m-d' }}" value="{{ vinculo.acesso_ate|date:'Y-m-d' }}">
+    </div>
+    <button type="submit" class="botao secundario">Salvar a data</button>
+    <p class="ajuda">Para quem está saindo ou cobre alguém por um tempo. No dia seguinte ao marcado a
+       conta se desliga sozinha. Para tirar a data, deixe em branco e salve.</p>
+  </form>
+  {% endif %}
+  <form method="post" action="{% url 'contas:alterar_usuario' alvo.pk %}" class="formulario-ficha">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="desligar">
+    <div>
+      <label for="motivo-desligar">Encerrar o acesso: motivo</label>
+      <input type="text" id="motivo-desligar" name="motivo" required maxlength="200" placeholder="Ex.: saiu da empresa">
+    </div>
+    <button type="submit" class="botao secundario">Encerrar o acesso</button>
+    <p class="ajuda">Para quem saiu da empresa. A conta não se apaga: o que ela fez continua na
+       auditoria, com o nome dela.</p>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="cartao" id="pode">
+  <h2>O que pode fazer</h2>
+  {% if efetivas %}
+  <p>{{ contagem.total }} {% if contagem.total == 1 %}permissão{% else %}permissões{% endif %}, somando os perfis{% if contagem.dinheiro %}: {{ contagem.dinheiro }} com <span class="marca marca-dinheiro">dinheiro</span>{% endif %}{% if contagem.administracao %} e {{ contagem.administracao }} com <span class="marca marca-administracao">administração</span>{% endif %}.</p>
+  <details class="detalhe-permissoes">
+  <summary>Ver cada uma, por assunto, e de qual perfil vem</summary>
+  <p class="ajuda"><span class="marca marca-dinheiro">dinheiro</span> mostra valor, custo, lucro, caixa
+     ou banco; <span class="marca marca-administracao">administração</span> mexe em acessos ou em
+     configurações.</p>
+  <div class="permissoes-efetivas">
+    {% for modulo, itens in efetivas %}
+    <div class="modulo-de-permissoes">
+      <h3>{{ modulo }}</h3>
+      <ul>
+        {% for item in itens %}
+        <li><strong>{{ item.permissao.nome }}</strong>
+          {% if item.permissao.dinheiro %}<span class="marca marca-dinheiro">dinheiro</span>{% endif %}
+          {% if item.permissao.administracao %}<span class="marca marca-administracao">administração</span>{% endif %}
+          <span class="ajuda">{{ item.permissao.abre }} Vem de: {{ item.de|join:", " }}.</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+  </details>
+  {% else %}
+  <p class="valor-ruim">Nada. Sem perfil, a pessoa entra e não abre nenhuma tela.</p>
+  {% endif %}
+</section>
+
+<section class="cartao" id="sessoes">
+  <h2>Sessões abertas</h2>
+  {% if sessoes %}
+  <div class="tabela-rolavel tabela-em-cartao">
+    <table class="tabela-sessoes">
+      <thead><tr><th scope="col">Aparelho</th><th scope="col">De onde</th><th scope="col">Entrou</th><th scope="col">Último uso</th><th scope="col"><span class="oculto-visualmente">Ação</span></th></tr></thead>
+      <tbody>
+        {% for s in sessoes %}
+        <tr>
+          <th scope="row">{{ s.aparelho }}{% if s.chave == sessao_de_agora %} <span class="etiqueta">esta, a sua de agora</span>{% endif %}</th>
+          <td data-rotulo="De onde">{{ s.origem }}</td>
+          <td data-rotulo="Entrou">{{ s.entrou_em|date:"d/m H:i"|default:"—" }}</td>
+          <td data-rotulo="Último uso">{{ s.visto_em|date:"d/m H:i"|default:"—" }}</td>
+          <td>{% if s.chave != sessao_de_agora and pode_mexer or s.chave != sessao_de_agora and proprio %}
+            <form method="post" action="{% url 'contas:alterar_usuario' alvo.pk %}" class="formulario-linha">
+              {% csrf_token %}
+              <input type="hidden" name="acao" value="encerrar_sessao">
+              <input type="hidden" name="chave" value="{{ s.chave }}">
+              <button type="submit" class="botao secundario">Encerrar esta</button>
+            </form>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pode_mexer or proprio %}
+  <form method="post" action="{% url 'contas:alterar_usuario' alvo.pk %}" class="formulario-ficha">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="encerrar_sessoes">
+    <button type="submit" class="botao secundario">{% if proprio %}Sair dos outros aparelhos{% else %}Encerrar todas{% endif %}</button>
+    <p class="ajuda">A pessoa continua com o acesso; só precisa entrar de novo em cada aparelho.</p>
+  </form>
+  {% endif %}
+  {% else %}
+  <p class="vazio">Nenhuma sessão aberta agora.</p>
+  {% endif %}
+  <p class="ajuda">Sessão cai sozinha com 4 horas desde a entrada ou 30 minutos parada. O endereço
+     seguro (https) passa pelo próprio servidor, e por isso não mostra o número do aparelho.</p>
+</section>
+
+<section class="cartao" id="historico">
+  <h2>Histórico do acesso</h2>
+  {% if historico %}
+  <div class="tabela-rolavel tabela-em-cartao tabela-dez">
+    <table class="tabela-historico">
+      <thead><tr><th scope="col">Quando</th><th scope="col">O que</th><th scope="col">Quem fez</th><th scope="col">Detalhe</th></tr></thead>
+      <tbody>
+        {% for e in historico %}
+        <tr class="{% if e.resultado != 'sucesso' %}linha-{{ e.resultado }}{% endif %}">
+          <th scope="row">{{ e.momento|date:"d/m/Y H:i" }}</th>
+          <td data-rotulo="O que">{{ e.o_que }}</td>
+          <td data-rotulo="Quem fez">{{ e.quem }}</td>
+          <td data-rotulo="Detalhe">{{ e.detalhe|default:"" }}{% if e.origem %} <span class="ajuda">{{ e.origem }}</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="vazio">Nada registrado ainda.</p>
+  {% endif %}
+  {% if ve_auditoria %}<p class="ajuda">Tudo o que esta pessoa fez no sistema está na <a href="{% url 'auditoria:lista' %}?usuario={{ alvo.get_username|urlencode }}">auditoria</a>.</p>{% endif %}
+</section>
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {
+    "titulo": "A ficha da pessoa",
+    "texto": "Tudo sobre o acesso de uma pessoa numa tela só. Toda mudança aqui fica na auditoria, com quem fez, quando e de onde."
+  },
+  {
+    "seletor": "#perfis",
+    "titulo": "Perfis",
+    "texto": "Marque um ou mais. O que a pessoa pode é a soma deles. Perfil travado tem acesso a dinheiro ou à administração que você não tem: só quem tem pode dar ou tirar."
+  },
+  {
+    "seletor": "#situacao",
+    "titulo": "Bloquear, encerrar e data para acabar",
+    "texto": "Bloquear é para férias e afastamento: volta com os mesmos perfis. Encerrar é para quem saiu da empresa. A data para acabar desliga a conta sozinha no dia seguinte."
+  },
+  {
+    "seletor": "#pode",
+    "titulo": "O que pode fazer",
+    "texto": "O que a pessoa abre de fato, somando os perfis, e de qual perfil vem cada coisa."
+  },
+  {
+    "seletor": "#sessoes",
+    "titulo": "Sessões abertas",
+    "texto": "Em que aparelhos a pessoa está com o sistema aberto agora. Encerrar derruba aquele aparelho; ela entra de novo com a senha."
+  },
+  {
+    "seletor": "#historico",
+    "titulo": "Histórico",
+    "texto": "Entradas, senhas erradas, tentativas de abrir o que o perfil não deixa e toda mudança no acesso dela."
+  }
+]
+</script>
+{% endblock %}

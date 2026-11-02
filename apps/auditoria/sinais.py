@@ -7,7 +7,10 @@ from .servicos import registrar
 
 @receiver(user_logged_in)
 def ao_entrar(sender, request, user, **kwargs):
-    registrar("acesso.entrada", usuario=user)
+    # A conta técnica do servidor é exceção (prompt de controle de acesso, 02/11/2026: "uso
+    # excepcional e auditado"): a entrada dela diz que foi ela, para saltar aos olhos.
+    registrar("acesso.entrada", usuario=user,
+              depois={"superusuario": True} if getattr(user, "is_superuser", False) else None)
 
 
 @receiver(user_logged_out)

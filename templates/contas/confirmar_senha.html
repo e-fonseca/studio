@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<section class="cartao estreito cartao-confirmar" id="confirmar-senha">
+  <h1>Confirme a sua senha</h1>
+  <p>Para mexer em quem tem acesso ao sistema, digite a sua senha de novo. Depois a área fica aberta
+     enquanto você estiver usando, e fecha sozinha com 15 minutos parada.</p>
+  {% if erro %}<p class="erro-campo" role="alert">{{ erro }}</p>{% endif %}
+  <form method="post" class="formulario-senha">
+    {% csrf_token %}
+    <input type="hidden" name="proximo" value="{{ proximo }}">
+    <input type="text" name="username" value="{{ user.get_username }}" autocomplete="username" hidden>
+    <div>
+      <label for="senha-confirmar">Senha de {{ user.get_username }}</label>
+      <input type="password" id="senha-confirmar" name="senha" autocomplete="current-password" required autofocus>
+    </div>
+    <button type="submit" class="botao">Confirmar</button>
+  </form>
+  <p class="ajuda">Use seu próprio usuário. As ações ficam registradas para controle e organização do trabalho.</p>
+</section>
+{% endblock %}

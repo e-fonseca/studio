@@ -47,6 +47,85 @@ def marcar_entrada(sessao):
     sessao[VISTO] = agora
 
 
+# ------------------------------------------------------------ de onde e de que aparelho
+# Desde a 1.44.0 a ficha da pessoa lista as sessões abertas dela, e quem administra
+# encerra uma por uma. Para a lista dizer alguma coisa, a sessão guarda no login de onde
+# a pessoa entrou e com que navegador. Nada disso é dado pessoal da pessoa: é o endereço
+# do aparelho na rede da loja e o nome do navegador.
+IP = "ip"
+APARELHO = "aparelho"
+
+
+def marcar_aparelho(sessao, request):
+    sessao[IP] = (request.META.get("REMOTE_ADDR") or "")[:45]
+    sessao[APARELHO] = descrever_aparelho(request.META.get("HTTP_USER_AGENT", ""))
+
+
+def descrever_aparelho(user_agent):
+    """'Chrome no Android', 'Edge no Windows': o que o navegador diz de si, em português.
+
+    A ordem importa: o Edge e o Samsung Internet também dizem "Chrome", e o Chrome também
+    diz "Safari"; o Android também diz "Linux".
+    """
+    texto = user_agent or ""
+    if not texto.strip():
+        return "aparelho desconhecido"
+    for marca, navegador in (("SamsungBrowser", "Samsung Internet"), ("Edg", "Edge"),
+                             ("OPR/", "Opera"), ("Firefox/", "Firefox"), ("FxiOS", "Firefox"),
+                             ("CriOS", "Chrome"), ("Chrome/", "Chrome"), ("Safari/", "Safari")):
+        if marca in texto:
+            break
+    else:
+        navegador = "Navegador"
+    for marca, sistema in (("iPhone", "iPhone"), ("iPad", "iPad"), ("Android", "Android"),
+                           ("Windows", "Windows"), ("Macintosh", "Mac"), ("Mac OS X", "Mac"),
+                           ("Linux", "Linux")):
+        if marca in texto:
+            return f"{navegador} no {sistema}"
+    return navegador
+
+
+def origem(ip):
+    """De onde, numa frase: a rede da loja, a VPN ou o endereço seguro.
+
+    O endereço seguro (https, porta 8443) passa por um túnel no próprio servidor, então o
+    sistema vê o servidor (127.0.0.1) e não o aparelho; daí a frase não ter número.
+    """
+    ip = (ip or "").strip()
+    if not ip:
+        return "de onde, não se sabe"
+    if ip in ("127.0.0.1", "::1"):
+        return "endereço seguro (https)"
+    if ip.startswith("192.168.") or ip.startswith("10."):
+        return f"rede da loja, {ip}"
+    if ip.startswith("26."):
+        return f"VPN, {ip}"
+    return ip
+
+
+def descrever(dados):
+    """O que a ficha mostra de uma sessão, a partir do que está gravado nela.
+
+    `vencida` diz se o LimiteDeSessaoMiddleware já a derrubaria no próximo clique: sessão
+    assim ainda está no banco até o cookie vencer, mas não entra mais.
+    """
+    agora = timezone.now()
+    entrada = _quando(dados.get(CHAVE))
+    visto = _quando(dados.get(VISTO)) or entrada
+    vencida = False
+    if entrada is not None and (agora - entrada).total_seconds() > _limite_em_segundos():
+        vencida = True
+    if visto is not None and (agora - visto).total_seconds() > _parada_em_segundos():
+        vencida = True
+    return {
+        "entrou_em": entrada,
+        "visto_em": visto,
+        "vencida": vencida,
+        "aparelho": dados.get(APARELHO) or "aparelho desconhecido",
+        "origem": origem(dados.get(IP)),
+    }
+
+
 def _limite_em_segundos():
     return int(getattr(settings, "SESSAO_MAXIMA_SEGUNDOS", 4 * 60 * 60))
 

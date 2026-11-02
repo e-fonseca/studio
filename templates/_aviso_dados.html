@@ -4,7 +4,7 @@
   <div class="faixa-interna">
     <strong>{{ estado_dados.titulo }}.</strong>
     <span>{{ estado_dados.detalhe }}</span>
-    <a href="{% url 'painel:painel' %}">Abrir o painel</a>
+    {% if perms.importacao.ver_painel %}<a href="{% url 'painel:painel' %}">Abrir o painel</a>{% endif %}
   </div>
 </div>
 {% endif %}

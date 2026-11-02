@@ -117,7 +117,7 @@ GRUPOS = [
           telas=(
         # Primeira de propósito: é a tela em que a quantidade é escolhida e o pedido
         # sai. Clicar em "Compras" cai aqui.
-        Item("compras:lista", "Lista de compra", "importacao.ver_painel",
+        Item("compras:lista", "Lista de compra", "compras.ver_compras",
              irmas=("compras:lista_em_arquivo", "compras:ajustar_quantidade",
                     "compras:pedido_ao_fornecedor"),
              ajuda="O que comprar antes de faltar, quanto comprar e de qual fornecedor."),
@@ -136,13 +136,13 @@ GRUPOS = [
     )),
     Grupo("vendas", "Vendas", ajuda="O que a loja vendeu, com que lucro e para quem.",
           telas=(
-        Item("painel:vendas_dia", "Vendas do dia", "importacao.ver_painel",
+        Item("painel:vendas_dia", "Vendas do dia", "importacao.ver_vendas",
              irmas=("painel:vendas_dia_arquivo",),
              ajuda="O que a loja vendeu no dia, com custo, lucro e margem de cada produto."),
-        Item("margem:lista", "Margem", "importacao.ver_painel",
+        Item("margem:lista", "Margem", "importacao.ver_margem",
              irmas=("margem:em_arquivo",),
              ajuda="Markup e margem de lucro de cada produto, e da loja inteira."),
-        Item("painel:ticket_medio", "Ticket médio", "importacao.ver_painel",
+        Item("painel:ticket_medio", "Ticket médio", "importacao.ver_vendas",
              ajuda="Quanto o cliente gasta por compra, por período, pagamento e vendedor."),
         Item("clientes:lista", "Clientes", "clientes.ver_clientes",
              ajuda="Quem compra na loja, pelo que o SET registra."),
@@ -173,7 +173,7 @@ GRUPOS = [
     )),
     Grupo("sistema", "Sistema",
           ajuda="Quem entra, de onde vêm os dados e o que o sistema avisa.", telas=(
-        Item("importacao:historico", "Importações", "importacao.ver_painel",
+        Item("importacao:historico", "Importações", "importacao.ver_importacoes",
              ajuda="Quando os dados do SET entraram e o que cada importação trouxe."),
         Item("compras:dados_da_empresa", "Dados da empresa", "compras.change_dadosdaempresa",
              ajuda="O nome, o CNPJ e os endereços que saem no pedido ao fornecedor."),
@@ -181,7 +181,9 @@ GRUPOS = [
              irmas=("processos:detalhe", "processos:ficha_tecnica"),
              ajuda="Transferência de conhecimento: o passo a passo do trabalho."),
         Item("contas:usuarios", "Usuários", "contas.gerenciar_usuarios",
-             ajuda="Quem entra no sistema e com qual perfil."),
+             irmas=("contas:ficha", "contas:alterar_usuario", "contas:criar_usuario",
+                    "contas:confirmar_senha"),
+             ajuda="Quem entra no sistema, com quais perfis, e a ficha de cada pessoa."),
         Item("alertas:painel", "Alertas", "alertas.configurar_email",
              ajuda="Os relatórios que o sistema manda por e-mail sozinho."),
         Item("backup:painel", "Cópia do programa", "backup.configurar_backup",
@@ -216,22 +218,28 @@ FORA_DO_MENU = [
     # ("Quatro no menu"): oito abas eram muita coisa para decidir rápido. Abrem pela
     # fileira de links logo abaixo do título da Lista de compra, e nenhuma tela ou
     # histórico foi apagado.
-    Item("compras:antes_de_comprar", "Antes de comprar", "importacao.ver_painel",
+    Item("compras:antes_de_comprar", "Antes de comprar", "compras.ver_compras",
          dentro_de="compras:lista",
          ajuda="Quanto ainda cabe comprar no mês e se vale comprar este produto."),
-    Item("compras:sugestoes", "Sugestões", "importacao.ver_painel",
+    Item("compras:sugestoes", "Sugestões", "compras.ver_compras",
          dentro_de="compras:lista",
          ajuda="O que repor, o que parar de comprar e o que empurrar na venda."),
     Item("compras:sugestoes_da_equipe", "Sugestões da equipe", "compras.sugerir_compra",
          dentro_de="compras:lista",
          ajuda="O que a equipe viu na loja e acha que precisa ser comprado."),
-    Item("compras:consulta", "Últimas compras", "importacao.ver_painel",
+    Item("compras:consulta", "Últimas compras", "compras.ver_compras",
          irmas=("compras:compra",), dentro_de="compras:lista",
          ajuda="A última compra de cada fornecedor, item a item."),
     # Abre pela Lista de compra, no quadro "Comparar com o ano passado".
-    Item("compras:comparar", "Comparar com o ano passado", "importacao.ver_painel",
+    Item("compras:comparar", "Comparar com o ano passado", "compras.ver_compras",
          irmas=("compras:comparar_em_arquivo",), dentro_de="compras:lista",
          ajuda="O que o período vendeu contra o mesmo período do ano passado."),
+    # Abre pela tela Usuários (1.44.0): é onde quem dá acesso já está. Menu novo não se
+    # cria solto (pedido do Edson, 19/10/2026).
+    Item("contas:perfis", "Perfis e permissões", "contas.gerenciar_usuarios",
+         irmas=("contas:perfil", "contas:criar_perfil", "contas:retirar_perfil",
+                "contas:devolver_perfil"), dentro_de="contas:usuarios",
+         ajuda="O que cada perfil pode fazer, numa tabela, e quem está em cada um."),
     # Abre pela Visão geral, no quadro "O tempo e a venda".
     Item("tempo:painel", "Tempo e venda", "tempo.anotar_tempo",
          irmas=("tempo:em_arquivo",), dentro_de="painel:geral",

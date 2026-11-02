@@ -1,6 +1,7 @@
 """Tela de markup e margem de lucro, e o mesmo recorte em arquivo.
 
-A permissão é a mesma dos painéis (`importacao.ver_painel`): isto é custo, preço e
+A permissão é própria desde a 1.44.0 (`importacao.ver_margem`); até ali era a mesma dos
+painéis, e quem tinha a dos painéis ganhou esta na atualização. Isto é custo, preço e
 lucro, então é assunto da gerência e do administrativo. O perfil de vendedor não tem
 essa permissão e nunca vê esta tela, que é a condição que o Edson pôs desde o começo.
 """
@@ -9,11 +10,12 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.http import HttpResponse
 from django.shortcuts import render
 
+from apps.auditoria.servicos import registrar_arquivo
 from apps.importacao import servicos as importacao_servicos
 
 from . import servicos
 
-PERMISSAO = "importacao.ver_painel"
+PERMISSAO = "importacao.ver_margem"
 
 
 def _recorte(request, quantos):
@@ -65,4 +67,5 @@ def em_arquivo(request):
             else "margem-e-markup.csv")
     resposta = HttpResponse(corpo, content_type="text/csv; charset=utf-8")
     resposta["Content-Disposition"] = f'attachment; filename="{nome}"'
+    registrar_arquivo(request, nome)
     return resposta

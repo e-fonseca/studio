@@ -9,7 +9,7 @@ from django.utils import timezone
 from apps.contas import sessao
 from apps.contas.models import VinculoIdentidade
 from apps.contas.perfis import ADMINISTRACAO
-from apps.core.fabricas import SENHA_TESTE, usuario
+from apps.core.fabricas import SENHA_TESTE, confirmar_senha, usuario
 
 
 class TestLimiteDeSessao(TestCase):
@@ -24,28 +24,28 @@ class TestLimiteDeSessao(TestCase):
         estado = self.client.session
         estado[sessao.CHAVE] = (timezone.now() - timedelta(hours=4, minutes=1)).isoformat()
         estado.save()
-        resposta = self.client.get(reverse("contas:usuarios"))
+        resposta = self.client.get(reverse("contas:trocar_senha"))
         self.assertRedirects(resposta, reverse("contas:entrar"))
 
     def test_dentro_do_limite_continua_trabalhando(self):
         estado = self.client.session
         estado[sessao.CHAVE] = (timezone.now() - timedelta(hours=3, minutes=50)).isoformat()
         estado.save()
-        self.assertEqual(self.client.get(reverse("contas:usuarios")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("contas:trocar_senha")).status_code, 200)
 
     @override_settings(SESSAO_MAXIMA_SEGUNDOS=60)
     def test_o_limite_vem_da_configuracao(self):
         estado = self.client.session
         estado[sessao.CHAVE] = (timezone.now() - timedelta(minutes=2)).isoformat()
         estado.save()
-        self.assertRedirects(self.client.get(reverse("contas:usuarios")), reverse("contas:entrar"))
+        self.assertRedirects(self.client.get(reverse("contas:trocar_senha")), reverse("contas:entrar"))
 
     def test_sessao_antiga_sem_a_marca_nao_derruba_ninguem(self):
         """Na primeira vez que a atualização sobe, ninguém é expulso no meio do trabalho."""
         estado = self.client.session
         del estado[sessao.CHAVE]
         estado.save()
-        self.assertEqual(self.client.get(reverse("contas:usuarios")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("contas:trocar_senha")).status_code, 200)
 
 
 class TestSessaoParada(TestCase):
@@ -69,30 +69,30 @@ class TestSessaoParada(TestCase):
 
     def test_meia_hora_parada_cai_na_tela_de_entrada(self):
         self._parada_desde(minutes=31)
-        resposta = self.client.get(reverse("contas:usuarios"))
+        resposta = self.client.get(reverse("contas:trocar_senha"))
         self.assertRedirects(resposta, reverse("contas:entrar"))
 
     def test_quem_estava_usando_continua(self):
         self._parada_desde(minutes=20)
-        self.assertEqual(self.client.get(reverse("contas:usuarios")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("contas:trocar_senha")).status_code, 200)
 
     def test_cada_uso_reinicia_a_contagem(self):
         """Trabalhar a tarde toda não derruba: o que derruba é parar."""
         self._parada_desde(minutes=25)
-        self.client.get(reverse("contas:usuarios"))
+        self.client.get(reverse("contas:trocar_senha"))
         visto = sessao._quando(self.client.session[sessao.VISTO])
         self.assertLess((timezone.now() - visto).total_seconds(), 60)
         self._parada_desde(minutes=25)
-        self.assertEqual(self.client.get(reverse("contas:usuarios")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("contas:trocar_senha")).status_code, 200)
 
     @override_settings(SESSAO_PARADA_SEGUNDOS=60)
     def test_o_tempo_parado_vem_da_configuracao(self):
         self._parada_desde(minutes=2)
-        self.assertRedirects(self.client.get(reverse("contas:usuarios")), reverse("contas:entrar"))
+        self.assertRedirects(self.client.get(reverse("contas:trocar_senha")), reverse("contas:entrar"))
 
     def test_a_tela_de_entrada_explica_por_que_saiu(self):
         self._parada_desde(minutes=31)
-        resposta = self.client.get(reverse("contas:usuarios"), follow=True)
+        resposta = self.client.get(reverse("contas:trocar_senha"), follow=True)
         self.assertContains(resposta, "sem uso e foi encerrada por segurança")
 
     def test_sessao_sem_a_marca_de_uso_conta_da_entrada(self):
@@ -101,7 +101,7 @@ class TestSessaoParada(TestCase):
         del estado[sessao.VISTO]
         estado[sessao.CHAVE] = (timezone.now() - timedelta(hours=1)).isoformat()
         estado.save()
-        self.assertRedirects(self.client.get(reverse("contas:usuarios")), reverse("contas:entrar"))
+        self.assertRedirects(self.client.get(reverse("contas:trocar_senha")), reverse("contas:entrar"))
 
     def test_quem_nem_entrou_nao_e_incomodado(self):
         self.client.logout()
@@ -113,11 +113,12 @@ class TestCadastroDeUsuario(TestCase):
     def setUp(self):
         self.gerente = usuario("gerente", ADMINISTRACAO)
         self.client.login(username="gerente", password=SENHA_TESTE)
+        confirmar_senha(self.client)
 
     def _criar(self, **extra):
-        dados = {"apelido": "barbara", "nome": "Bárbara", "sobrenome": "Peres",
+        dados = {"apelido": "barbara", "nome": "Bárbara", "sobrenome": "Teste",
                  "email": "barbara@exemplo.com.br", "cpf": "529.982.247-25",
-                 "perfil": ADMINISTRACAO}
+                 "perfis": [ADMINISTRACAO]}
         dados.update(extra)
         return self.client.post(reverse("contas:criar_usuario"), dados, follow=True)
 
@@ -126,7 +127,7 @@ class TestCadastroDeUsuario(TestCase):
         from django.contrib.auth import get_user_model
 
         pessoa = get_user_model().objects.get(username="barbara")
-        self.assertEqual(pessoa.get_full_name(), "Bárbara Peres")
+        self.assertEqual(pessoa.get_full_name(), "Bárbara Teste")
         self.assertEqual(pessoa.email, "barbara@exemplo.com.br")
         self.assertEqual(pessoa.vinculo.cpf, "52998224725")
 

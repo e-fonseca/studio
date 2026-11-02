@@ -19,7 +19,7 @@ from apps.auditoria.models import EventoAuditoria
 from apps.contas import recuperacao
 from apps.contas.models import CodigoDeRecuperacao
 from apps.contas.perfis import ADMINISTRACAO, VENDEDOR
-from apps.core.fabricas import SENHA_TESTE, usuario
+from apps.core.fabricas import SENHA_TESTE, entrar_na_area_de_acessos, usuario
 
 LOCMEM = "django.core.mail.backends.locmem.EmailBackend"
 SENHA_NOVA = "uma frase comprida de teste"
@@ -315,13 +315,15 @@ class BloqueioSaiComASenhaNovaTest(TestCase):
 class EmailCadastradoTest(TestCase):
     """Onde o e-mail de recuperação se grava: a gerência em Usuários, a pessoa na própria senha."""
 
+    def _gravar(self, alvo, email, **extra):
+        return self.client.post(reverse("contas:alterar_usuario", args=[alvo.pk]),
+                                {"acao": "email", "email": email}, **extra)
+
     def test_a_gerencia_grava_o_email_de_alguem(self):
         gerente = usuario("edson", ADMINISTRACAO)
         vendedora = usuario("ana", VENDEDOR)
-        self.client.login(username="edson", password=SENHA_TESTE)
-        resposta = self.client.post(reverse("contas:email_de_recuperacao"),
-                                    {"usuario": vendedora.pk, "email": "ana.loja@exemplo.com.br"},
-                                    follow=True)
+        entrar_na_area_de_acessos(self.client, "edson")
+        resposta = self._gravar(vendedora, "ana.loja@exemplo.com.br", follow=True)
         self.assertContains(resposta, "o código vai para ana.loja@exemplo.com.br")
         vendedora.refresh_from_db()
         self.assertEqual(vendedora.email, "ana.loja@exemplo.com.br")
@@ -332,28 +334,40 @@ class EmailCadastradoTest(TestCase):
     def test_email_torto_e_recusado(self):
         usuario("edson", ADMINISTRACAO)
         vendedora = usuario("ana", VENDEDOR)
-        self.client.login(username="edson", password=SENHA_TESTE)
-        resposta = self.client.post(reverse("contas:email_de_recuperacao"),
-                                    {"usuario": vendedora.pk, "email": "ana.loja"}, follow=True)
+        entrar_na_area_de_acessos(self.client, "edson")
+        resposta = self._gravar(vendedora, "ana.loja", follow=True)
         self.assertContains(resposta, "Esse e-mail não parece certo")
         vendedora.refresh_from_db()
         self.assertEqual(vendedora.email, "")
 
     def test_a_tela_de_usuarios_mostra_quem_nao_recupera_sozinho(self):
         usuario("edson", ADMINISTRACAO)
-        usuario("ana", VENDEDOR)
-        self.client.login(username="edson", password=SENHA_TESTE)
+        ana = usuario("ana", VENDEDOR)
+        entrar_na_area_de_acessos(self.client, "edson")
         resposta = self.client.get(reverse("contas:usuarios"))
         self.assertContains(resposta, "sem e-mail: não recupera a senha sozinho")
-        self.assertContains(resposta, "E-mail para recuperar a senha")
+        ficha = self.client.get(reverse("contas:ficha", args=[ana.pk]))
+        self.assertContains(ficha, "E-mail para recuperar a senha")
 
     def test_o_vendedor_nao_grava_email_de_ninguem(self):
         usuario("balcao", VENDEDOR)
         outra = usuario("ana", VENDEDOR)
         self.client.login(username="balcao", password=SENHA_TESTE)
-        resposta = self.client.post(reverse("contas:email_de_recuperacao"),
-                                    {"usuario": outra.pk, "email": "meu@exemplo.com.br"})
+        resposta = self._gravar(outra, "meu@exemplo.com.br")
         self.assertEqual(resposta.status_code, 403)
+
+    def test_quem_so_administra_pessoas_nao_troca_o_email_da_gerencia(self):
+        """Quem troca o e-mail de uma conta pede o código e toma a senha dela: o e-mail de
+        quem tem mais acesso só muda pela mão de quem tem o mesmo acesso (1.44.0)."""
+        from apps.contas.perfis import ADMIN_ACESSOS  # noqa: PLC0415
+
+        gerente = usuario("edson", ADMINISTRACAO)
+        usuario("rh", ADMIN_ACESSOS)
+        entrar_na_area_de_acessos(self.client, "rh")
+        resposta = self._gravar(gerente, "rh.pessoal@exemplo.com.br", follow=True)
+        self.assertContains(resposta, "tem acesso que você não tem")
+        gerente.refresh_from_db()
+        self.assertEqual(gerente.email, "")
 
     def test_a_pessoa_grava_o_proprio_email_com_a_senha_de_agora(self):
         conta = usuario("balcao", VENDEDOR)

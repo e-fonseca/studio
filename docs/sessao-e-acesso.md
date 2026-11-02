@@ -58,9 +58,12 @@ no dia certo e clicar em Encerrar. Era também o "registrar delegações tempor�
 desligados e invalidar sessões" do briefing de 05/10/2026, que ficou sem a parte da data.
 
 - **A data mora na conta** (`VinculoIdentidade.acesso_ate`, "último dia de acesso") e se
-  marca no quadro "Acesso com data para acabar" da tela de usuários (um formulário só, e não
-  um por linha: a tabela já tem três ações por pessoa), ou já na criação da conta. É
-  inclusiva: "até 12/11" entra no dia 12 inteiro.
+  marca na ficha da pessoa, em "Situação do acesso" (desde a 1.44.0; até ali era um quadro
+  da tela de usuários), ou já na criação da conta. É inclusiva: "até 12/11" entra no dia 12
+  inteiro.
+- **A última pessoa que administra não se desliga pela data** (1.44.0): a auditoria registra
+  `acesso.prazo_nao_cumprido` a cada dia, e a gerência resolve dando o acesso a outra pessoa
+  (`controle-de-acesso.md`).
 - **No dia seguinte a conta se desliga sozinha**, com o mesmo efeito do Encerrar: conta
   desligada, sessões abertas derrubadas, e a auditoria registra o motivo "Acesso combinado
   até 12/11/2026" com o serviço "data marcada para o acesso acabar".
@@ -135,8 +138,9 @@ Procure o administrador do sistema."*
 
 - **A própria pessoa**, em "Trocar a minha senha" (o nome no alto da tela), no quadro
   "E-mail para recuperar a senha". Pede a senha de agora, como a troca de senha.
-- **A gerência**, na tela de usuários, no quadro "E-mail para recuperar a senha". A lista de
-  usuários marca quem está "sem e-mail: não recupera a senha sozinho".
+- **A gerência**, na ficha da pessoa, em "Senha e e-mail" (desde a 1.44.0; até ali era um
+  quadro da tela de usuários). A lista de usuários marca quem está "sem e-mail: não recupera
+  a senha sozinho".
 - As duas mudanças vão para a auditoria (`acesso.email_definido`), com o meio do endereço
   escondido.
 
@@ -147,3 +151,26 @@ senha da caixa `naoresponder@`. Basta isso; a lista de destinatários e o "manda
 relatórios" não contam, porque o código vai ao e-mail de quem pediu. **Sem a senha da caixa
 colada na tela Alertas, a recuperação responde que o envio de e-mail do sistema ainda não
 está configurado** e manda procurar o administrador.
+
+## A senha de novo e as sessões abertas (1.44.0)
+
+Do prompt de controle de acesso (02/11/2026): "reautenticação para operações administrativas
+sensíveis", "rotação de sessão na elevação de privilégio" e "sessões ativas e revogação".
+
+- **A área de acessos pede a senha outra vez** (Usuários, a ficha de cada pessoa e Perfis e
+  permissões), em `apps/contas/confirmacao.py`. Vale 15 minutos contados do último clique
+  na área; ao confirmar, a sessão troca de chave (`cycle_key`), e cinco senhas erradas
+  seguidas encerram a sessão. A mudança enviada depois que a janela fechou não é aplicada:
+  a tela pede a senha e a pessoa refaz. Quem não administra recebe o 403 direto.
+- **A sessão guarda, no login, o endereço e o navegador** (`marcar_aparelho`): "Chrome no
+  Android", "Edge no Windows". A ficha da pessoa lista as sessões vivas (as que já passaram
+  das quatro horas ou dos trinta minutos parada não aparecem: a próxima tela delas já cai)
+  com o aparelho, de onde (rede da loja, VPN ou endereço seguro), a entrada e o último uso.
+- **Encerrar uma sessão confere que ela é da pessoa da ficha**: a chave vem da tela, e sem
+  essa conferência quem trocasse o número no endereço derrubaria a sessão de outra pessoa.
+  A sessão em que a própria gerência está não se encerra pela ficha (para isso existe o
+  Sair); na própria ficha, "Sair dos outros aparelhos" encerra todas menos a de agora.
+- **Pelo endereço seguro (8443)** a ficha mostra "endereço seguro (https)" e não o IP: o túnel
+  do HTTPS entrega a conexão ao sistema como se viesse do próprio servidor.
+- Bloquear, encerrar o acesso e definir senha nova derrubam todas as sessões da pessoa, como
+  já faziam o desligamento e a troca de senha.

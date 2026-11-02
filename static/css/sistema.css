@@ -2596,3 +2596,117 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
     --mon-texto: #1b1813; --mon-texto-suave: #5c5449;
   }
 }
+
+/* ------------------------------------------------------------- acessos (1.44.0)
+   Usuários, a ficha de cada pessoa e Perfis e permissões. Cor só por token, como o resto
+   do sistema escuro; a tela de papel volta clara sozinha pelo bloco do topo. */
+.situacao {
+  display: inline-block; padding: .15rem .65rem; border: 1px solid currentColor;
+  border-radius: 999px; font-size: .82rem; font-weight: 700; white-space: nowrap;
+}
+.situacao-ativo { color: var(--cor-sucesso); background: var(--cor-sucesso-fraca); }
+.situacao-pendente { color: var(--cor-alerta); background: var(--cor-alerta-fraca); }
+.situacao-bloqueado { color: var(--cor-erro); background: var(--cor-erro-fraca); }
+.situacao-desligado { color: var(--cor-texto-suave); background: var(--cor-superficie-2); }
+
+/* As duas marcas do catálogo (apps/contas/catalogo.py): dinheiro e administração. */
+.marca {
+  display: inline-block; padding: 0 .4rem; border: 1px solid; border-radius: var(--raio-pequeno);
+  font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  vertical-align: .1em; white-space: nowrap;
+}
+.marca-dinheiro { color: var(--cor-latao); border-color: var(--cor-latao); background: var(--cor-latao-fraca); }
+.marca-administracao { color: var(--cor-link); border-color: var(--cor-link); }
+
+/* Escolher perfis (na criação e na ficha) e permissões (no perfil): caixa grande, com a
+   frase do que cada uma abre embaixo do nome. Travada é tracejada, e não apagada: com a
+   opacidade baixa a frase que explica POR QUE travou ficava ilegível. */
+.escolha-de-perfis {
+  grid-column: 1 / -1; display: grid; gap: .5rem; margin: .4rem 0 .9rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+.escolha-de-perfis legend { grid-column: 1 / -1; font-size: .85rem; color: var(--cor-texto-suave); }
+.perfil-escolha, .permissao-escolha {
+  display: flex; gap: .55rem; align-items: flex-start; margin: 0; padding: .55rem .7rem;
+  border: 1px solid var(--cor-borda); border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2); font-weight: 400; cursor: pointer;
+}
+.perfil-escolha input, .permissao-escolha input { width: auto; flex: 0 0 auto; margin: .2rem 0 0; }
+.perfil-escolha .ajuda, .permissao-escolha .ajuda { display: block; font-size: .8rem; }
+.perfil-escolha:has(input:checked), .permissao-escolha:has(input:checked) {
+  border-color: var(--cor-primaria); background: var(--cor-primaria-fraca);
+}
+.perfil-travado, .permissao-travada { border-style: dashed; cursor: not-allowed; }
+.formulario-usuario .escolha-de-perfis { margin-bottom: 0; }
+
+/* O que a pessoa pode, por módulo, e as permissões do perfil, por módulo. */
+.permissoes-efetivas, .permissoes-do-perfil {
+  display: grid; gap: .3rem 1.4rem; margin-top: .6rem;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+}
+.modulo-de-permissoes { display: grid; gap: .4rem; align-content: start; }
+.modulo-de-permissoes h3, .modulo-de-permissoes legend {
+  margin: .7rem 0 .2rem; font-size: .82rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--cor-texto-suave);
+}
+.modulo-de-permissoes ul { list-style: none; margin: 0; padding: 0; }
+.modulo-de-permissoes li { padding: .35rem 0; border-bottom: 1px solid var(--cor-borda); }
+.modulo-de-permissoes li:last-child { border-bottom: 0; }
+.modulo-de-permissoes li .ajuda { display: block; font-size: .8rem; }
+
+/* A matriz: uma linha por permissão, uma coluna por perfil. No computador ela cabe na
+   largura e rola com a página; a frase do que cada permissão abre fica no balão (title) e
+   nas telas de cada perfil e de cada pessoa, senão a tabela passava de 3.000 pixels. */
+.matriz-de-permissoes thead th {
+  text-align: center; vertical-align: bottom; text-transform: none; letter-spacing: 0;
+  font-size: .82rem; min-width: 6.2rem; background: var(--cor-superficie-2);
+}
+.matriz-de-permissoes thead th a { font-weight: 700; }
+.matriz-de-permissoes thead th .ajuda { display: block; font-size: .74rem; font-weight: 400; }
+.matriz-de-permissoes thead th.matriz-canto { text-align: left; }
+.matriz-de-permissoes tbody th[scope="row"] {
+  min-width: 17rem; font-weight: 600; background: var(--cor-superficie);
+  padding-top: .45rem; padding-bottom: .45rem;
+}
+.matriz-de-permissoes tbody th[scope="row"] .ajuda { display: none; }
+.matriz-de-permissoes td { padding-top: .45rem; padding-bottom: .45rem; }
+.matriz-modulo th {
+  padding-top: .9rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--cor-texto-suave); background: var(--cor-superficie);
+}
+.matriz-marca { text-align: center; vertical-align: middle; }
+.matriz-marca .tem { color: var(--cor-sucesso); font-size: 1.1rem; font-weight: 700; }
+.matriz-marca .nao-tem { color: var(--cor-texto-suave); }
+
+.detalhe-permissoes > summary {
+  cursor: pointer; color: var(--cor-link); min-height: 2.75rem; display: flex; align-items: center;
+}
+.lista-de-impacto { display: grid; gap: .4rem; margin: .4rem 0 0; padding-left: 1.2rem; }
+.cartao-aviso-acesso { --cor-faixa: var(--cor-alerta); }
+.tabela-historico tr.linha-negado > th, .tabela-historico tr.linha-falha > th {
+  box-shadow: inset 3px 0 0 var(--cor-erro);
+}
+.formulario-ficha .campo-largo { flex: 1 1 20rem; }
+.formulario-ficha .campo-largo input { width: 100%; }
+.formulario-ficha > .ajuda { flex: 1 1 100%; margin: 0; }
+.formulario-usuario .campo-largo { grid-column: 1 / -1; }
+.formulario-de-perfil textarea { width: 100%; }
+.formulario-em-linha { display: inline-flex; margin-left: .6rem; }
+.busca-de-pessoas { margin: 0 0 .9rem; }
+.busca-de-pessoas input { min-width: 16rem; }
+/* "Começar copiando" mostra o nome inteiro do perfil, e não "nada, começar vaz". */
+.formulario-usuario select { min-width: 15rem; }
+.dica-de-rolar { display: none; }
+
+@media (max-width: 48rem) {
+  .busca-de-pessoas, .busca-de-pessoas label { width: 100%; }
+  .busca-de-pessoas input { min-width: 0; width: 100%; }
+  /* No celular a tabela rola de lado, com o nome da permissão parado à esquerda. */
+  .matriz-rolavel .matriz-de-permissoes { min-width: 44rem; }
+  .matriz-de-permissoes tbody th[scope="row"] {
+    position: sticky; left: 0; z-index: 1; min-width: 9.5rem; max-width: 11rem;
+  }
+  .matriz-modulo th { position: sticky; left: 0; }
+  .dica-de-rolar { display: block; }
+  .formulario-em-linha { display: flex; margin: .4rem 0 0; }
+}

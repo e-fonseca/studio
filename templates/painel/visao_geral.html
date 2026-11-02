@@ -85,7 +85,7 @@ justifica e o link que a resolve; quem não pode abrir a tela não vê a tarefa.
       {% endif %}
       <li>Desconto médio de {{ visao.ticket.desconto_medio|reais }} por venda.</li>
     </ul>
-    <p><a href="{% url 'painel:ticket_medio' %}">Abrir o ticket médio com filtros</a></p>
+    {% if perms.importacao.ver_vendas %}<p><a href="{% url 'painel:ticket_medio' %}">Abrir o ticket médio com filtros</a></p>{% endif %}
     {% else %}
     <p>Sem venda registrada no período desta importação.</p>
     {% endif %}

@@ -68,7 +68,7 @@ def _previstos_de_hoje(request, estado):
     Devolve `([], None)` sem importação concluída: a tela continua mostrando os pedidos
     guardados, que são dado nosso e não dependem da foto do SET.
     """
-    if estado.importacao is None or not request.user.has_perm("importacao.ver_painel"):
+    if estado.importacao is None or not request.user.has_perm("compras.ver_compras"):
         return [], None
     from apps.compras import limite  # noqa: PLC0415 - evita ciclo no import
     from apps.financeiro import servicos as financeiro  # noqa: PLC0415

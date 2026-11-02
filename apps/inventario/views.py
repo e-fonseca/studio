@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from apps.auditoria.servicos import registrar_arquivo
 from apps.core import pdf, planilha
 from apps.importacao import servicos as importacao_servicos
 
@@ -237,7 +238,9 @@ def ajustes(request, pk):
     achada = get_object_or_404(Contagem, pk=pk)
     resposta = HttpResponse(servicos.divergencias_em_texto(achada),
                             content_type="text/tab-separated-values; charset=utf-8")
-    resposta["Content-Disposition"] = f'attachment; filename="ajustes-contagem-{achada.pk}.tsv"'
+    nome = f"ajustes-contagem-{achada.pk}.tsv"
+    resposta["Content-Disposition"] = f'attachment; filename="{nome}"'
+    registrar_arquivo(request, nome)
     return resposta
 
 
@@ -286,9 +289,11 @@ def _entregar(request, montar, *, titulo, subtitulo, arquivo, paisagem=True, **d
     if _formato(request) == "planilha":
         folha = planilha.Planilha(titulo, subtitulo, paisagem=paisagem, emitido_por=quem)
         montar(folha, **dados)
+        registrar_arquivo(request, f"{arquivo}.xlsx")
         return planilha.resposta(folha, f"{arquivo}.xlsx")
     papel = pdf.Relatorio(titulo, subtitulo, paisagem=paisagem, emitido_por=quem)
     montar(papel, **dados)
+    registrar_arquivo(request, f"{arquivo}.pdf")
     return pdf.resposta(papel, f"{arquivo}.pdf")
 
 

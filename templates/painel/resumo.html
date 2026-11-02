@@ -20,8 +20,8 @@
       <button type="submit" class="botao">Importar agora</button>
       <span class="ajuda">Lê uma cópia do backup do SET. Não mexe no SET nem na venda.</span>
     </form>
-    <p class="ajuda"><a href="{% url 'importacao:historico' %}">Conferir o backup e forçar a atualização</a>,
-      para ver o tamanho e a data do arquivo antes de importar.</p>
+    {% if perms.importacao.ver_importacoes %}<p class="ajuda"><a href="{% url 'importacao:historico' %}">Conferir o backup e forçar a atualização</a>,
+      para ver o tamanho e a data do arquivo antes de importar.</p>{% endif %}
   {% endif %}
 </section>
 

@@ -8,7 +8,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
-from apps.auditoria.servicos import registrar
+from apps.auditoria.servicos import registrar, registrar_arquivo
 from apps.core.templatetags.cabana import reais
 from apps.importacao import servicos as importacao_servicos
 
@@ -257,4 +257,5 @@ def produtos_em_arquivo(request):
         nome_do_arquivo = f"produtos-{limpo.lower()[:40]}.csv"
     resposta = HttpResponse("\ufeff" + buffer.getvalue(), content_type="text/csv; charset=utf-8")
     resposta["Content-Disposition"] = f'attachment; filename="{nome_do_arquivo}"'
+    registrar_arquivo(request, nome_do_arquivo)
     return resposta

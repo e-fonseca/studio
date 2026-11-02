@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_POST
 
+from apps.auditoria.servicos import registrar_arquivo
 from apps.core import barras, procura
 
 from . import comparacao as comparacao_servicos
@@ -65,7 +66,7 @@ def importar(request):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("importacao.ver_importacoes", raise_exception=True)
 def historico(request):
     return render(request, "importacao/historico.html", {
         "titulo": "Importações",
@@ -88,7 +89,7 @@ def historico(request):
 
 
 @login_required
-@permission_required("importacao.ver_painel", raise_exception=True)
+@permission_required("importacao.ver_importacoes", raise_exception=True)
 def log(request, pk):
     """Baixa o log de uma importação como texto, para anexar num e-mail ou guardar."""
     importacao = get_object_or_404(Importacao, pk=pk)
@@ -105,6 +106,7 @@ def log(request, pk):
     resposta = HttpResponse(corpo, content_type="text/plain; charset=utf-8")
     nome = f"importacao-{timezone.localtime(importacao.iniciada_em):%Y%m%d-%H%M}-{importacao.pk}.txt"
     resposta["Content-Disposition"] = f'attachment; filename="{nome}"'
+    registrar_arquivo(request, nome)
     return resposta
 
 

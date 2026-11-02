@@ -44,6 +44,11 @@
 /sistema/processos/21/
 /sistema/processos/ficha-tecnica/
 /sistema/usuarios/
+# A ficha de uma pessoa e um perfil: troque o número por um que exista no seu banco.
+/sistema/usuarios/14/
+/sistema/usuarios/perfis/
+/sistema/usuarios/perfis/11/
+/sistema/usuarios/confirmar/
 /sistema/alertas/
 /sistema/backup/
 /sistema/certificado/
