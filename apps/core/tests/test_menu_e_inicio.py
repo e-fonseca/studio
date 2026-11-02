@@ -136,8 +136,8 @@ class TestMenuPorAssunto(TestCase):
         """A seta de "próxima" tem que seguir o assunto, não saltar para outro."""
         corpo = self.client.get(reverse("compras:lista")).content.decode()
         navegacao = corpo[corpo.index('class="navegacao-telas"'):]
-        # Depois da Lista vem Pedidos desde que o menu de Compras ficou com quatro telas.
-        self.assertIn(reverse("pedidos:lista"), navegacao)
+        # Depois da Lista vem a Compra guiada desde a 1.45.0 (pedido de 02/11/2026).
+        self.assertIn(reverse("compras:guiada"), navegacao)
 
 
 class TestTelaQueEhRecursoDeOutra(TestCase):
@@ -217,9 +217,12 @@ class TestVersaoSoNoTopo(TestCase):
         self.assertIn(reverse("core:versoes"), corpo[:corpo.index("<footer")])
 
 
-class ComprasComQuatroTelas(TestCase):
+class ComprasComCincoTelas(TestCase):
     """Escolha do Edson em 22/10/2026: "Quatro no menu". Oito abas eram muito para
-    decidir rápido; as outras quatro abrem de dentro da Lista de compra, sem apagar nada."""
+    decidir rápido; as outras quatro abrem de dentro da Lista de compra, sem apagar nada.
+
+    A quinta é pedido dele em 02/11/2026: "no menu compras criar um sub menu compra
+    guiada". Ela vem logo depois da Lista, que continua sendo a primeira."""
 
     QUE_SAIRAM = ("compras:antes_de_comprar", "compras:sugestoes",
                   "compras:sugestoes_da_equipe", "compras:consulta")
@@ -228,10 +231,11 @@ class ComprasComQuatroTelas(TestCase):
         usuario(nome, perfil)
         self.client.login(username=nome, password=SENHA_TESTE)
 
-    def test_o_menu_de_compras_tem_quatro_telas(self):
+    def test_o_menu_de_compras_tem_cinco_telas(self):
         compras = menu.grupo_de("compras:lista")
         self.assertEqual([tela.rotulo for tela in compras.telas],
-                         ["Lista de compra", "Pedidos", "Fornecedores", "Indicadores de compra"])
+                         ["Lista de compra", "Compra guiada", "Pedidos", "Fornecedores",
+                          "Indicadores de compra"])
 
     def test_as_que_sairam_abrem_de_dentro_da_lista(self):
         self.entrar("edson", ADMINISTRACAO)

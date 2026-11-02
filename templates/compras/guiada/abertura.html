@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load cabana static %}
+{% comment %}
+A abertura da compra guiada (1.45.0): a leitura da loja inteira e a primeira pergunta, de
+qual fornecedor é a compra. Os fornecedores em cartão são os que mais têm venda parada por
+falta de produto; os outros estão na caixa de digitar, com a lista do SET. Embaixo fica o
+registro das compras guiadas já feitas, que é o que a funcionária que saiu não deixou: quem
+comprou, quanto e como decidiu.
+{% endcomment %}
+{% block classe_corpo %}em-compra-guiada{% endblock %}
+{% block mensagens %}{% endblock %}
+{% block cabeca %}<script src="{% static 'js/guiada.js' %}" defer></script>{% endblock %}
+{% block conteudo %}
+<div class="guiada-palco">
+  <section class="guiada-cartao guiada-largo guiada-abertura" aria-labelledby="guiada-pergunta">
+    <header class="guiada-cabeca">
+      <p class="guiada-de-quem"><span>Compra guiada</span></p>
+      <p class="guiada-dados guiada-dados-{{ estado.nivel }}" title="{{ estado.detalhe }}">{{ estado.titulo }}</p>
+      <a class="guiada-sair" href="{% url 'compras:lista' %}" title="Volta para a Lista de compra">Sair <span aria-hidden="true">×</span></a>
+    </header>
+    <div class="guiada-progresso">
+      <p class="guiada-passo">Passo 1 <span>· O fornecedor</span></p>
+      <div class="guiada-trilha" aria-hidden="true"><span style="width: 6%"></span></div>
+    </div>
+
+    {% if messages %}
+    <div class="guiada-recados" role="status">
+      {% for m in messages %}<p class="mensagem {{ m.tags }}">{{ m }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    <h1 id="guiada-pergunta" class="guiada-pergunta">Vamos montar um pedido, uma pergunta de cada vez</h1>
+    <p class="guiada-explica">São umas dez perguntas sobre um fornecedor. Cada resposta mostra na hora
+      quanto o pedido custa e quanto tempo ele dura, e nada é pedido sem o seu clique no fim. As
+      respostas ficam guardadas: quem vier depois vê como cada compra foi decidida.</p>
+
+    {% if em_andamento %}
+    <div class="guiada-andamento">
+      <p class="guiada-legenda">Você parou no meio {% if em_andamento|length == 1 %}desta compra{% else %}destas compras{% endif %}</p>
+      <ul>
+        {% for compra in em_andamento %}
+        <li>
+          <span><strong>{{ compra.fornecedor }}</strong> <span class="ajuda">começada em {{ compra.criada_em|date:"d/m/Y H:i" }}</span></span>
+          <span class="guiada-andamento-acoes">
+            <a class="botao" href="{% url 'compras:guiada_continuar' compra.pk %}">Continuar</a>
+            <form method="post" action="{% url 'compras:guiada_deixar' compra.pk %}">{% csrf_token %}
+              <button type="submit" class="botao secundario">Deixar de lado</button>
+            </form>
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if leitura.importacao %}
+    <h2 class="guiada-legenda">A loja hoje</h2>
+    <dl class="guiada-leitura">
+      <div class="guiada-dado">
+        <dt>Na prateleira, a custo</dt>
+        <dd><strong>{{ leitura.na_prateleira|reais }}</strong>
+          <span class="guiada-dado-nota">o que o SET diz que a loja tem</span></dd>
+      </div>
+      <div class="guiada-dado guiada-dado-atencao">
+        <dt>Parado sem vender no ano</dt>
+        <dd><strong>{{ leitura.parado|reais }}</strong>
+          <span class="guiada-dado-nota">{{ leitura.parado_porcentagem }}% da prateleira, em {{ leitura.produtos_parados|contagem }} produtos: não comprar mais deles</span></dd>
+      </div>
+      <div class="guiada-dado{% if leitura.faltando %} guiada-dado-ruim{% endif %}">
+        <dt>Faltando</dt>
+        <dd><strong>{{ leitura.faltando|contagem }} produto{{ leitura.faltando|pluralize }}</strong>
+          <span class="guiada-dado-nota">{% if leitura.carros_chefe_em_alerta %}{{ leitura.carros_chefe_em_alerta }} dos que mais vendem estão no mínimo{% else %}nenhum dos que mais vendem no mínimo{% endif %}</span></dd>
+      </div>
+      <div class="guiada-dado{% if leitura.teto.estourou %} guiada-dado-ruim{% else %} guiada-dado-destaque{% endif %}">
+        <dt>Cabe comprar no mês</dt>
+        <dd><strong>{% if leitura.teto.estourou %}nada{% else %}{{ leitura.teto.sobra|reais }}{% endif %}</strong>
+          <span class="guiada-dado-nota">do teto de {{ leitura.teto.teto.mensal|reais }}{% if leitura.teto.quantos_pedidos %}, já descontados {{ leitura.teto.quantos_pedidos }} pedido{{ leitura.teto.quantos_pedidos|pluralize }} daqui{% endif %}</span></dd>
+      </div>
+    </dl>
+
+    {% if leitura.carros %}
+    <div class="guiada-carros">
+      <p class="guiada-legenda">Os que mais vendem e estão acabando</p>
+      <ul>
+        {% for item in leitura.carros %}
+        <li>
+          <span><strong>{{ item.descricao }}</strong> <span class="ajuda">{% if item.estoque > 0 %}tem {{ item.estoque|quantidade:"0" }}{% if item.porcentagem_do_ideal is not None %}, {{ item.porcentagem_do_ideal }}% do ideal{% endif %}{% elif item.estoque < 0 %}acabou (o SET mostra {{ item.estoque|quantidade:"0" }}){% else %}acabou{% endif %} · faturou {{ item.receita_12m|reais }} no ano</span></span>
+          {% comment %}Formulário próprio, e não form="guiada-comecar": o botão que vem antes no papel vira o do Enter daquele formulário, e o Enter no "Outro fornecedor" começava a compra deste.{% endcomment %}
+          <form method="post" action="{% url 'compras:guiada_comecar' %}">{% csrf_token %}
+            <button type="submit" name="direto" value="{{ item.fornecedor }}" class="botao secundario guiada-botao-pequeno">Comprar de {{ item.fornecedor|truncatechars:34 }}</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'compras:guiada_comecar' %}" id="guiada-comecar" class="guiada-formulario">
+      {% csrf_token %}
+      <fieldset class="guiada-opcoes guiada-opcoes-grade">
+        <legend class="guiada-legenda">De qual fornecedor é esta compra?</legend>
+        <p class="ajuda guiada-legenda-nota">Primeiro os que mais têm venda parada por falta de produto.</p>
+        {% for opcao in leitura.opcoes %}
+        <label class="guiada-opcao">
+          <input type="radio" name="fornecedor" value="{{ opcao.nome }}"{% if sugerido == opcao.nome %} checked{% endif %}>
+          <span class="guiada-opcao-corpo">
+            <span class="guiada-opcao-titulo">{{ opcao.nome }}</span>
+            <span class="guiada-opcao-conta">{{ opcao.quantos|contagem }} para repor{% if opcao.faltando %}, {{ opcao.faltando }} faltando{% endif %}{% if opcao.carros_chefe %} · {{ opcao.carros_chefe }} carro{{ opcao.carros_chefe|pluralize }}-chefe{% endif %}</span>
+            <span class="guiada-opcao-nota">o que falta vendeu {{ opcao.receita_parada|reais }} no ano · {% if opcao.ultima_compra %}última compra em {{ opcao.ultima_compra|date:"d/m/Y" }}{% else %}sem compra no SET{% endif %}</span>
+            {% if opcao.parado %}<span class="guiada-opcao-nota guiada-nota-parado">{{ opcao.parado|reais }} dele parado na prateleira</span>{% endif %}
+          </span>
+          <kbd class="guiada-tecla" aria-hidden="true">{{ forloop.counter }}</kbd>
+        </label>
+        {% endfor %}
+        <label class="guiada-opcao guiada-opcao-aberta guiada-opcao-toda">
+          <input type="radio" name="fornecedor" value="outro"{% if sugerido and not sugerido_na_lista %} checked{% endif %}>
+          <span class="guiada-opcao-corpo">
+            <span class="guiada-opcao-titulo">Outro fornecedor</span>
+            <span class="guiada-campo-junto guiada-campo-largo"><input type="text" name="outro_fornecedor" list="guiada-fornecedores" value="{% if not sugerido_na_lista %}{{ sugerido }}{% endif %}" maxlength="200" autocomplete="off" placeholder="comece a digitar o nome" aria-label="Nome do fornecedor" data-marca-a-opcao></span>
+            <span class="guiada-opcao-nota">{{ leitura.fornecedores_na_lista }} fornecedores têm o que repor pela conta; dá para escolher qualquer um dos {{ leitura.todos|length }} do SET.</span>
+          </span>
+        </label>
+        <datalist id="guiada-fornecedores">
+          {% for nome in leitura.todos %}<option value="{{ nome }}">{% endfor %}
+        </datalist>
+      </fieldset>
+      {% if leitura.sem_fornecedor %}
+      <p class="ajuda">{{ leitura.sem_fornecedor }} produto{{ leitura.sem_fornecedor|pluralize }} para repor não {{ leitura.sem_fornecedor|pluralize:"tem,têm" }} fornecedor no SET: a compra guiada não chega neles. Estão na <a href="{% url 'compras:lista' %}?fornecedor={{ 'Sem fornecedor no SET'|urlencode }}">Lista de compra</a>.</p>
+      {% endif %}
+      <footer class="guiada-rodape">
+        <a class="botao secundario guiada-voltar" href="{% url 'compras:lista' %}">Lista de compra</a>
+        <p class="guiada-agora">{% if not pode_gerar %}Você monta e baixa a folha; gerar o pedido é da gerência ou da Líder de loja.{% endif %}</p>
+        <button type="submit" class="botao guiada-seguir">Começar</button>
+      </footer>
+    </form>
+    {% else %}
+    <p class="guiada-vazio">Ainda não há dados do SET importados. A compra guiada lê o estoque e a venda da última importação.</p>
+    {% endif %}
+  </section>
+
+  {% if feitas %}
+  <section class="guiada-cartao guiada-largo guiada-registro" aria-labelledby="guiada-feitas">
+    <h2 id="guiada-feitas" class="guiada-legenda">Compras guiadas já feitas</h2>
+    <p class="ajuda">Quem comprou, de quem, quanto e como decidiu. É o registro que fica para quem vier depois.</p>
+    <div class="tabela-rolavel tabela-em-cartao">
+      <table class="tabela-compra">
+        <caption class="oculto-visualmente">As últimas compras guiadas</caption>
+        <thead>
+          <tr><th scope="col">Quando</th><th scope="col">Fornecedor</th><th scope="col">Quem</th><th scope="col" class="numerico">Pedido</th><th scope="col">Como foi decidido</th></tr>
+        </thead>
+        <tbody>
+          {% for feita in feitas %}
+          <tr>
+            <th scope="row">{{ feita.concluida_em|date:"d/m/Y" }}</th>
+            <td data-rotulo="Fornecedor">{{ feita.fornecedor }}</td>
+            <td data-rotulo="Quem">{{ feita.criada_por|nome_pessoa:"conta apagada" }}</td>
+            <td class="numerico" data-rotulo="Pedido">{% if perms.pedidos.view_pedido %}<a href="{% url 'pedidos:detalhe' feita.pedido_numero %}">{{ feita.pedido_numero }}</a>{% else %}{{ feita.pedido_numero }}{% endif %} · {{ feita.valor|reais }}</td>
+            <td data-rotulo="Como foi decidido" class="guiada-resumo">{{ feita.resumo }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

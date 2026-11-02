@@ -1,0 +1,43 @@
+{% extends "compras/guiada/_moldura.html" %}
+{% load cabana %}
+{% block pergunta %}Quanto tempo {{ compra.fornecedor }} leva para entregar?{% endblock %}
+{% block explicacao %}
+<p class="guiada-explica">Do dia do pedido até a mercadoria chegar na loja. O SET não guarda
+  esse prazo e ninguém informou o deste fornecedor, então a conta usa {{ prazo_padrao }} dias.
+  Prazo maior é pedido maior: a compra tem que segurar a loja até a mercadoria chegar.
+  {% if grava_na_ficha %}A resposta fica gravada na ficha do fornecedor e passa a valer também
+  na Lista de compra: a pergunta não volta.{% else %}A resposta vale para esta compra. Gravar
+  na ficha do fornecedor é de quem cuida dos fornecedores.{% endif %}</p>
+{% endblock %}
+{% block opcoes %}
+<fieldset class="guiada-opcoes">
+  <legend class="oculto-visualmente">Prazo de entrega</legend>
+  {% for opcao in opcoes %}
+  <label class="guiada-opcao">
+    <input type="radio" name="prazo" value="{{ opcao.chave }}"{% if marcado == opcao.chave|stringformat:"s" %} checked{% endif %}>
+    <span class="guiada-opcao-corpo">
+      <span class="guiada-opcao-titulo">{{ opcao.rotulo }}: {{ opcao.chave }} dias</span>
+      <span class="guiada-opcao-conta">{{ opcao.quantos|contagem }} produto{{ opcao.quantos|pluralize }} · {{ opcao.valor|reais }}</span>
+    </span>
+    <kbd class="guiada-tecla" aria-hidden="true">{{ forloop.counter }}</kbd>
+  </label>
+  {% endfor %}
+  <label class="guiada-opcao guiada-opcao-aberta">
+    <input type="radio" name="prazo" value="outro"{% if marcado == "outro" %} checked{% endif %}>
+    <span class="guiada-opcao-corpo">
+      <span class="guiada-opcao-titulo">Outro prazo</span>
+      <span class="guiada-campo-junto"><input type="text" inputmode="numeric" name="prazo_outro" value="{% if dados %}{{ dados.prazo_outro }}{% else %}{{ outro_prazo|default:'' }}{% endif %}" maxlength="3" aria-label="Prazo em dias" data-marca-a-opcao> dias</span>
+    </span>
+    <kbd class="guiada-tecla" aria-hidden="true">5</kbd>
+  </label>
+  <label class="guiada-opcao guiada-opcao-neutra">
+    <input type="radio" name="prazo" value="nao_sei"{% if marcado == "nao_sei" %} checked{% endif %}>
+    <span class="guiada-opcao-corpo">
+      <span class="guiada-opcao-titulo">Não sei</span>
+      <span class="guiada-opcao-nota">A conta segue com {{ prazo_padrao }} dias e nada é gravado na ficha.</span>
+      <span class="guiada-opcao-nota">Para saber, olhe a data das últimas notas dele contra a data dos pedidos, ou pergunte ao vendedor do fornecedor.</span>
+    </span>
+    <kbd class="guiada-tecla" aria-hidden="true">6</kbd>
+  </label>
+</fieldset>
+{% endblock %}

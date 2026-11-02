@@ -7,6 +7,52 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.45.0 — 02/11/2026
+
+Pedido dele (02/11/2026, com dois prints): *"remover linha branca em volta do logotipo / no
+menu compras criar um sub menu compra guiada / fazer formato tipo apresentação, pop up, só que
+com perguntas fechadas ou abertas para informar tipo ou quantidade para formatar a sugestão de
+compra [...] Hoje o formato está longe de está intuitivo e fácil de operar, preciso que empenho
+máximo nesse recurso, a funcionaria que trabalhava com essa parte saiu da empresa e não deixou
+nenhuma informação registrada. / no gráfico principal do dashboard, inserir na vertical mais
+faixas de valores 10.000 50.000 80.000 120.000 150.000 250.000"*. Como a compra guiada
+funciona está em `compra-guiada.md`; o passo a passo de quem compra, em
+`manual/compra-guiada.md`.
+
+- **Compra guiada**, a segunda tela de Compras (e o botão Começar no alto da Lista de compra):
+  o pedido de um fornecedor montado em perguntas, uma por tela, num cartão de apresentação com
+  a barra de andamento. A primeira tela lê a loja inteira (prateleira, parado sem vender, o que
+  falta, quanto cabe no mês e os que mais vendem e estão acabando) e pergunta o fornecedor; as
+  outras perguntam o prazo de entrega (quando ninguém informou), quando se volta a comprar,
+  que tipos entram, em que venda se basear, a quantidade dos cinco que mais vendem, as
+  encomendas e as sugestões da equipe, e o orçamento. No fim, a conferência com a tabela
+  inteira editável, o recado ao fornecedor e Gerar o pedido.
+- **Cada resposta mostra a consequência antes de ser escolhida**: quantos produtos, quanto
+  custa e por quanto tempo o pedido segura a loja. A conta é a da Lista de compra, com as
+  respostas no lugar dos números fixos: com a próxima compra "na semana que vem", dá o mesmo
+  número da Lista.
+- **Fica registrado como cada compra foi decidida**: quem, quando, o pedido e um resumo das
+  respostas, na primeira tela e na pergunta da próxima compra do mesmo fornecedor. O prazo de
+  entrega respondido vai para a ficha do fornecedor e passa a valer na Lista de compra.
+- **A conferência pergunta antes de comprar o que dura mais de um ano** na prateleira, com
+  "Tirar do pedido". Quase sempre é o estoque mínimo cadastrado no SET (2.807 produtos têm um)
+  maior do que o produto vende.
+- **O pedido segue a regra de Pedidos**: o da gerência nasce valendo; o da Líder de loja e o
+  do perfil Compras, esperando a gerência; quem só monta baixa a folha com o aviso. Gerar duas
+  vezes não faz dois pedidos, e o Enter numa quantidade não gera pedido (desce para a linha de
+  baixo).
+- **A linha branca em volta do logotipo foi erro meu na 1.44.0**: a etiqueta nova da tela de
+  perfis tinha o mesmo nome da classe do logotipo (`marca`), e o logotipo ganhou a moldura e
+  as letras de etiqueta. A mesma troca de nome mexeu no alinhamento dos botões "Gerar pedido"
+  da Lista de compra e de Pedidos e do "Enviar agora" da cópia do programa no GitHub
+  (`formulario-em-linha`). Os dois voltaram, e um teste novo recusa a mesma classe definida
+  em dois cantos do `sistema.css`.
+- **Faturamento mês a mês** ganhou as faixas de 10, 50, 80, 120, 150 e 250 mil no eixo
+  vertical, junto com as redondas. Rótulo que encostaria no vizinho fica só com a linha.
+- **O botão que trava contra o duplo clique é o que foi apertado.** Antes era sempre o
+  primeiro do formulário: num formulário com dois botões, "Salvar" mudava o outro para
+  "Gerando…".
+
 ## 1.44.0 — 02/11/2026
 
 Pedido dele: o prompt "Implementação do módulo de usuários e controle de acesso do Aux SET",

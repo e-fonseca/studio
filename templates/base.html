@@ -132,7 +132,8 @@
     // segunda leitura.
     document.addEventListener("submit", function (e) {
       if (e.target.hasAttribute("data-destino")) { return; }
-      var b = e.target.querySelector("button[type=submit]");
+      // e.submitter é o botão apertado; sem ele (navegador antigo), o primeiro do formulário.
+      var b = e.submitter || e.target.querySelector("button[type=submit]");
       if (b) { setTimeout(function () { b.disabled = true; b.textContent = b.getAttribute("data-enviando") || "Enviando…"; }, 0); }
     });
   </script>

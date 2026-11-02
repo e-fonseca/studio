@@ -325,3 +325,65 @@ class PoliticaDeCompra(models.Model):
         """A política em vigor. Sem nada gravado, vale o padrão que ele pediu."""
         registro, _ = cls.objects.get_or_create(pk=1)
         return registro
+
+
+class CompraGuiada(models.Model):
+    """Uma compra montada pelas perguntas da compra guiada, com as respostas guardadas.
+
+    Pedido do Edson em 02/11/2026: *"fazer formato tipo apresentação, pop up, só que com
+    perguntas fechadas ou abertas (...) para formatar um pedido de compra para o
+    fornecedor assertivo (...) a funcionária que trabalhava com essa parte saiu da empresa
+    e não deixou nenhuma informação registrada"*.
+
+    As respostas ficam guardadas por isso: cada compra guiada é o registro de COMO a
+    compra foi decidida — para quanto tempo, com que venda de base, quais tipos, que
+    orçamento, quais encomendas, quem respondeu. A próxima pessoa que comprar deste
+    fornecedor lê aqui o que a anterior pensou, em vez de começar do zero.
+
+    É dado NOSSO, como o pedido: não tem `importacao`, a sincronização não o refaz e nada
+    vai para o SET. O pedido gerado fica pelo número (`pedido_numero`), que nunca é
+    reaproveitado, e não por chave estrangeira entre os dois aplicativos.
+    """
+
+    class Situacao(models.TextChoices):
+        ANDAMENTO = "andamento", "Em andamento"
+        CONCLUIDA = "concluida", "Pedido gerado"
+        DEIXADA = "deixada", "Deixada de lado"
+
+    fornecedor = models.CharField("fornecedor", max_length=200)
+    situacao = models.CharField(max_length=20, choices=Situacao.choices,
+                                default=Situacao.ANDAMENTO)
+    # As respostas, pergunta a pergunta (apps/compras/guiada.py diz quais são as chaves).
+    respostas = models.JSONField("respostas", default=dict, blank=True)
+
+    criada_em = models.DateTimeField(default=timezone.now)
+    criada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="compras_guiadas",
+    )
+    atualizada_em = models.DateTimeField(auto_now=True)
+    concluida_em = models.DateTimeField(null=True, blank=True)
+
+    # Preenchidos quando o pedido sai: de que foto vieram os números, qual pedido nasceu,
+    # quanto ele somou e as decisões numa frase, para a lista das compras já feitas.
+    data_corte = models.DateField("dados conferidos em", null=True, blank=True)
+    pedido_numero = models.PositiveIntegerField("número do pedido gerado", null=True, blank=True)
+    valor = models.DecimalField("valor do pedido", max_digits=14, decimal_places=2,
+                                default=Decimal("0"))
+    resumo = models.CharField("as decisões, numa frase", max_length=500, blank=True)
+
+    class Meta:
+        ordering = ["-criada_em"]
+        verbose_name = "compra guiada"
+        verbose_name_plural = "compras guiadas"
+        indexes = [
+            models.Index(fields=["criada_por", "situacao", "-criada_em"]),
+            models.Index(fields=["fornecedor", "-criada_em"]),
+        ]
+
+    def __str__(self):
+        return f"Compra guiada {self.pk} · {self.fornecedor}"
+
+    @property
+    def em_andamento(self):
+        return self.situacao == self.Situacao.ANDAMENTO

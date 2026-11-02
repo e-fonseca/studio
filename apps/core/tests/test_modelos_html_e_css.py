@@ -107,3 +107,68 @@ class CartaoNoCelular(SimpleTestCase):
         regra = next(linha for linha in css.splitlines()
                      if linha.startswith(".tabela-compra .linha-detalhe {"))
         self.assertIn("white-space: normal", regra)
+
+
+def _regras_soltas(css):
+    """Cada classe definida sozinha (`.nome {`) fora de @media, com as linhas onde aparece.
+
+    Os comentários viram linhas em branco, e não somem, para o número da linha continuar o
+    do arquivo: é ele que o teste mostra quando falha.
+    """
+    sem_comentario = re.sub(r"/\*.*?\*/", lambda achado: "\n" * achado.group().count("\n"),
+                            css, flags=re.S)
+    onde = {}
+    profundidade, inicio = 0, 0
+    for posicao, letra in enumerate(sem_comentario):
+        if letra == "{":
+            seletor = sem_comentario[inicio:posicao].strip()
+            if profundidade == 0 and not seletor.startswith("@"):
+                linha = sem_comentario.count("\n", 0, posicao) + 1
+                for parte in seletor.split(","):
+                    parte = parte.strip()
+                    if re.fullmatch(r"\.[\w-]+", parte):
+                        onde.setdefault(parte, []).append(linha)
+            profundidade += 1
+            inicio = posicao + 1
+        elif letra == "}":
+            profundidade = max(profundidade - 1, 0)
+            inicio = posicao + 1
+        elif letra == ";":
+            inicio = posicao + 1
+    return onde
+
+
+class MesmaClasseEmDoisCantos(SimpleTestCase):
+    """A mesma classe definida duas vezes, longe uma da outra, é outra tela sendo mudada.
+
+    Na 1.44.0 a etiqueta "dinheiro" da área de acessos ganhou a classe `.marca` — o nome
+    que o bloco do logotipo, no topo de TODAS as telas, já usava. A regra de baixo venceu
+    a de cima, e o logotipo apareceu com borda branca, em caixa alta e empilhado; o Edson
+    viu no dia da instalação (02/11/2026). Na mesma versão, `.formulario-em-linha` ganhou
+    uma segunda definição para o botão "Trazer de volta" e mexeu no botão de gerar o
+    pedido da Lista de compra. Nenhum teste viu, porque cada tela, sozinha, estava certa.
+
+    Repetir a classe perto da primeira é legítimo (um grupo de regras e um ajuste logo
+    abaixo). O defeito é o outro canto do arquivo, onde quem escreve não vê a primeira.
+    """
+
+    DISTANCIA = 40
+
+    def test_classe_solta_nao_e_definida_de_novo_longe_da_primeira(self):
+        css = Path(settings.BASE_DIR, "static", "css", "sistema.css").read_text(encoding="utf-8")
+        repetidas = [
+            f"{classe} nas linhas {', '.join(map(str, linhas))}"
+            for classe, linhas in sorted(_regras_soltas(css).items())
+            if max(linhas) - min(linhas) > self.DISTANCIA
+        ]
+        self.assertEqual(repetidas, [], "a mesma classe definida em dois cantos do sistema.css: "
+                                        "dê um nome novo, ou ponha o recipiente antes dela")
+
+    def test_a_conferencia_acha_o_caso_da_1_44_0(self):
+        """O próprio defeito, recolocado num texto de mentira, tem que ser achado."""
+        css = (".marca { display: flex; }\n" + "\n" * 60
+               + "@media (max-width: 40rem) { .marca { gap: 0; } }\n"
+               + "/* comentário\ncom .marca { dentro } */\n"
+               + ".marca { border: 1px solid; }\n")
+        linhas = _regras_soltas(css)[".marca"]
+        self.assertEqual(linhas, [1, 65])

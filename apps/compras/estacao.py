@@ -195,7 +195,12 @@ class Estacao:
                      media_esperada=esperado, de=de, ate=ate)
 
 
-def montar(importacao, consulta_de_produtos, hoje=None, dias_maximos=120):
+# A janela mais longa que um pedido da lista de compra pede ao ano passado: prazo do
+# fornecedor, mais a semana até a próxima compra e a de segurança, com folga.
+DIAS_MAXIMOS = 120
+
+
+def montar(importacao, consulta_de_produtos, hoje=None, dias_maximos=DIAS_MAXIMOS):
     """Lê de uma vez o que o ano passado tem a dizer sobre os produtos da consulta.
 
     `consulta_de_produtos` é o queryset dos candidatos da lista de compra; entra aqui

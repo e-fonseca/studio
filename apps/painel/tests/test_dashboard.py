@@ -399,14 +399,38 @@ class TestQuadrosDoGrafana(BaseDashboard):
         self.assertEqual(dashboard._reais_curto(1500000), "R$ 1,5 mi")
         self.assertEqual(dashboard._reais_curto(2000000), "R$ 2 mi")
 
-    def test_as_marcas_do_eixo_vao_do_zero_ao_topo(self):
+    def test_as_marcas_do_eixo_vao_do_zero_ao_topo_com_as_faixas_pedidas(self):
+        """Pedido do Edson em 02/11/2026: 10, 50, 80, 120, 150 e 250 mil no eixo vertical."""
         meses = [dashboard.Mes(rotulo="a", valor=Decimal("228153")),
                  dashboard.Mes(rotulo="b", valor=Decimal("100000"))]
         marcas = dashboard._grafico_de_linha(meses).marcas
-        self.assertEqual([m.rotulo for m in marcas], ["R$ 0", "R$ 100 mil", "R$ 200 mil", "R$ 300 mil"])
-        self.assertEqual([m.altura for m in marcas], [0, 33, 67, 100])
+        self.assertEqual([m.rotulo for m in marcas], [
+            "R$ 0", "R$ 10 mil", "R$ 50 mil", "R$ 80 mil", "R$ 100 mil", "R$ 120 mil",
+            "R$ 150 mil", "R$ 200 mil", "R$ 250 mil", "R$ 300 mil"])
+        self.assertEqual([m.altura for m in marcas], [0, 3, 17, 27, 33, 40, 50, 67, 83, 100])
         self.assertEqual(marcas[0].y, "300.0")
+        self.assertEqual(marcas[1].y, "290.0")
         self.assertEqual(marcas[-1].y, "0.0")
+        # O zero encostaria no 10 mil no celular: ele, e só ele, fica para o gráfico alto.
+        self.assertEqual([m.escrita for m in marcas], ["alto"] + ["sempre"] * 9)
+
+    def test_faixa_acima_do_topo_fica_de_fora(self):
+        marcas = dashboard._marcas(*dashboard._escala(90000))
+        self.assertEqual([m.rotulo for m in marcas], [
+            "R$ 0", "R$ 10 mil", "R$ 25 mil", "R$ 50 mil", "R$ 75 mil", "R$ 80 mil",
+            "R$ 100 mil"])
+        # 75 e 80 mil ficam a 5% um do outro: no celular a faixa pedida ganha.
+        self.assertEqual({m.rotulo: m.escrita for m in marcas}["R$ 75 mil"], "alto")
+        self.assertEqual({m.rotulo: m.escrita for m in marcas}["R$ 80 mil"], "sempre")
+
+    def test_rotulo_colado_no_vizinho_fica_so_a_linha(self):
+        """Num mês de R$ 1 milhão as faixas se espremem no pé: a linha fica, o rótulo não."""
+        marcas = {m.rotulo: m for m in dashboard._marcas(*dashboard._escala(900000))}
+        self.assertEqual(marcas["R$ 0"].escrita, "")
+        self.assertEqual(marcas["R$ 10 mil"].escrita, "sempre")
+        self.assertEqual(marcas["R$ 50 mil"].escrita, "alto")
+        self.assertEqual(marcas["R$ 1 mi"].escrita, "sempre")
+        self.assertEqual(len([m for m in marcas.values() if m.rotulo == "R$ 250 mil"]), 1)
 
     def test_as_fatias_da_rosca_somam_o_circulo_e_comecam_no_topo(self):
         fatias = dashboard._fatiar([dashboard.Fatia("a", Decimal("75")),

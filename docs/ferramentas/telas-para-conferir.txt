@@ -5,6 +5,12 @@
 /sistema/painel/dashboard/
 /sistema/painel/geral/
 /sistema/compras/lista/
+# A compra guiada: a abertura sempre existe; as perguntas dependem de uma compra em
+# andamento no seu banco (troque o 3 por uma que exista e seja do usuário que confere).
+/sistema/compras/guiada/
+/sistema/compras/guiada/3/proxima-compra/
+/sistema/compras/guiada/3/produto-1/
+/sistema/compras/guiada/3/revisao/
 /sistema/pedidos/
 /sistema/pedidos/1/
 /sistema/fornecedores/

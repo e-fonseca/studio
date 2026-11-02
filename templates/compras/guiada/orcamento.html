@@ -1,0 +1,53 @@
+{% extends "compras/guiada/_moldura.html" %}
+{% load cabana l10n %}
+{% block pergunta %}Até quanto este pedido pode chegar?{% endblock %}
+{% block explicacao %}
+<p class="guiada-explica">Se o pedido passar do limite, saem primeiro os que menos vendem. As
+  quantidades que você escolheu à mão e as encomendas não saem: elas são decisão sua.</p>
+{% endblock %}
+{% block leitura %}
+{% with t=teto.teto %}
+<dl class="guiada-leitura">
+  <div class="guiada-dado">
+    <dt>Teto de compra de {{ t.rotulo_mes|lower }}</dt>
+    <dd><strong>{{ t.mensal|reais }}</strong>
+      <span class="guiada-dado-nota">o custo do que a loja vende num mês</span></dd>
+  </div>
+  <div class="guiada-dado">
+    <dt>Já comprado no mês</dt>
+    <dd><strong>{{ t.comprado|reais }}</strong>
+      <span class="guiada-dado-nota">lançado no SET{% if teto.quantos_pedidos %}, mais {{ teto.pedidos_abertos|reais }} em {{ teto.quantos_pedidos }} pedido{{ teto.quantos_pedidos|pluralize }} daqui esperando a mercadoria{% endif %}</span></dd>
+  </div>
+  <div class="guiada-dado{% if teto.estourou %} guiada-dado-ruim{% endif %}">
+    <dt>Sobra no mês</dt>
+    <dd><strong>{% if teto.estourou %}nada{% else %}{{ teto.sobra|reais }}{% endif %}</strong>
+      <span class="guiada-dado-nota">{% if teto.estourou %}o mês já passou do teto em {{ teto.sobra|reais|cut:"-" }}{% else %}para todos os fornecedores{% endif %}</span></dd>
+  </div>
+  <div class="guiada-dado guiada-dado-destaque">
+    <dt>Este pedido, pela conta</dt>
+    <dd><strong>{{ proposta.total_sem_corte|reais }}</strong>
+      <span class="guiada-dado-nota">{{ proposta.no_pedido|length }} produto{{ proposta.no_pedido|length|pluralize }}{% if proposta.decididas or proposta.encomendas %}, com as escolhas e encomendas{% endif %}</span></dd>
+  </div>
+</dl>
+{% endwith %}
+{% endblock %}
+{% block opcoes %}
+<fieldset class="guiada-opcoes">
+  <legend class="oculto-visualmente">Limite do pedido</legend>
+  {% for opcao in opcoes %}
+  <label class="guiada-opcao{% if opcao.recomendada %} guiada-recomendada{% endif %}{% if opcao.chave == 'valor' %} guiada-opcao-aberta{% endif %}{% if opcao.desligada %} guiada-desligada{% endif %}">
+    <input type="radio" name="orcamento" value="{{ opcao.chave }}"{% if marcado == opcao.chave %} checked{% endif %}{% if opcao.desligada %} disabled{% endif %}>
+    <span class="guiada-opcao-corpo">
+      <span class="guiada-opcao-titulo">{{ opcao.rotulo }}{% if opcao.recomendada %} <span class="guiada-selo">Recomendado</span>{% endif %}</span>
+      {% if opcao.chave == "valor" %}
+      <span class="guiada-campo-junto">R$ <input type="text" inputmode="decimal" name="orcamento_valor" value="{% if dados %}{{ dados.orcamento_valor }}{% else %}{{ orcamento_valor }}{% endif %}" maxlength="12" aria-label="Valor máximo do pedido, em reais" data-marca-a-opcao></span>
+      {% elif opcao.valor is not None %}
+      <span class="guiada-opcao-conta">{{ opcao.valor|reais }}</span>
+      {% endif %}
+      {% if opcao.nota %}<span class="guiada-opcao-nota">{{ opcao.nota }}</span>{% endif %}
+    </span>
+    <kbd class="guiada-tecla" aria-hidden="true">{{ forloop.counter }}</kbd>
+  </label>
+  {% endfor %}
+</fieldset>
+{% endblock %}

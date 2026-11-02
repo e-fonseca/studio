@@ -1,0 +1,86 @@
+{% extends "compras/guiada/_moldura.html" %}
+{% load cabana l10n %}
+{% block pergunta %}Algum cliente encomendou? A equipe pediu alguma coisa?{% endblock %}
+{% block explicacao %}
+<p class="guiada-explica">Encomenda entra no pedido além da conta e o orçamento não corta. Se
+  ninguém encomendou nada de {{ compra.fornecedor }}, é só continuar.</p>
+{% endblock %}
+{% block antes_do_formulario %}
+<section class="guiada-bloco" aria-labelledby="guiada-encomendas">
+  <h2 id="guiada-encomendas" class="guiada-legenda">Encomendas de cliente</h2>
+  {% if proposta.encomendas %}
+  <ul class="guiada-lista-encomendas">
+    {% for linha in proposta.encomendas %}
+    <li>
+      <span><strong>{{ linha.encomenda|quantidade }}</strong> × {{ linha.descricao }} <span class="ajuda">({{ linha.codigo }})</span></span>
+      <form method="post">{% csrf_token %}
+        {% if de %}<input type="hidden" name="de" value="{{ de }}">{% endif %}
+        <input type="hidden" name="acao" value="tirar">
+        <input type="hidden" name="codigo" value="{{ linha.codigo }}">
+        <button type="submit" class="botao secundario guiada-botao-pequeno">Tirar</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="ajuda">Nenhuma encomenda neste pedido.</p>
+  {% endif %}
+
+  <form method="get" class="guiada-procura" role="search">
+    {% if de %}<input type="hidden" name="de" value="{{ de }}">{% endif %}
+    <label for="guiada-procurar">Procurar o produto encomendado</label>
+    <span class="guiada-procura-linha">
+      <input type="search" id="guiada-procurar" name="procurar" value="{{ procurado }}" placeholder="nome, código ou código de barras" autocomplete="off">
+      <button type="submit" class="botao secundario">Procurar</button>
+    </span>
+  </form>
+  {% if procurado %}
+  {% if achados %}
+  <ul class="guiada-achados">
+    {% for produto in achados %}
+    <li>
+      <span class="guiada-achado-nome"><strong>{{ produto.descricao }}</strong>
+        <span class="ajuda">{{ produto.codigo }} · {% if produto.estoque > 0 %}tem {{ produto.estoque|quantidade:"0" }}{% elif produto.estoque < 0 %}acabou (o SET mostra {{ produto.estoque|quantidade:"0" }}){% else %}acabou{% endif %}{% if produto.fornecedor != compra.fornecedor %} · no SET é de {{ produto.fornecedor|default:"fornecedor nenhum" }}{% endif %}</span></span>
+      <form method="post" class="guiada-achado-pedir">{% csrf_token %}
+        {% if de %}<input type="hidden" name="de" value="{{ de }}">{% endif %}
+        <input type="hidden" name="acao" value="adicionar">
+        <input type="hidden" name="codigo" value="{{ produto.codigo }}">
+        <input type="text" inputmode="decimal" name="unidades" value="1" maxlength="7" aria-label="Unidades encomendadas de {{ produto.descricao }}">
+        <button type="submit" class="botao secundario guiada-botao-pequeno">Pôr no pedido</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="ajuda">Nada encontrado com “{{ procurado }}” na última importação.</p>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}
+{% block opcoes %}
+<fieldset class="guiada-bloco">
+  <legend class="guiada-legenda">Sugestões da equipe para {{ compra.fornecedor }}</legend>
+  {% if equipe %}
+  <p class="ajuda">Marque as que entram neste pedido. Quem pode responder às sugestões vê cada uma respondida quando o pedido for gerado.</p>
+  {% for sugestao in equipe %}
+  {% if sugestao.codigo %}
+  <div class="guiada-sugestao">
+    <label class="guiada-sugestao-marcar">
+      <input type="checkbox" name="equipe" value="{{ sugestao.pk }}"{% if sugestao.marcada %} checked{% endif %}>
+      <span><strong>{{ sugestao.produto }}</strong>
+        <span class="ajuda">{{ sugestao.get_motivo_display }} · {{ sugestao.quem_escreveu }}, {{ sugestao.criada_em|date:"d/m/Y" }}{% if sugestao.observacao %} · “{{ sugestao.observacao|truncatechars:90 }}”{% endif %}</span></span>
+    </label>
+    <label class="guiada-sugestao-quantas">Unidades
+      <input type="text" inputmode="decimal" name="equipe-{{ sugestao.pk }}" value="{{ sugestao.unidades }}" maxlength="7">
+    </label>
+  </div>
+  {% else %}
+  <p class="guiada-sugestao guiada-sugestao-sem-codigo"><strong>{{ sugestao.produto }}</strong>
+    <span class="ajuda">sem código do SET: <a href="?procurar={{ sugestao.produto|urlencode }}{% if de %}&amp;de={{ de }}{% endif %}">procure o produto</a> e ponha como encomenda.</span></p>
+  {% endif %}
+  {% endfor %}
+  {% else %}
+  <p class="ajuda">A equipe não deixou sugestão aberta para este fornecedor.</p>
+  {% endif %}
+</fieldset>
+{% endblock %}

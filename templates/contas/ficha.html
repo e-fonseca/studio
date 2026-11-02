@@ -150,11 +150,11 @@
 <section class="cartao" id="pode">
   <h2>O que pode fazer</h2>
   {% if efetivas %}
-  <p>{{ contagem.total }} {% if contagem.total == 1 %}permissão{% else %}permissões{% endif %}, somando os perfis{% if contagem.dinheiro %}: {{ contagem.dinheiro }} com <span class="marca marca-dinheiro">dinheiro</span>{% endif %}{% if contagem.administracao %} e {{ contagem.administracao }} com <span class="marca marca-administracao">administração</span>{% endif %}.</p>
+  <p>{{ contagem.total }} {% if contagem.total == 1 %}permissão{% else %}permissões{% endif %}, somando os perfis{% if contagem.dinheiro %}: {{ contagem.dinheiro }} com <span class="tipo-de-acesso tipo-de-acesso-dinheiro">dinheiro</span>{% endif %}{% if contagem.administracao %} e {{ contagem.administracao }} com <span class="tipo-de-acesso tipo-de-acesso-administracao">administração</span>{% endif %}.</p>
   <details class="detalhe-permissoes">
   <summary>Ver cada uma, por assunto, e de qual perfil vem</summary>
-  <p class="ajuda"><span class="marca marca-dinheiro">dinheiro</span> mostra valor, custo, lucro, caixa
-     ou banco; <span class="marca marca-administracao">administração</span> mexe em acessos ou em
+  <p class="ajuda"><span class="tipo-de-acesso tipo-de-acesso-dinheiro">dinheiro</span> mostra valor, custo, lucro, caixa
+     ou banco; <span class="tipo-de-acesso tipo-de-acesso-administracao">administração</span> mexe em acessos ou em
      configurações.</p>
   <div class="permissoes-efetivas">
     {% for modulo, itens in efetivas %}
@@ -163,8 +163,8 @@
       <ul>
         {% for item in itens %}
         <li><strong>{{ item.permissao.nome }}</strong>
-          {% if item.permissao.dinheiro %}<span class="marca marca-dinheiro">dinheiro</span>{% endif %}
-          {% if item.permissao.administracao %}<span class="marca marca-administracao">administração</span>{% endif %}
+          {% if item.permissao.dinheiro %}<span class="tipo-de-acesso tipo-de-acesso-dinheiro">dinheiro</span>{% endif %}
+          {% if item.permissao.administracao %}<span class="tipo-de-acesso tipo-de-acesso-administracao">administração</span>{% endif %}
           <span class="ajuda">{{ item.permissao.abre }} Vem de: {{ item.de|join:", " }}.</span></li>
         {% endfor %}
       </ul>

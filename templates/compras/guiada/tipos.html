@@ -1,0 +1,41 @@
+{% extends "compras/guiada/_moldura.html" %}
+{% load cabana %}
+{% block pergunta %}Que produtos de {{ compra.fornecedor }} entram nesta compra?{% endblock %}
+{% block explicacao %}
+<p class="guiada-explica">Primeiro o tipo de produto, depois o quanto. Desmarcar um tipo tira
+  ele do pedido inteiro; "só o que já está faltando" é para quando o dinheiro está curto.</p>
+{% endblock %}
+{% block opcoes %}
+{% if proposta.tipos %}
+<fieldset class="guiada-opcoes" data-tipos>
+  <legend class="guiada-legenda">Tipos de produto (o grupo no SET)</legend>
+  {% for tipo in proposta.tipos %}
+  <label class="guiada-opcao">
+    <input type="checkbox" name="tipo" value="{{ tipo.grupo }}"{% if tipo.grupo in tipos_marcados %} checked{% endif %} data-tudo="{{ tipo.quantos }}" data-faltando="{{ tipo.faltando_ou_abaixo }}" data-carro_chefe="{{ tipo.carros_chefe }}">
+    <span class="guiada-opcao-corpo">
+      <span class="guiada-opcao-titulo">{{ tipo.grupo|default:"Sem grupo no SET" }}</span>
+      <span class="guiada-opcao-conta">{{ tipo.quantos|contagem }} para repor{% if tipo.faltando %} ({{ tipo.faltando }} faltando){% endif %} · {{ tipo.valor|reais }}</span>
+      <span class="guiada-opcao-nota">a loja vendeu {{ tipo.vendeu_12m|reais }} deste tipo no ano</span>
+    </span>
+  </label>
+  {% endfor %}
+</fieldset>
+{% else %}
+<p class="guiada-vazio">Pela conta, nada de {{ compra.fornecedor }} está para repor agora. Dá para
+  seguir e pôr encomendas de cliente, ou trocar a venda de base na próxima pergunta.</p>
+{% endif %}
+
+<fieldset class="guiada-opcoes">
+  <legend class="guiada-legenda">E o que entra destes tipos?</legend>
+  {% for opcao in entra %}
+  <label class="guiada-opcao{% if opcao.recomendada %} guiada-recomendada{% endif %}">
+    <input type="radio" name="entra" value="{{ opcao.chave }}"{% if entra_marcada == opcao.chave %} checked{% endif %}>
+    <span class="guiada-opcao-corpo">
+      <span class="guiada-opcao-titulo">{{ opcao.rotulo }}</span>
+      <span class="guiada-opcao-conta"><span data-conta-entra="{{ opcao.chave }}">{{ opcao.quantos }} produto{{ opcao.quantos|pluralize }}</span></span>
+    </span>
+    <kbd class="guiada-tecla" aria-hidden="true">{{ forloop.counter }}</kbd>
+  </label>
+  {% endfor %}
+</fieldset>
+{% endblock %}

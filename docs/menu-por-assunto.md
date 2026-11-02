@@ -31,7 +31,7 @@ abaixo), cada uma um assunto:
 |---|---|
 | **Dashboard** | A loja em quadros: venda, margem, estoque e o que pede atenção (desde a 1.43.0) |
 | **Visão geral** | Como a loja está hoje, e o que fazer agora |
-| **Compras** | Lista de compra, Pedidos, Fornecedores, Indicadores de compra (desde a 1.40.1; Antes de comprar, Sugestões, Sugestões da equipe e Últimas compras abrem pela fileira "Também em Compras", logo abaixo do título da Lista) |
+| **Compras** | Lista de compra, **Compra guiada** (1.45.0), Pedidos, Fornecedores, Indicadores de compra (desde a 1.40.1; Antes de comprar, Sugestões, Sugestões da equipe e Últimas compras abrem pela fileira "Também em Compras", logo abaixo do título da Lista) |
 | **Vendas** | Vendas do dia, Margem, Ticket médio, Clientes (o Dashboard morava aqui até a 1.42.0) |
 | **Estoque** | Consulta, Inventário |
 | **Dinheiro** | Financeiro, Caixa, Conciliação |

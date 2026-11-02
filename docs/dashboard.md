@@ -79,6 +79,14 @@ mostra o valor com o mouse em cima, e o celular não tem mouse.
   "R$ 1,5 mi" (`_reais_curto`). Os rótulos são texto da página, ao lado do desenho, e não
   texto dentro do SVG: o SVG é esticado (`preserveAspectRatio="none"`) e texto esticado
   sai torto. Pelo mesmo motivo as linhas usam `vector-effect: non-scaling-stroke`.
+- **As faixas do eixo vertical (1.45.0)**: pedido dele em 02/11/2026, *"inserir na vertical
+  mais faixas de valores 10.000 50.000 80.000 120.000 150.000 250.000"*. `_marcas` junta as
+  faixas de `FAIXAS_DO_FATURAMENTO` (só as abaixo do topo da escala) às marcas redondas do
+  passo. Quando dois rótulos ficariam um em cima do outro, ganha a faixa pedida, depois a
+  redonda, por último o zero (o pé do gráfico já é o zero); o outro fica escrito só no gráfico
+  alto (`monitor-eixo-so-no-alto`, escondido por `@container eixo-do-tempo (max-height: 25rem)`)
+  ou fica só a linha. Num ano de R$ 300 mil no mês, o computador e o celular escrevem as nove:
+  10, 50, 80, 100, 120, 150, 200, 250 e 300 mil.
 - O tamanho do número grande é a largura do quadro dividida pelas letras dele:
   `Kpi.texto` escreve o número, `Kpi.letras` conta, e o CSS faz
   `calc(155cqi / var(--letras))`. "R$ 1.538.337,98" saía cortado no tamanho de "16.361".

@@ -121,6 +121,13 @@ GRUPOS = [
              irmas=("compras:lista_em_arquivo", "compras:ajustar_quantidade",
                     "compras:pedido_ao_fornecedor"),
              ajuda="O que comprar antes de faltar, quanto comprar e de qual fornecedor."),
+        # Pedido do Edson em 02/11/2026: "no menu compras criar um sub menu compra guiada".
+        # A mesma conta da Lista de compra, feita em perguntas, um fornecedor por vez, para
+        # quem nunca comprou pela loja (apps/compras/guiada.py).
+        Item("compras:guiada", "Compra guiada", "compras.ver_compras",
+             irmas=("compras:guiada_comecar", "compras:guiada_continuar", "compras:guiada_passo",
+                    "compras:guiada_folha", "compras:guiada_pronto", "compras:guiada_deixar"),
+             ajuda="Perguntas, uma de cada vez, que montam o pedido de um fornecedor."),
         Item("pedidos:lista", "Pedidos", "pedidos.view_pedido",
              # "baixar" fica de fora: ela devolve o arquivo anexado, não uma tela com menu.
              irmas=("pedidos:detalhe", "pedidos:anexar", "pedidos:receber",

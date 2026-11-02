@@ -1,0 +1,115 @@
+{% extends "compras/guiada/_moldura.html" %}
+{% load cabana l10n %}
+{% block largura %} guiada-largo{% endblock %}
+{% block pergunta %}Confira o pedido de {{ compra.fornecedor }}{% endblock %}
+{% block explicacao %}
+<p class="guiada-explica">Mude qualquer quantidade na tabela; produto com zero não vai no papel.
+  Nada é pedido antes do botão "Gerar o pedido", e o pedido não é mandado ao fornecedor: a folha é você quem manda.</p>
+{% endblock %}
+{% block leitura %}
+<dl class="guiada-leitura" data-resumo-do-pedido>
+  <div class="guiada-dado guiada-dado-destaque">
+    <dt>Total do pedido</dt>
+    <dd><strong data-total-do-pedido>{{ proposta.total|reais }}</strong>
+      <span class="guiada-dado-nota">{% if proposta.sem_custo %}{{ proposta.sem_custo }} produto{{ proposta.sem_custo|pluralize }} sem custo no SET fica{{ proposta.sem_custo|pluralize:"m" }} fora da soma{% else %}a custo do SET{% endif %}</span></dd>
+  </div>
+  <div class="guiada-dado">
+    <dt>Produtos</dt>
+    <dd><strong data-produtos-do-pedido>{{ proposta.no_pedido|length }}</strong>
+      <span class="guiada-dado-nota"><span data-unidades-do-pedido>{{ proposta.unidades|quantidade:"0" }}</span> unidades</span></dd>
+  </div>
+  <div class="guiada-dado">
+    <dt>Segura a loja por</dt>
+    <dd><strong>{{ tempo }}</strong>
+      <span class="guiada-dado-nota">até a próxima compra chegar ({{ proposta.proxima_compra }} + {{ proposta.prazo_dias }} dias{% if proposta.prazo_assumido %}, prazo estimado{% endif %})</span></dd>
+  </div>
+  <div class="guiada-dado{% if proposta.cortadas %} guiada-dado-atencao{% endif %}">
+    <dt>Limite</dt>
+    <dd><strong>{% if proposta.orcamento is not None %}{{ proposta.orcamento|reais }}{% else %}sem limite{% endif %}</strong>
+      <span class="guiada-dado-nota">{% if proposta.cortadas %}{{ proposta.cortadas|length }} produto{{ proposta.cortadas|length|pluralize }} ficou de fora ({{ proposta.valor_cortado|reais }}){% elif proposta.orcamento is not None %}o pedido coube inteiro{% else %}nada foi cortado{% endif %}</span></dd>
+  </div>
+</dl>
+
+<details class="guiada-respondidas">
+  <summary>O que você respondeu ({{ respondidas|length }} respostas) e onde mudar</summary>
+  <ul>
+    {% for resposta in respondidas %}
+    <li><span class="guiada-respondida-titulo">{{ resposta.titulo }}</span> <span>{{ resposta.texto }}</span> <a href="{{ resposta.endereco }}">Mudar</a></li>
+    {% endfor %}
+  </ul>
+</details>
+{% endblock %}
+{% block opcoes %}
+{% comment %}O Enter num campo do formulário aperta o PRIMEIRO botão dele. Este vem antes de
+todos e só salva: quem digita a quantidade e dá Enter não gera o pedido sem querer. Com o
+guiada.js, o Enter nem chega aqui: ele pula para a linha de baixo, como numa planilha.{% endcomment %}
+<button type="submit" name="acao" value="salvar" class="oculto-visualmente" tabindex="-1" aria-hidden="true">Salvar as mudanças</button>
+{% with longe=proposta.longe %}
+{% if longe %}
+<div class="guiada-alerta guiada-alerta-acao">
+  <p><strong>{{ longe|length }} produto{{ longe|length|pluralize }} deste pedido dura{{ longe|length|pluralize:"m" }} mais de um ano na prateleira</strong>
+    com a quantidade que a conta pediu, <span class="guiada-valor">{{ proposta.valor_longe|reais }}</span>: {% for linha in longe|slice:":3" %}{{ linha.descricao }} ({{ linha.cobre }}){% if not forloop.last %}, {% endif %}{% endfor %}{% if longe|length > 3 %} e mais {{ longe|length|add:"-3" }}{% endif %}.
+    Quase sempre é o estoque mínimo cadastrado no SET, maior do que o produto vende.</p>
+  <button type="submit" name="acao" value="tirar_longe" class="botao secundario guiada-botao-pequeno" data-enviando="Tirando…">Tirar {% if longe|length == 1 %}este{% else %}estes{% endif %} do pedido</button>
+</div>
+{% endif %}
+{% endwith %}
+{% if proposta.linhas %}
+{% with linhas=proposta.linhas %}
+<div class="tabela-rolavel tabela-em-cartao guiada-tabela">
+  <table class="tabela-compra">
+    <caption>{{ linhas|length }} produto{{ linhas|length|pluralize }}, do que mais faz falta para o que menos faz. O limite corta pelo fim.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Produto</th>
+        <th scope="col" class="numerico">Tem</th>
+        <th scope="col" class="numerico">Vende por mês</th>
+        <th scope="col" class="numerico">O sistema pede</th>
+        <th scope="col" class="numerico">Comprar</th>
+        <th scope="col" class="numerico">Custo</th>
+        <th scope="col" class="numerico">Total</th>
+        <th scope="col" class="numerico">Dura</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for linha in linhas %}
+      <tr class="{% if linha.carro_chefe %}linha-carro-chefe{% endif %}{% if linha.cortada %} guiada-cortada{% endif %}{% if linha.quantidade <= 0 and not linha.cortada %} guiada-zerada{% endif %}" data-linha>
+        <th scope="row"><strong>{{ linha.descricao }}</strong>{% if linha.carro_chefe %} <span class="selo selo-carro-chefe">Carro-chefe</span>{% endif %}
+          <span class="linha-detalhe">{{ linha.codigo }} · {{ linha.rotulo|lower }}{% if linha.encomenda %} · {{ linha.encomenda|quantidade }} encomendada{{ linha.encomenda|pluralize }}{% endif %}{% if linha.decidida_pela_pessoa %} · escolhida por você{% endif %}{% if linha.cortada %} · fora pelo limite: digite para pôr de volta{% endif %}</span></th>
+        <td class="numerico" data-rotulo="Tem">{{ linha.estoque|quantidade:"0" }}</td>
+        <td class="numerico" data-rotulo="Vende por mês">{{ linha.por_mes|quantidade:"0" }}</td>
+        <td class="numerico" data-rotulo="O sistema pede">{{ linha.sugerida|quantidade:"0" }}</td>
+        <td class="numerico guiada-celula-quantidade" data-rotulo="Comprar">
+          <input type="text" inputmode="decimal" name="q-{{ linha.codigo }}" value="{{ linha.quantidade|quantidade:'0' }}" maxlength="7" aria-label="Quantas comprar de {{ linha.descricao }}" data-quantidade data-custo="{{ linha.custo|default_if_none:''|unlocalize }}" data-por-dia="{{ linha.demanda_diaria|unlocalize }}">
+          <input type="hidden" name="era-{{ linha.codigo }}" value="{{ linha.quantidade|quantidade:'0' }}">
+        </td>
+        <td class="numerico" data-rotulo="Custo">{% if linha.custo is not None %}{{ linha.custo|reais }}{% else %}sem custo{% endif %}</td>
+        <td class="numerico" data-rotulo="Total" data-total-da-linha>{{ linha.valor_do_pedido|reais }}</td>
+        <td class="numerico{% if linha.cobre_mais_de_um_ano %} guiada-longe{% endif %}" data-rotulo="Dura" data-dura>{{ linha.cobre|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endwith %}
+{% else %}
+<p class="guiada-vazio">Nada neste pedido ainda. Volte em "O que entra" ou ponha uma encomenda.</p>
+{% endif %}
+<label class="guiada-recado" for="guiada-recado">Recado para o fornecedor <span class="ajuda">(sai escrito no pedido)</span></label>
+<textarea id="guiada-recado" name="recado" maxlength="300" rows="2" placeholder="Ex.: entregar até sexta; mandar o XML da nota junto com o PDF.">{% if dados %}{{ dados.recado }}{% else %}{{ recado }}{% endif %}</textarea>
+{% endblock %}
+{% block rodape %}
+{% comment %}O pé que gruda no fim da tela do celular tem só o principal, como nas outras
+perguntas; com os quatro botões ele cobria metade da tabela. Os outros vêm logo abaixo.{% endcomment %}
+<footer class="guiada-rodape guiada-rodape-final">
+  <a class="botao secundario guiada-voltar" href="{{ anterior }}">Voltar</a>
+  <p class="guiada-agora">Pedido: <strong data-total-do-pedido>{{ proposta.total|reais }}</strong> <span><span data-produtos-do-pedido>{{ proposta.no_pedido|length }}</span> produtos</span></p>
+  {% if pode_gerar %}<button type="submit" name="acao" value="gerar" class="botao guiada-seguir" data-enviando="Gerando o pedido…">Gerar o pedido</button>{% else %}<button type="submit" name="acao" value="salvar" class="botao guiada-seguir" data-enviando="Salvando…">Salvar as mudanças</button>{% endif %}
+</footer>
+<div class="guiada-mais-acoes">
+  {% if pode_gerar %}<button type="submit" name="acao" value="salvar" class="botao secundario" data-enviando="Salvando…">Salvar as mudanças</button>{% endif %}
+  <a class="botao secundario" href="{% url 'compras:guiada_folha' compra.pk %}" target="_blank" rel="noopener">Ver a folha em PDF</a>
+</div>
+<p class="ajuda guiada-nota-final">{% if vai_esperar %}O seu pedido nasce esperando a aprovação da gerência, e a folha sai com o aviso de que ainda não vale.{% elif pode_gerar %}"Gerar o pedido" guarda o pedido em Pedidos com a folha anexada, para conferir a nota fiscal quando a mercadoria chegar.{% else %}Gerar o pedido é da gerência ou da Líder de loja: salve as mudanças e entregue a folha a quem pode.{% endif %}
+  <span class="guiada-aviso-folha" data-aviso-folha hidden>A folha sai com o que está salvo: salve as mudanças antes de abrir.</span></p>
+{% endblock %}

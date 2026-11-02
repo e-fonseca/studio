@@ -37,8 +37,8 @@
         <label class="permissao-escolha{% if linha.travada %} permissao-travada{% endif %}">
           <input type="checkbox" name="permissoes" value="{{ linha.permissao.codigo }}" {% if linha.marcada %}checked{% endif %} {% if linha.travada %}disabled{% endif %}>
           <span><strong>{{ linha.permissao.nome }}</strong>
-            {% if linha.permissao.dinheiro %}<span class="marca marca-dinheiro">dinheiro</span>{% endif %}
-            {% if linha.permissao.administracao %}<span class="marca marca-administracao">administração</span>{% endif %}
+            {% if linha.permissao.dinheiro %}<span class="tipo-de-acesso tipo-de-acesso-dinheiro">dinheiro</span>{% endif %}
+            {% if linha.permissao.administracao %}<span class="tipo-de-acesso tipo-de-acesso-administracao">administração</span>{% endif %}
             <span class="ajuda">{{ linha.permissao.abre }}</span></span>
         </label>
         {% endfor %}

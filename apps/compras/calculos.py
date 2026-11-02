@@ -40,6 +40,11 @@ class Parametros:
     excesso_cobertura_dias: int = 180  # acima disso, o item é considerado em excesso
     dias_minimos_historico: int = 28  # menos que isso: confiança baixa
     dias_dados_vencidos: int = 10  # data de corte mais antiga que isso: dados vencidos
+    # Quantos dias a mais o ponto de pedido olha para a frente. Zero na lista de compra,
+    # que é revista toda semana. A compra guiada (apps/compras/guiada.py) pergunta quando
+    # a pessoa volta a comprar do fornecedor; se é daqui a um mês, entra também o que
+    # acaba antes de a compra SEGUINTE chegar, e não só o que acaba antes desta.
+    antecipar_dias: int = 0
 
 
 @dataclass(frozen=True)
@@ -126,7 +131,7 @@ def _quanto_comprar(demanda, posicao, item, p):
     if item.prazo_reposicao_dias is None or demanda <= 0:
         return None, None, ZERO
     seguranca = demanda * p.dias_seguranca
-    ponto = demanda * item.prazo_reposicao_dias + seguranca
+    ponto = demanda * (item.prazo_reposicao_dias + p.antecipar_dias) + seguranca
     alvo = demanda * (item.prazo_reposicao_dias + p.horizonte_revisao_dias) + seguranca
     if item.estoque_minimo_manual is not None:
         ponto = max(ponto, _d(item.estoque_minimo_manual))

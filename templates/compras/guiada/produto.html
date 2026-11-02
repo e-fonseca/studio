@@ -1,0 +1,87 @@
+{% extends "compras/guiada/_moldura.html" %}
+{% load cabana l10n %}
+{% block pergunta %}{% if linha %}Quantas unidades de {{ linha.descricao }}?{% else %}Este produto saiu da compra{% endif %}{% endblock %}
+{% block explicacao %}
+{% if linha %}
+<p class="guiada-explica">
+  {% if linha.carro_chefe %}<span class="selo selo-carro-chefe">Carro-chefe</span>{% endif %}
+  <span class="selo selo-{{ linha.urgencia }}">{{ linha.rotulo }}</span>
+  Um dos que mais vendem de {{ compra.fornecedor }}: faturou {{ linha.receita_12m|reais }} no ano.
+  Código {{ linha.codigo }}{% if linha.grupo %}, {{ linha.grupo|lower }}{% endif %}.
+</p>
+{% endif %}
+{% endblock %}
+{% block leitura %}
+{% if linha %}
+{% with item=linha.item %}
+<dl class="guiada-leitura">
+  <div class="guiada-dado{% if linha.estoque <= 0 %} guiada-dado-ruim{% endif %}">
+    <dt>Tem na loja</dt>
+    <dd><strong>{{ linha.estoque|quantidade:"0" }}</strong>
+      <span class="guiada-dado-nota">{% if item.saldo_desprezado %}abaixo de zero no SET: a conta usa zero{% elif linha.a_caminho %}e {{ linha.a_caminho|quantidade }} a caminho{% else %}pelo SET, sem contagem{% endif %}</span></dd>
+  </div>
+  <div class="guiada-dado">
+    <dt>Vende por mês</dt>
+    <dd><strong>{{ linha.por_mes|quantidade:"0" }}</strong>
+      <span class="guiada-dado-nota">{{ proposta.janela_rotulo|default:"12 meses"|lower }} de base</span></dd>
+  </div>
+  <div class="guiada-dado">
+    <dt>Vendeu no ano</dt>
+    <dd><strong>{{ linha.vendas_12m|quantidade:"0" }}</strong>
+      <span class="guiada-dado-nota">{% if item.giro_dos_90_dias %}{{ item.giro_dos_90_dias }}{% else %}unidades em 12 meses{% endif %}</span></dd>
+  </div>
+  <div class="guiada-dado">
+    <dt>Custo</dt>
+    <dd><strong>{% if linha.custo is not None %}{{ linha.custo|reais }}{% else %}sem custo{% endif %}</strong>
+      <span class="guiada-dado-nota">{% if linha.custo is not None %}por unidade, no SET{% else %}o SET não tem o custo: a linha sai sem valor{% endif %}</span></dd>
+  </div>
+</dl>
+<div class="guiada-porque">
+  <p class="guiada-porque-titulo">Por que o sistema pede {{ linha.sugerida|quantidade:"0" }}</p>
+  {% if item.motivo %}<p>{{ item.motivo }}</p>{% endif %}
+  {% with m=item.movimento %}{% if m and m.tem_ultima_compra %}
+  <p>Última compra: {{ m.ultima_compra_unidades|quantidade }} em {{ m.ultima_compra_em|date:"d/m/Y" }}; vendeu {{ m.vendido_desde_a_compra|quantidade }} desde então{% if m.ultima_compra_ja_vendida %}, e já saiu tudo{% endif %}.</p>
+  {% endif %}{% endwith %}
+  {% if linha.ajuste_da_lista %}<p>{{ linha.ajuste_da_lista }}</p>{% endif %}
+  {% if linha.encomenda %}<p>Além disso, {{ linha.encomenda|quantidade }} encomendada{{ linha.encomenda|pluralize }} por cliente entra{{ linha.encomenda|pluralize:"m" }} no pedido.</p>{% endif %}
+</div>
+{% if linha.parou_de_vender %}
+<p class="guiada-alerta">Vendeu no ano, mas nada nos últimos 90 dias. Vale olhar a prateleira antes de repetir a compra.</p>
+{% endif %}
+{% endwith %}
+{% endif %}
+{% endblock %}
+{% block opcoes %}
+{% if linha %}
+<fieldset class="guiada-opcoes">
+  <legend class="oculto-visualmente">Quantas unidades comprar</legend>
+  {% for opcao in opcoes %}
+  <label class="guiada-opcao{% if opcao.chave == 'sugerida' %} guiada-recomendada{% endif %}{% if opcao.longe %} guiada-longe{% endif %}">
+    <input type="radio" name="quantidade" value="{{ opcao.chave }}"{% if marcado == opcao.chave %} checked{% endif %}>
+    <span class="guiada-opcao-corpo">
+      <span class="guiada-opcao-titulo">{{ opcao.rotulo }}: {{ opcao.unidades|quantidade }}{% if opcao.chave == 'sugerida' %} <span class="guiada-selo">A conta</span>{% endif %}</span>
+      <span class="guiada-opcao-conta">{% if opcao.valor is not None %}{{ opcao.valor|reais }}{% else %}sem custo no SET{% endif %}</span>
+      <span class="guiada-opcao-nota">{% if opcao.cobre %}dura {{ opcao.cobre }} de venda{% if opcao.longe %}: mais de um ano na prateleira{% endif %}{% endif %}</span>
+    </span>
+    <kbd class="guiada-tecla" aria-hidden="true">{{ forloop.counter }}</kbd>
+  </label>
+  {% endfor %}
+  <label class="guiada-opcao guiada-opcao-neutra">
+    <input type="radio" name="quantidade" value="nao"{% if marcado == "nao" %} checked{% endif %}>
+    <span class="guiada-opcao-corpo">
+      <span class="guiada-opcao-titulo">Não comprar agora</span>
+      <span class="guiada-opcao-nota">{% if linha.encomenda %}Fica só a encomenda do cliente.{% else %}O produto sai deste pedido.{% endif %}</span>
+    </span>
+    <kbd class="guiada-tecla" aria-hidden="true">{{ opcoes|length|add:1 }}</kbd>
+  </label>
+  <label class="guiada-opcao guiada-opcao-aberta">
+    <input type="radio" name="quantidade" value="outro"{% if marcado == "outro" %} checked{% endif %}>
+    <span class="guiada-opcao-corpo">
+      <span class="guiada-opcao-titulo">Outra quantidade</span>
+      <span class="guiada-campo-junto"><input type="text" inputmode="decimal" name="quantidade_outro" value="{% if dados %}{{ dados.quantidade_outro }}{% else %}{{ outra_quantidade|default:'' }}{% endif %}" maxlength="7" aria-label="Quantas unidades" data-marca-a-opcao data-custo="{{ linha.custo|default_if_none:''|unlocalize }}" data-por-dia="{{ linha.demanda_diaria|unlocalize }}"> unidades <output class="guiada-conta-viva" data-conta-viva></output></span>
+    </span>
+    <kbd class="guiada-tecla" aria-hidden="true">{{ opcoes|length|add:2 }}</kbd>
+  </label>
+</fieldset>
+{% endif %}
+{% endblock %}

@@ -322,11 +322,67 @@ LARGURA_DA_LINHA, ALTURA_DA_LINHA = 1000, 300
 
 @dataclass
 class Marca:
-    """Uma linha de grade do eixo: o rótulo, a altura em % (página) e o y (desenho)."""
+    """Uma linha de grade do eixo: o rótulo, a altura em % (página) e o y (desenho).
+
+    `escrita` diz se o rótulo aparece: "sempre", "alto" (só quando o gráfico é alto o
+    bastante para ele não encostar no vizinho, o que o CSS decide pela altura real do
+    eixo) ou "" (só a linha, sem rótulo).
+    """
 
     rotulo: str
     altura: int
     y: str
+    escrita: str = "sempre"
+
+
+# As faixas que o Edson pediu no eixo vertical (02/11/2026): "no gráfico principal do
+# dashboard, inserir na vertical mais faixas de valores 10.000 50.000 80.000 120.000
+# 150.000 250.000". Entram junto com as marcas redondas do passo, e só as que cabem na
+# escala do gráfico: num ano de R$ 600 mil por mês a de 10 mil seria um fio colado no zero.
+FAIXAS_DO_FATURAMENTO = (10_000, 50_000, 80_000, 120_000, 150_000, 250_000)
+
+# Distância mínima entre dois rótulos, em porcentagem da altura do eixo. "Sempre" é a
+# que cabe no celular (o eixo tem uns 190 px e a letra 10 px); "alto" é a que cabe no
+# computador, onde o eixo passa de 400 px. Abaixo de "alto", o rótulo encostaria no
+# vizinho em qualquer tela e fica só a linha.
+_FOLGA_SEMPRE = 5.5
+_FOLGA_NO_ALTO = 2.8
+
+
+def _marcas(topo, passo):
+    """As linhas de grade: as redondas do passo e as faixas pedidas, de baixo para cima.
+
+    Quando dois rótulos ficariam um em cima do outro, ganha a faixa que o Edson pediu,
+    depois a marca redonda; o zero é o que menos diz, porque o pé do gráfico já é o
+    zero. O outro rótulo fica só para o gráfico alto, ou some, e a linha continua.
+    """
+    valores = {}
+    valor = 0.0
+    while valor <= topo + 0.001:
+        valores[round(valor, 2)] = 1 if valor else 0
+        valor += passo
+    for faixa in FAIXAS_DO_FATURAMENTO:
+        if faixa < topo:
+            valores[float(faixa)] = 2
+
+    alturas = {v: v / topo * 100 for v in valores}
+    sempre, no_alto = [], []
+    for v in sorted(valores, key=lambda v: (-valores[v], v)):
+        perto_de_sempre = min((abs(alturas[v] - alturas[o]) for o in sempre), default=100)
+        perto_de_todos = min((abs(alturas[v] - alturas[o]) for o in sempre + no_alto),
+                             default=100)
+        if perto_de_sempre >= _FOLGA_SEMPRE:
+            sempre.append(v)
+        elif perto_de_todos >= _FOLGA_NO_ALTO:
+            no_alto.append(v)
+
+    marcas = []
+    for v in sorted(valores):
+        escrita = "sempre" if v in sempre else ("alto" if v in no_alto else "")
+        marcas.append(Marca(_reais_curto(v), int(round(alturas[v])),
+                            _coordenada(ALTURA_DA_LINHA - alturas[v] / 100 * ALTURA_DA_LINHA),
+                            escrita))
+    return marcas
 
 
 def _escala(maior):
@@ -390,15 +446,8 @@ def _grafico_de_linha(meses):
         trechos.append(atual)
     antes = " ".join("M" + " L".join(trecho) for trecho in trechos if len(trecho) > 1)
 
-    marcas = []
-    valor = 0.0
-    while valor <= topo + 0.001:
-        altura = valor / topo
-        marcas.append(Marca(_reais_curto(valor), int(round(altura * 100)),
-                            _coordenada(ALTURA_DA_LINHA - altura * ALTURA_DA_LINHA)))
-        valor += passo
     return GraficoDeLinha(agora=agora, agora_area=area, parcial=parcial, antes=antes,
-                          marcas=marcas, colunas=quantos)
+                          marcas=_marcas(topo, passo), colunas=quantos)
 
 
 @dataclass

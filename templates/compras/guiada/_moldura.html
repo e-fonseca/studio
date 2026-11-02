@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load cabana static %}
+{% comment %}
+A moldura de cada pergunta da compra guiada (1.45.0). Pedido do Edson em 02/11/2026:
+"formato tipo apresentação, pop up, só que com perguntas fechadas ou abertas". Cada
+pergunta é uma página com o cartão no meio, a barra de progresso em cima e o pedido como
+está agora no pé, ao lado do Continuar: quem responde vê o que a resposta fez antes de
+seguir. O recado da tela fica dentro do cartão, onde o olho está.
+
+"Voltar" é link, e não botão: o script do base.html trava o PRIMEIRO botão de envio do
+formulário quando ele é enviado, e esse tem que ser o "Continuar".
+{% endcomment %}
+{% block classe_corpo %}em-compra-guiada{% endblock %}
+{% block mensagens %}{% endblock %}
+{% block cabeca %}<script src="{% static 'js/guiada.js' %}" defer></script>{% endblock %}
+{% block conteudo %}
+<div class="guiada-palco">
+  <section class="guiada-cartao{% block largura %}{% endblock %}" aria-labelledby="guiada-pergunta">
+    <header class="guiada-cabeca">
+      <p class="guiada-de-quem"><span>Compra guiada</span> <strong>{{ compra.fornecedor }}</strong></p>
+      <p class="guiada-dados guiada-dados-{{ estado.nivel }}" title="{{ estado.detalhe }}">{{ estado.titulo }}</p>
+      <a class="guiada-sair" href="{% url 'compras:guiada' %}" title="As respostas ficam guardadas: dá para continuar depois.">Sair <span aria-hidden="true">×</span></a>
+    </header>
+    <div class="guiada-progresso">
+      <p class="guiada-passo">Passo {{ numero }} de {{ total_de_passos }} <span>· {{ titulo_do_passo }}</span></p>
+      <div class="guiada-trilha" role="progressbar" aria-label="Andamento da compra" aria-valuemin="0" aria-valuemax="{{ total_de_passos }}" aria-valuenow="{{ numero }}"><span style="width: {{ porcentagem }}%"></span></div>
+    </div>
+
+    {% if messages or erro %}
+    <div class="guiada-recados" role="status">
+      {% for m in messages %}<p class="mensagem {{ m.tags }}">{{ m }}</p>{% endfor %}
+      {% if erro %}<p class="mensagem error">{{ erro }}</p>{% endif %}
+    </div>
+    {% endif %}
+
+    <h1 id="guiada-pergunta" class="guiada-pergunta">{% block pergunta %}{% endblock %}</h1>
+    {% block explicacao %}{% endblock %}
+    {% block leitura %}{% endblock %}
+    {% block antes_do_formulario %}{% endblock %}
+
+    <form method="post" class="guiada-formulario" id="guiada-respostas">
+      {% csrf_token %}
+      {% if de %}<input type="hidden" name="de" value="{{ de }}">{% endif %}
+      {% block opcoes %}{% endblock %}
+      {% block rodape %}
+      <footer class="guiada-rodape">
+        <a class="botao secundario guiada-voltar" href="{{ anterior }}">{% if de %}Voltar à conferência{% elif primeiro %}Trocar o fornecedor{% else %}Voltar{% endif %}</a>
+        <p class="guiada-agora">Pedido agora: <strong>{{ proposta.total|reais }}</strong> <span>{{ proposta.no_pedido|length }} produto{{ proposta.no_pedido|length|pluralize }}</span></p>
+        <button type="submit" class="botao guiada-seguir">{% block seguir %}{% if de %}Guardar e voltar{% else %}Continuar{% endif %}{% endblock %}</button>
+      </footer>
+      {% endblock %}
+    </form>
+  </section>
+</div>
+{% endblock %}

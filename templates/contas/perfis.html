@@ -30,8 +30,8 @@
 
 <section class="cartao" id="matriz">
   <h2>O que cada perfil pode</h2>
-  <p class="ajuda"><span class="marca marca-dinheiro">dinheiro</span> mostra valor, custo, lucro, caixa
-     ou banco. <span class="marca marca-administracao">administração</span> mexe em acessos ou em
+  <p class="ajuda"><span class="tipo-de-acesso tipo-de-acesso-dinheiro">dinheiro</span> mostra valor, custo, lucro, caixa
+     ou banco. <span class="tipo-de-acesso tipo-de-acesso-administracao">administração</span> mexe em acessos ou em
      configurações. Essas duas só se dão a outra pessoa se quem dá também tiver.</p>
   <p class="ajuda dica-de-rolar">Arraste a tabela para o lado para ver os outros perfis.</p>
   <div class="tabela-rolavel matriz-rolavel">
@@ -51,8 +51,8 @@
         {% for linha in bloco.linhas %}
         <tr>
           <th scope="row" title="{{ linha.permissao.abre }}">{{ linha.permissao.nome }}
-            {% if linha.permissao.dinheiro %}<span class="marca marca-dinheiro">dinheiro</span>{% endif %}
-            {% if linha.permissao.administracao %}<span class="marca marca-administracao">administração</span>{% endif %}
+            {% if linha.permissao.dinheiro %}<span class="tipo-de-acesso tipo-de-acesso-dinheiro">dinheiro</span>{% endif %}
+            {% if linha.permissao.administracao %}<span class="tipo-de-acesso tipo-de-acesso-administracao">administração</span>{% endif %}
             <span class="ajuda">{{ linha.permissao.abre }}</span></th>
           {% for tem in linha.marcas %}
           <td class="matriz-marca">{% if tem %}<span class="tem" aria-label="pode">✓</span>{% else %}<span class="nao-tem" aria-label="não pode">·</span>{% endif %}</td>

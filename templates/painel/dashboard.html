@@ -110,7 +110,7 @@ antes (apps/painel/dashboard.py); as explicações longas foram para o "i" de ca
     </div>
     <div class="monitor-tempo">
       <div class="monitor-tempo-eixo" aria-hidden="true">
-        {% for m in g.marcas %}<span style="bottom: {{ m.altura }}%">{{ m.rotulo }}</span>{% endfor %}
+        {% for m in g.marcas %}{% if m.escrita %}<span{% if m.escrita == "alto" %} class="monitor-eixo-so-no-alto"{% endif %} style="bottom: {{ m.altura }}%">{{ m.rotulo }}</span>{% endif %}{% endfor %}
       </div>
       <div class="monitor-tempo-desenho">
         <svg viewBox="0 0 1000 300" preserveAspectRatio="none" role="img"

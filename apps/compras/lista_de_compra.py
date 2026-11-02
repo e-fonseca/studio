@@ -257,23 +257,8 @@ class ItemDaLista:
 
     @property
     def quanto_tempo_a_quantidade_dura(self):
-        """O mesmo em palavras, na unidade que a pessoa usa para pensar.
-
-        Dias até três meses, depois meses, depois anos: "cobre 1.825 dias" não assusta
-        ninguém, e "cobre 5 anos" assusta — e é para assustar, porque é o erro que a loja
-        comete. Quem lê isto é quem está decidindo a quantidade, e esta é a frase que
-        julga o número que ele acabou de digitar.
-        """
-        dias = self.dias_que_a_quantidade_cobre
-        if dias is None:
-            return ""
-        if dias < 90:
-            return f"{dias} dia{'s' if dias != 1 else ''}"
-        if dias < 730:
-            meses = round(dias / 30)
-            return f"{meses} {'meses' if meses != 1 else 'mês'}"
-        anos = dias / 365
-        return f"{anos:.1f}".replace(".", ",").removesuffix(",0") + " anos"
+        """O mesmo em palavras, na unidade que a pessoa usa para pensar (ver `duracao`)."""
+        return duracao(self.dias_que_a_quantidade_cobre)
 
     @property
     def quantidade_cobre_mais_de_um_ano(self):
@@ -386,6 +371,25 @@ class ListaDeCompra:
         return self.quantos > 0
 
 
+def duracao(dias):
+    """Quantos dias de venda, na unidade que a pessoa usa para pensar.
+
+    Dias até três meses, depois meses, depois anos: "cobre 1.825 dias" não assusta
+    ninguém, e "cobre 5 anos" assusta — e é para assustar, porque é o erro que a loja
+    comete. Quem lê isto é quem está decidindo a quantidade, e esta é a frase que julga o
+    número que ele acabou de digitar. A compra guiada usa a mesma frase em cada opção.
+    """
+    if dias is None:
+        return ""
+    if dias < 90:
+        return f"{dias} dia{'s' if dias != 1 else ''}"
+    if dias < 730:
+        meses = round(dias / 30)
+        return f"{meses} {'meses' if meses != 1 else 'mês'}"
+    anos = dias / 365
+    return f"{anos:.1f}".replace(".", ",").removesuffix(",0") + " anos"
+
+
 def _duas_casas(valor):
     """Quantidade com no máximo duas casas, para a conta escrita na linha.
 
@@ -439,7 +443,20 @@ def _candidatos(importacao):
     )
 
 
-def montar(importacao, fornecedor="", urgencia="", media="", hoje=None) -> ListaDeCompra:
+def montar(importacao, fornecedor="", urgencia="", media="", hoje=None, *, parametros=None,
+           so_do_fornecedor="", prazos=None) -> ListaDeCompra:
+    """A lista da loja inteira, com os filtros da tela aplicados depois da conta.
+
+    Os três parâmetros nomeados são da compra guiada (apps/compras/guiada.py), e os três
+    têm padrão que não muda nada para a lista de compra:
+
+    - `parametros`: a política da conta (`calculos.Parametros`). A guiada troca o
+      horizonte até a próxima compra pelo que a pessoa respondeu.
+    - `so_do_fornecedor`: conta só os produtos deste fornecedor. A guiada é sempre de um
+      fornecedor, e refazer a conta da loja inteira a cada pergunta custaria segundos.
+    - `prazos`: prazos respondidos na guiada que ainda não estão na ficha (quem respondeu
+      não pode mudar a ficha). Valem por cima dos informados, só nesta conta.
+    """
     lista = ListaDeCompra()
     if importacao is None:
         return lista
@@ -454,7 +471,9 @@ def montar(importacao, fornecedor="", urgencia="", media="", hoje=None) -> Lista
     carros = set(politica_de_compra.carros_chefe(importacao, politica.carros_chefe))
 
     informados = fornecedores.prazos_informados()
-    parametros = calculos.Parametros()
+    if prazos:
+        informados = {**informados, **prazos}
+    parametros = parametros or calculos.Parametros()
     dias = importacao.dias_abertos_12m or 1
     por_fornecedor = {}
     nomes = set()
@@ -465,7 +484,13 @@ def montar(importacao, fornecedor="", urgencia="", media="", hoje=None) -> Lista
     # A mesma consulta para os quatro usos abaixo, montada UMA vez: ela era remontada a
     # cada chamada, com a cadeia de exclusões do `so_mercadoria` toda de novo.
     quem_entra = _candidatos(importacao)
-    ano_passado = estacao.montar(importacao, quem_entra, hoje=dia_do_pedido)
+    if so_do_fornecedor:
+        quem_entra = quem_entra.filter(fornecedor=so_do_fornecedor)
+    # A janela mais longa que o ano passado lê: 120 dias, mais o que a compra guiada
+    # antecipa quando a próxima compra está longe. Sem a soma, o ano passado calava
+    # justamente no pedido de três meses, que é o que mais atravessa estação.
+    ano_passado = estacao.montar(importacao, quem_entra, hoje=dia_do_pedido,
+                                 dias_maximos=estacao.DIAS_MAXIMOS + parametros.antecipar_dias)
     # De onde entrou e para onde foi o estoque de cada produto, e de que pedaço de
     # calendário sai a média de venda. Duas consultas cada, antes do laço, pelo mesmo
     # motivo da estação: onze mil produtos vezes uma consulta cada é a tela que não abre.

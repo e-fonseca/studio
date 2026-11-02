@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import views, views_guiada
 
 app_name = "compras"
 urlpatterns = [
@@ -17,6 +17,15 @@ urlpatterns = [
     path("equipe/", views.sugestoes_da_equipe, name="sugestoes_da_equipe"),
     path("equipe/registrar/", views.registrar_sugestao, name="registrar_sugestao"),
     path("equipe/<int:pk>/responder/", views.responder_sugestao, name="responder_sugestao"),
+    # A compra guiada (1.45.0): perguntas, uma de cada vez, que montam o pedido de um
+    # fornecedor. Cada pergunta é um endereço, e a resposta fica gravada a cada passo.
+    path("guiada/", views_guiada.abertura, name="guiada"),
+    path("guiada/comecar/", views_guiada.comecar, name="guiada_comecar"),
+    path("guiada/<int:pk>/", views_guiada.continuar, name="guiada_continuar"),
+    path("guiada/<int:pk>/folha/", views_guiada.folha, name="guiada_folha"),
+    path("guiada/<int:pk>/pronto/", views_guiada.pronto, name="guiada_pronto"),
+    path("guiada/<int:pk>/deixar/", views_guiada.deixar, name="guiada_deixar"),
+    path("guiada/<int:pk>/<slug:passo>/", views_guiada.passo, name="guiada_passo"),
     path("", views.consulta_de_compras, name="consulta"),
     path("<int:id_set>/", views.compra, name="compra"),
 ]

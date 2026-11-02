@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block classe_corpo %}em-compra-guiada{% endblock %}
+{% block mensagens %}{% endblock %}
+{% block conteudo %}
+<div class="guiada-palco">
+  <section class="guiada-cartao guiada-pronto" aria-labelledby="guiada-pergunta">
+    <header class="guiada-cabeca">
+      <p class="guiada-de-quem"><span>Compra guiada</span> <strong>{{ compra.fornecedor }}</strong></p>
+      <a class="guiada-sair" href="{% url 'compras:guiada' %}">Fechar <span aria-hidden="true">×</span></a>
+    </header>
+    <div class="guiada-progresso">
+      <p class="guiada-passo">Pronto</p>
+      <div class="guiada-trilha" aria-hidden="true"><span style="width: 100%"></span></div>
+    </div>
+    {% if messages %}
+    <div class="guiada-recados" role="status">
+      {% for m in messages %}<p class="mensagem {{ m.tags }}">{{ m }}</p>{% endfor %}
+    </div>
+    {% endif %}
+    {% if registro and registro.esperando_aprovacao %}
+    <h1 id="guiada-pergunta" class="guiada-pergunta">Pedido {{ compra.pedido_numero }} guardado, esperando a gerência</h1>
+    <p class="guiada-explica">Ele só vale depois de aprovado. A folha guardada sai com o aviso de que
+      ainda não vale; quando a gerência aprovar, a folha sem o aviso fica no pedido.</p>
+    {% else %}
+    <h1 id="guiada-pergunta" class="guiada-pergunta">Pedido {{ compra.pedido_numero }} guardado</h1>
+    <p class="guiada-explica">Está em Pedidos, com a folha anexada. Mande a folha ao fornecedor e,
+      quando a mercadoria chegar, anexe a nota fiscal no pedido para conferir item a item.</p>
+    {% endif %}
+    <dl class="guiada-leitura guiada-leitura-dois">
+      <div class="guiada-dado guiada-dado-destaque">
+        <dt>Valor do pedido</dt>
+        <dd><strong>{{ compra.valor|reais }}</strong>
+          <span class="guiada-dado-nota">{{ compra.fornecedor }}</span></dd>
+      </div>
+      <div class="guiada-dado">
+        <dt>Como foi decidido</dt>
+        <dd><span class="guiada-dado-frase">{{ compra.resumo }}</span></dd>
+      </div>
+    </dl>
+    <footer class="guiada-rodape">
+      <a class="botao secundario guiada-voltar" href="{% url 'compras:guiada' %}">Fazer outra compra</a>
+      <span class="guiada-acoes-finais">
+        {% if perms.pedidos.view_pedido %}
+        <a class="botao secundario" href="{% url 'pedidos:imprimir' compra.pedido_numero %}" target="_blank" rel="noopener">Imprimir a folha</a>
+        <a class="botao" href="{% url 'pedidos:detalhe' compra.pedido_numero %}">Abrir o pedido</a>
+        {% endif %}
+      </span>
+    </footer>
+  </section>
+</div>
+{% endblock %}

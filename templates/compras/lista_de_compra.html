@@ -22,6 +22,17 @@ outras abrem desta fileira, logo abaixo do título, onde quem compra já está.{
 </nav>
 {% endif %}
 
+{% comment %}O convite para a compra guiada (1.45.0) fica aqui em cima porque é nesta tela que
+quem não sabe por onde começar chega. Pedido dele em 02/11/2026: "Hoje o formato está longe de
+estar intuitivo e fácil de operar". A conta das duas telas é a mesma.{% endcomment %}
+<a class="guiada-convite" href="{% url 'compras:guiada' %}">
+  <span class="guiada-convite-texto">
+    <strong>Compra guiada</strong>
+    <span>Monte o pedido de um fornecedor respondendo perguntas, uma de cada vez, com o valor e quanto tempo dura na hora.</span>
+  </span>
+  <span class="botao">Começar</span>
+</a>
+
 {% include "importacao/_andamento.html" %}
 
 {% if not lista.tem_itens %}

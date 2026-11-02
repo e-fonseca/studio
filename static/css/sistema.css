@@ -2351,7 +2351,14 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
   display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); grid-template-rows: 1fr auto;
   flex: 1 1 auto; min-height: 17rem; margin-top: .5rem;
 }
-.monitor-tempo-eixo { position: relative; grid-row: 1; grid-column: 1; }
+/* O eixo mede a própria altura (container de tamanho) para decidir quais rótulos cabem:
+   com as faixas que o Edson pediu em 02/11/2026 o eixo tem até dez marcas, e no celular
+   a de 10 mil encostaria no zero. O rótulo "só no alto" some quando o eixo é baixo; a
+   linha de grade continua. A conta de qual rótulo é qual está em `dashboard._marcas`. */
+.monitor-tempo-eixo { position: relative; grid-row: 1; grid-column: 1; container: eixo-do-tempo / size; }
+@container eixo-do-tempo (max-height: 25rem) {
+  .monitor-eixo-so-no-alto { visibility: hidden; }
+}
 .monitor-tempo-eixo span {
   position: absolute; right: .5rem; transform: translateY(50%);
   font-size: .72rem; color: var(--mon-texto-suave); white-space: nowrap;
@@ -2564,7 +2571,9 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
   .monitor-meses, .monitor-coluna, .monitor-problemas, .monitor-abc,
   .monitor-quarto, .monitor-metade { grid-column: span 2; }
   .monitor-coluna { grid-template-columns: minmax(0, 1fr); }
-  .monitor-tempo { grid-template-columns: 3.4rem minmax(0, 1fr); min-height: 14rem; }
+  /* 17rem e não 14: com as faixas de 02/11/2026 são até dez marcas no eixo, e em 14rem
+     elas ficavam a 10 px uma da outra, com letra de 10 px. */
+  .monitor-tempo { grid-template-columns: 3.4rem minmax(0, 1fr); min-height: 17rem; }
   .monitor-tempo-eixo span { font-size: .64rem; right: .3rem; }
   .monitor-legenda-linhas { margin-left: 0; }
   .monitor-mes-longo { display: none; }
@@ -2609,14 +2618,21 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
 .situacao-bloqueado { color: var(--cor-erro); background: var(--cor-erro-fraca); }
 .situacao-desligado { color: var(--cor-texto-suave); background: var(--cor-superficie-2); }
 
-/* As duas marcas do catálogo (apps/contas/catalogo.py): dinheiro e administração. */
-.marca {
+/* As duas marcas do catálogo (apps/contas/catalogo.py): dinheiro e administração.
+
+   Na 1.44.0 esta regra se chamava `.marca`, o MESMO nome do bloco do logotipo no topo
+   (lá em cima, na seção do topo). A regra de baixo vence a de cima, e o logotipo de
+   todas as telas ganhou a borda branca, a caixa alta e o empilhamento desta etiqueta.
+   O Edson viu no mesmo dia (02/11/2026). Nome de classe novo procura antes se já existe:
+   `apps/core/tests/test_modelos_html_e_css.py` falha quando a mesma classe solta
+   é definida de novo em outro canto do arquivo. */
+.tipo-de-acesso {
   display: inline-block; padding: 0 .4rem; border: 1px solid; border-radius: var(--raio-pequeno);
   font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
   vertical-align: .1em; white-space: nowrap;
 }
-.marca-dinheiro { color: var(--cor-latao); border-color: var(--cor-latao); background: var(--cor-latao-fraca); }
-.marca-administracao { color: var(--cor-link); border-color: var(--cor-link); }
+.tipo-de-acesso-dinheiro { color: var(--cor-latao); border-color: var(--cor-latao); background: var(--cor-latao-fraca); }
+.tipo-de-acesso-administracao { color: var(--cor-link); border-color: var(--cor-link); }
 
 /* Escolher perfis (na criação e na ficha) e permissões (no perfil): caixa grande, com a
    frase do que cada uma abre embaixo do nome. Travada é tracejada, e não apagada: com a
@@ -2691,7 +2707,9 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
 .formulario-ficha > .ajuda { flex: 1 1 100%; margin: 0; }
 .formulario-usuario .campo-largo { grid-column: 1 / -1; }
 .formulario-de-perfil textarea { width: 100%; }
-.formulario-em-linha { display: inline-flex; margin-left: .6rem; }
+/* Só no quadro dos perfis retirados. Na 1.44.0 esta regra era solta e mudava também o
+   botão de gerar o pedido da Lista de compra, o de Pedidos e o da cópia no GitHub. */
+#retirados .formulario-em-linha { display: inline-flex; margin-left: .6rem; }
 .busca-de-pessoas { margin: 0 0 .9rem; }
 .busca-de-pessoas input { min-width: 16rem; }
 /* "Começar copiando" mostra o nome inteiro do perfil, e não "nada, começar vaz". */
@@ -2708,5 +2726,317 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
   }
   .matriz-modulo th { position: sticky; left: 0; }
   .dica-de-rolar { display: block; }
-  .formulario-em-linha { display: flex; margin: .4rem 0 0; }
+  #retirados .formulario-em-linha { display: flex; margin: .4rem 0 0; }
+}
+
+/* ------------------------------------------------------------ compra guiada (1.45.0)
+   Pedido do Edson em 02/11/2026: "formato tipo apresentação, pop up, só que com perguntas
+   fechadas ou abertas". Uma pergunta por tela, num cartão no meio de um palco escuro com o
+   clarão da brasa no alto (o mesmo da tela de entrada), a barra de andamento em cima e o
+   pedido como está agora no pé, ao lado do Continuar. As respostas prontas são cartões
+   grandes de tocar, cada um com a consequência escrita: quanto custa e quanto tempo dura.
+
+   O palco ocupa a largura toda (o cartão é que tem largura de leitura) e não cobre o topo:
+   o menu continua à mão, e "Sair" no cartão leva de volta sem perder nada.
+   Tudo aqui começa com `guiada-`, para não repetir nome de outra tela: na 1.44.0 uma
+   classe com o mesmo nome do bloco do logotipo desenhou uma moldura branca no topo. */
+.em-compra-guiada main { max-width: none; padding: 0; }
+/* overflow-x: clip porque o cartão entra deslizando da direita: durante a entrada ele
+   passa da tela e, sem o corte, o celular ganhava rolagem de lado por um instante. */
+.guiada-palco {
+  display: grid; gap: 1.25rem; align-content: start; overflow-x: clip;
+  min-height: 70vh; padding: 2.2rem 1.25rem 3rem;
+  background:
+    radial-gradient(56rem 20rem at 50% 0, rgba(191, 78, 22, .22), transparent 72%),
+    linear-gradient(180deg, rgba(36, 31, 26, .9), transparent 22rem);
+}
+/* overflow: clip, e não hidden: hidden faria do cartão uma caixa de rolagem, e o pé do
+   cartão, que gruda no fim da tela do celular, grudaria no cartão e não na tela. */
+.guiada-cartao {
+  position: relative; overflow: clip;
+  width: 100%; max-width: 50rem; margin: 0 auto; padding: 1.5rem 1.75rem 1.4rem;
+  background: var(--cor-superficie); border: 1px solid var(--cor-borda-forte); border-radius: 14px;
+  box-shadow: 0 1.6rem 3.4rem rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .04);
+  animation: guiada-entra .28s ease-out both;
+}
+.guiada-cartao::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: linear-gradient(90deg, var(--cor-acao), var(--cor-brasa) 55%, var(--cor-latao));
+}
+.guiada-largo { max-width: 76rem; }
+@keyframes guiada-entra { from { opacity: 0; transform: translateX(1.4rem); } to { opacity: 1; transform: none; } }
+
+.guiada-cabeca {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem 1rem;
+  font-size: .88rem; color: var(--cor-texto-suave);
+}
+.guiada-cabeca p { margin: 0; }
+.guiada-de-quem span {
+  margin-right: .35rem; font-size: .75rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--cor-latao);
+}
+.guiada-de-quem strong { color: var(--cor-texto); font-size: .98rem; }
+.guiada-dados { margin-left: auto; font-size: .8rem; }
+.guiada-dados-ok { color: var(--cor-sucesso); font-weight: 600; }
+.guiada-dados-atencao { color: var(--cor-alerta); font-weight: 600; }
+.guiada-dados-vencido, .guiada-dados-sem_dados { color: var(--cor-erro); font-weight: 600; }
+.guiada-sair {
+  display: inline-flex; align-items: center; gap: .35rem; min-height: 2.75rem; padding: 0 .4rem;
+  color: var(--cor-texto); text-decoration: none; font-weight: 600;
+}
+.guiada-sair span { font-size: 1.35rem; line-height: 1; color: var(--cor-texto-suave); }
+.guiada-sair:hover span { color: var(--cor-texto); }
+
+.guiada-progresso { margin: .35rem 0 0; }
+.guiada-passo { margin: 0 0 .35rem; font-size: .82rem; font-weight: 700; color: var(--cor-texto-suave); }
+.guiada-passo span { font-weight: 400; }
+.guiada-trilha { height: 6px; border-radius: 999px; background: var(--cor-superficie-3); overflow: hidden; }
+.guiada-trilha span {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, var(--cor-acao), var(--cor-latao));
+}
+.guiada-recados { margin: .9rem 0 0; }
+
+.guiada-pergunta { margin: 1.1rem 0 .45rem; font-size: clamp(1.45rem, 1.05rem + 1.5vw, 2.1rem); }
+.guiada-explica { margin: 0 0 .4rem; max-width: 48rem; color: var(--cor-texto-suave); font-size: 1rem; }
+.guiada-explica .selo { margin: 0 .3rem .2rem 0; }
+
+/* A leitura: os números que decidem a pergunta, em quadros. */
+.guiada-leitura {
+  display: grid; gap: .65rem; margin: 1.1rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+.guiada-leitura-dois { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+.guiada-dado {
+  --cor-faixa: transparent;
+  padding: .7rem .85rem .75rem; border: 1px solid var(--cor-borda); border-radius: var(--raio);
+  background: var(--cor-superficie-2); box-shadow: inset 3px 0 0 var(--cor-faixa);
+}
+.guiada-dado dt {
+  font-size: .74rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+.guiada-dado dd { margin: .2rem 0 0; }
+/* O número do quadro não quebra no meio ("R$" numa linha e o valor na outra lia como dois
+   números): ele diminui com a largura do quadro, que é um container, e só quebra palavra
+   quando nem o menor tamanho cabe. */
+.guiada-dado { container-type: inline-size; }
+.guiada-dado dd strong {
+  display: block; font-size: 1.35rem; font-size: clamp(1rem, 9.6cqi, 1.35rem); line-height: 1.25;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+@supports not (font-size: 1cqi) {
+  .guiada-dado dd strong { white-space: normal; overflow-wrap: anywhere; }
+}
+.guiada-dado-nota { display: block; margin-top: .15rem; font-size: .82rem; color: var(--cor-texto-suave); }
+.guiada-dado-frase { display: block; font-size: .95rem; }
+.guiada-dado-destaque { --cor-faixa: var(--cor-brasa); }
+.guiada-dado-destaque dd strong { color: var(--cor-primaria); }
+.guiada-dado-atencao { --cor-faixa: var(--cor-alerta); }
+.guiada-dado-atencao dd strong { color: var(--cor-alerta); }
+.guiada-dado-ruim { --cor-faixa: var(--cor-erro); }
+.guiada-dado-ruim dd strong { color: var(--cor-erro); }
+
+.guiada-porque {
+  margin: 1rem 0; padding: .7rem .95rem; border-radius: var(--raio);
+  background: var(--cor-superficie-2); box-shadow: inset 3px 0 0 var(--cor-latao);
+}
+.guiada-porque p { margin: .2rem 0; font-size: .93rem; }
+.guiada-porque-titulo { font-weight: 700; }
+.guiada-alerta {
+  margin: .8rem 0; padding: .6rem .85rem; border: 1px solid var(--cor-alerta); border-radius: var(--raio);
+  background: var(--cor-alerta-fraca); color: var(--cor-alerta); font-weight: 600;
+}
+.guiada-alerta-acao { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; font-weight: 400; }
+.guiada-alerta-acao p { flex: 1 1 24rem; margin: 0; }
+.guiada-alerta-acao strong { font-weight: 700; }
+/* Valor no meio da frase: o "R$" não fica no fim de uma linha e o número na outra. */
+.guiada-valor { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.guiada-vazio {
+  margin: 1rem 0; padding: .9rem 1rem; border: 1px dashed var(--cor-borda-forte); border-radius: var(--raio);
+  color: var(--cor-texto-suave);
+}
+.guiada-antes { margin: 1rem 0; font-size: .9rem; color: var(--cor-texto-suave); }
+.guiada-antes-titulo { margin: 0; font-weight: 700; color: var(--cor-texto); }
+.guiada-antes ul { margin: .3rem 0 0; padding-left: 1.1rem; }
+
+/* As respostas prontas: cartões grandes, de tocar, com a bolinha à esquerda e o atalho do
+   teclado à direita. O nome de três classes vence `form label`, que põe margem em cima. */
+.guiada-opcoes { display: grid; gap: .6rem; margin: 1.2rem 0 0; }
+.guiada-opcoes-grade { grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); }
+.guiada-legenda {
+  float: none; width: 100%; margin: 1.3rem 0 .3rem; padding: 0;
+  font-family: var(--fonte-titulo); font-size: 1.15rem; font-weight: 700; color: var(--cor-texto);
+}
+.guiada-opcoes > .guiada-legenda { margin-top: .4rem; }
+.guiada-legenda-nota { grid-column: 1 / -1; margin: -.35rem 0 .1rem; }
+.guiada-formulario .guiada-opcao, .guiada-opcoes .guiada-opcao {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .75rem; align-items: start;
+  margin: 0; padding: .85rem 1rem; font-weight: 400; cursor: pointer;
+  border: 1px solid var(--cor-borda-forte); border-radius: 10px; background: var(--cor-superficie);
+  transition: border-color .12s ease, background .12s ease;
+}
+.guiada-opcao:hover { border-color: var(--cor-texto-suave); background: var(--cor-superficie-3); }
+/* Duas regras, e não uma lista: navegador que não conhece :has() descarta a regra inteira,
+   e a marcação feita pelo static/js/guiada.js (.marcada) sumiria junto. */
+.guiada-opcao.marcada {
+  border-color: var(--cor-brasa); background: var(--cor-primaria-fraca);
+  box-shadow: inset 0 0 0 1px var(--cor-brasa);
+}
+.guiada-opcao:has(input:checked) {
+  border-color: var(--cor-brasa); background: var(--cor-primaria-fraca);
+  box-shadow: inset 0 0 0 1px var(--cor-brasa);
+}
+.guiada-opcao:focus-within { outline: 2px solid var(--cor-foco); outline-offset: 2px; }
+.guiada-opcao > input { margin: .2rem 0 0; }
+.guiada-opcao-corpo { display: grid; gap: .12rem; min-width: 0; }
+.guiada-opcao-titulo { font-weight: 700; font-size: 1.04rem; overflow-wrap: anywhere; }
+.guiada-opcao-conta { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--cor-primaria); }
+.guiada-opcao-nota { font-size: .86rem; color: var(--cor-texto-suave); }
+.guiada-longe .guiada-opcao-nota, td.guiada-longe { color: var(--cor-alerta); }
+.guiada-nota-parado { color: var(--cor-alerta); }
+.guiada-opcao-neutra { border-style: dashed; }
+.guiada-opcoes .guiada-opcao-toda { grid-column: 1 / -1; }
+.guiada-desligada { cursor: not-allowed; }
+.guiada-selo {
+  display: inline-block; margin-left: .35rem; padding: .05rem .5rem; border: 1px solid var(--cor-latao);
+  border-radius: 999px; background: var(--cor-latao-fraca); color: var(--cor-latao);
+  font-size: .72rem; font-weight: 700; letter-spacing: .03em; vertical-align: .12em; white-space: nowrap;
+}
+.guiada-tecla {
+  align-self: center; padding: .05rem .4rem; border: 1px solid var(--cor-borda-forte); border-radius: 4px;
+  font: 600 .74rem/1.4 var(--fonte-texto); color: var(--cor-texto-suave); background: var(--cor-superficie-2);
+}
+@media (hover: none) { .guiada-tecla { visibility: hidden; } }
+.guiada-campo-junto { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .7rem; margin-top: .35rem; }
+.guiada-campo-junto input { width: 7.5rem; min-height: 40px; }
+.guiada-campo-largo input { width: 100%; max-width: 32rem; }
+.guiada-conta-viva { font-size: .86rem; color: var(--cor-primaria); }
+
+/* O pé: Voltar, o pedido como está agora e Continuar. No celular ele gruda no fim da tela,
+   para o botão estar sempre no polegar. */
+.guiada-rodape {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .7rem 1rem;
+  margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--cor-borda);
+}
+.guiada-agora { flex: 1 1 12rem; margin: 0; text-align: center; font-size: .9rem; color: var(--cor-texto-suave); }
+.guiada-agora strong { color: var(--cor-texto); font-size: 1.08rem; font-variant-numeric: tabular-nums; }
+.guiada-agora span { margin-left: .3rem; }
+.guiada-seguir { min-width: 10rem; font-size: 1.04rem; white-space: nowrap; }
+.guiada-acoes-finais { display: flex; flex-wrap: wrap; gap: .55rem; }
+.guiada-mais-acoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .55rem; margin-top: .9rem; }
+.guiada-nota-final { margin: .7rem 0 0; }
+.guiada-aviso-folha { display: block; margin-top: .3rem; color: var(--cor-alerta); font-weight: 600; }
+.guiada-aviso-folha[hidden] { display: none; }
+
+/* Encomendas, sugestões da equipe, compras em andamento e carros-chefe: listas de linhas. */
+.guiada-bloco { margin: 1.2rem 0 0; }
+.guiada-lista-encomendas, .guiada-achados, .guiada-andamento ul, .guiada-carros ul {
+  display: grid; gap: .45rem; margin: .4rem 0 0; padding: 0; list-style: none;
+}
+.guiada-lista-encomendas li, .guiada-achados li, .guiada-andamento li, .guiada-carros li, .guiada-sugestao {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .9rem;
+  padding: .55rem .75rem; border: 1px solid var(--cor-borda); border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+}
+.guiada-lista-encomendas form, .guiada-achados form, .guiada-andamento form { display: flex; align-items: center; gap: .4rem; margin: 0; }
+.guiada-achado-nome { display: grid; min-width: 0; }
+.guiada-achado-pedir input { width: 5rem; min-height: 40px; }
+.guiada-botao-pequeno { min-height: 40px; padding: .3rem .85rem; font-size: .88rem; }
+.guiada-procura { margin: .9rem 0 0; }
+.guiada-procura label { margin-top: 0; }
+.guiada-procura-linha { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .3rem; }
+.guiada-procura-linha input { flex: 1 1 14rem; max-width: 30rem; }
+.guiada-sugestao { margin: .45rem 0 0; }
+.guiada-formulario .guiada-sugestao-marcar { display: flex; gap: .6rem; align-items: flex-start; margin: 0; font-weight: 400; }
+.guiada-sugestao-marcar > span { display: grid; }
+.guiada-formulario .guiada-sugestao-quantas { display: flex; align-items: center; gap: .45rem; margin: 0; }
+.guiada-sugestao-quantas input { width: 5rem; min-height: 40px; }
+.guiada-andamento {
+  margin: 1rem 0 0; padding: .8rem 1rem .9rem; border: 1px solid var(--cor-latao); border-radius: var(--raio);
+  background: var(--cor-latao-fraca);
+}
+.guiada-andamento .guiada-legenda { margin-top: 0; }
+.guiada-andamento-acoes { display: flex; flex-wrap: wrap; gap: .5rem; }
+.guiada-carros { margin: 1rem 0 0; }
+.guiada-carros li > span { display: grid; min-width: 0; }
+
+/* A conferência: a tabela da lista de compra, com o campo de cada linha. */
+.guiada-respondidas { margin: .6rem 0 0; }
+.guiada-respondidas summary {
+  display: flex; align-items: center; min-height: 2.75rem; cursor: pointer; color: var(--cor-link);
+}
+.guiada-respondidas ul { display: grid; gap: .35rem; margin: .3rem 0 .4rem; padding: 0; list-style: none; }
+.guiada-respondidas li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem; }
+.guiada-respondida-titulo {
+  min-width: 11rem; font-size: .78rem; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--cor-texto-suave);
+}
+.guiada-tabela { margin: 1.1rem 0 0; }
+.guiada-tabela table { min-width: 52rem; }
+.guiada-celula-quantidade input {
+  width: 5.5rem; min-height: 40px; text-align: right; font-variant-numeric: tabular-nums;
+}
+.guiada-tabela tr.guiada-cortada > th { box-shadow: inset 4px 0 0 var(--cor-alerta); }
+.guiada-tabela tr.guiada-zerada > th { box-shadow: inset 4px 0 0 var(--cor-borda-forte); }
+.guiada-tabela tr.guiada-mudou > th { box-shadow: inset 4px 0 0 var(--cor-link); }
+.guiada-formulario .guiada-recado { margin-top: 1.1rem; }
+.guiada-formulario textarea { max-width: none; }
+.guiada-registro .tabela-rolavel table { min-width: 44rem; }
+.guiada-resumo { font-size: .88rem; color: var(--cor-texto-suave); }
+.guiada-pronto .guiada-pergunta { color: var(--cor-sucesso); }
+
+/* O convite da Lista de compra para a compra guiada: uma faixa com o fio da brasa, que é a
+   cor de "comece por aqui" do sistema. A faixa inteira é o link; o botão só desenha. */
+.guiada-convite {
+  display: flex; align-items: center; justify-content: space-between; gap: .8rem 1.4rem;
+  flex-wrap: wrap; margin: 1rem 0 0; padding: .85rem 1.1rem;
+  border: 1px solid var(--cor-borda-forte); border-left: 4px solid var(--cor-brasa);
+  border-radius: var(--raio); background: var(--cor-superficie-2);
+  color: var(--cor-texto); text-decoration: none;
+}
+.guiada-convite:hover { border-color: var(--cor-brasa); }
+.guiada-convite:hover .botao { background: var(--cor-acao-forte); border-color: var(--cor-acao-forte); }
+.guiada-convite:focus-visible { outline: 3px solid var(--cor-foco); outline-offset: 2px; }
+.guiada-convite-texto { display: grid; gap: .2rem; flex: 1 1 22rem; }
+.guiada-convite-texto strong { font-size: 1.08rem; }
+.guiada-convite-texto span { color: var(--cor-texto-suave); }
+
+
+@media (max-width: 40rem) {
+  .guiada-palco { padding: .9rem .6rem 2rem; }
+  .guiada-cartao { padding: 1.1rem 1rem 1rem; border-radius: 12px; }
+  .guiada-dados { margin-left: 0; flex-basis: 100%; order: 3; }
+  .guiada-dado dd strong { font-size: 1.15rem; font-size: clamp(.95rem, 9.6cqi, 1.15rem); }
+  .guiada-leitura-dois { grid-template-columns: 1fr; }
+  .guiada-dado dd strong { font-size: 1.15rem; }
+  .guiada-opcoes-grade { grid-template-columns: 1fr; }
+  .guiada-formulario .guiada-opcao, .guiada-opcoes .guiada-opcao { grid-template-columns: auto minmax(0, 1fr); padding: .8rem .85rem; }
+  .guiada-tecla { display: none; }
+  .guiada-rodape {
+    position: sticky; bottom: 0; z-index: 2;
+    margin: 1.1rem -1rem -1rem; padding: .7rem 1rem calc(.7rem + env(safe-area-inset-bottom));
+    background: var(--cor-superficie); box-shadow: 0 -.6rem 1.2rem rgba(0, 0, 0, .45);
+  }
+  .guiada-agora { order: -1; flex-basis: 100%; text-align: left; }
+  .guiada-voltar, .guiada-seguir { flex: 1 1 8rem; min-width: 0; }
+  .guiada-acoes-finais { flex-basis: 100%; }
+  .guiada-acoes-finais .botao, .guiada-mais-acoes .botao { flex: 1 1 100%; }
+  .guiada-respondida-titulo { min-width: 0; flex-basis: 100%; }
+}
+@media (max-width: 52rem) {
+  .guiada-tabela table, .guiada-registro .tabela-rolavel table { min-width: 0; }
+  .guiada-tabela tbody td.numerico { display: inline-block; margin-right: 1.1rem; }
+  .guiada-tabela tbody td.guiada-celula-quantidade {
+    display: flex; align-items: center; gap: .5rem; margin: .45rem 0 0; padding-top: .5rem;
+    border-top: 1px dashed var(--cor-borda);
+  }
+  /* No cartão o fio sai do nome (encostava no texto) e vai para a borda do cartão inteiro,
+     como na Lista de compra. A ordem é a do computador: o que você mudou vence. */
+  .guiada-tabela tbody tr.linha-carro-chefe { box-shadow: inset 4px 0 0 var(--cor-latao); }
+  .guiada-tabela tbody tr.guiada-zerada { box-shadow: inset 4px 0 0 var(--cor-borda-forte); }
+  .guiada-tabela tbody tr.guiada-cortada { box-shadow: inset 4px 0 0 var(--cor-alerta); }
+  .guiada-tabela tbody tr.guiada-mudou { box-shadow: inset 4px 0 0 var(--cor-link); }
+  .guiada-tabela tr.linha-carro-chefe > th, .guiada-tabela tr.guiada-zerada > th,
+  .guiada-tabela tr.guiada-cortada > th, .guiada-tabela tr.guiada-mudou > th { box-shadow: none; }
 }

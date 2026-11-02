@@ -1,0 +1,59 @@
+{% extends "compras/guiada/_moldura.html" %}
+{% load cabana %}
+{% block pergunta %}Quando você volta a comprar de {{ compra.fornecedor }}?{% endblock %}
+{% block explicacao %}
+<p class="guiada-explica">Esta compra tem que segurar a prateleira até a PRÓXIMA chegar: o tempo
+  até você voltar a comprar mais os {{ proposta.prazo_dias }} dias de entrega{% if proposta.prazo_assumido %} (prazo estimado){% endif %}.
+  Mais tempo, mais produto e mais dinheiro parado na prateleira.</p>
+{% endblock %}
+{% block leitura %}
+<dl class="guiada-leitura">
+  <div class="guiada-dado">
+    <dt>Compras dele no ano</dt>
+    <dd><strong>{% if historico.compras_12m %}{{ historico.compras_12m }}{% else %}nenhuma{% endif %}</strong>
+      <span class="guiada-dado-nota">{% if historico.intervalo_dias %}uma a cada {{ historico.intervalo_dias }} dias, em média{% elif historico.compras_12m %}só uma nos últimos 12 meses{% else %}nenhuma lançada no SET em 12 meses{% endif %}</span></dd>
+  </div>
+  <div class="guiada-dado">
+    <dt>Última compra</dt>
+    <dd><strong>{% if historico.ultima_compra %}{{ historico.ultima_compra|date:"d/m/Y" }}{% else %}—{% endif %}</strong>
+      {% if dias_da_ultima is not None %}<span class="guiada-dado-nota">{{ dias_da_ultima }} dias antes dos dados de hoje</span>{% endif %}</dd>
+  </div>
+  <div class="guiada-dado">
+    <dt>Comprado dele no ano</dt>
+    <dd><strong>{{ historico.comprado_12m|reais }}</strong>
+      <span class="guiada-dado-nota">e a loja vendeu {{ historico.vendeu_12m|reais }} do que é dele</span></dd>
+  </div>
+  <div class="guiada-dado{% if historico.parado %} guiada-dado-atencao{% endif %}">
+    <dt>Parado sem vender no ano</dt>
+    <dd><strong>{{ historico.parado|reais }}</strong>
+      <span class="guiada-dado-nota">{{ historico.produtos_parados }} produto{{ historico.produtos_parados|pluralize }}, a custo, de {{ historico.na_prateleira|reais }} na prateleira</span></dd>
+  </div>
+</dl>
+{% if anteriores %}
+<div class="guiada-antes">
+  <p class="guiada-antes-titulo">Como as últimas compras guiadas deste fornecedor foram decididas</p>
+  <ul>
+    {% for antes in anteriores %}
+    <li><strong>{{ antes.concluida_em|date:"d/m/Y" }}</strong>, {{ antes.criada_por|nome_pessoa:"conta apagada" }}, pedido {{ antes.pedido_numero }} de {{ antes.valor|reais }}: {{ antes.resumo }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}
+{% block opcoes %}
+<fieldset class="guiada-opcoes">
+  <legend class="oculto-visualmente">Próxima compra deste fornecedor</legend>
+  {% for opcao in opcoes %}
+  <label class="guiada-opcao{% if opcao.recomendada %} guiada-recomendada{% endif %}">
+    <input type="radio" name="proxima_compra" value="{{ opcao.chave }}"{% if marcado == opcao.chave|stringformat:"s" %} checked{% endif %}>
+    <span class="guiada-opcao-corpo">
+      <span class="guiada-opcao-titulo">{{ opcao.rotulo }}{% if opcao.recomendada %} <span class="guiada-selo">{% if historico.pelo_ritmo %}Pelo ritmo de compra{% else %}Recomendada{% endif %}</span>{% endif %}</span>
+      <span class="guiada-opcao-conta">{{ opcao.quantos|contagem }} produto{{ opcao.quantos|pluralize }} · {{ opcao.valor|reais }}</span>
+      <span class="guiada-opcao-nota">a compra segura a loja por {{ opcao.cobre }}</span>
+      {% if opcao.recomendada %}<span class="guiada-opcao-nota">{{ historico.porque_da_recomendada }}</span>{% endif %}
+    </span>
+    <kbd class="guiada-tecla" aria-hidden="true">{{ forloop.counter }}</kbd>
+  </label>
+  {% endfor %}
+</fieldset>
+{% endblock %}
