@@ -470,11 +470,116 @@ def _grafico_de_linha(meses, faixas=FAIXAS_DO_FATURAMENTO):
                           marcas=_marcas(topo, passo, faixas), colunas=quantos)
 
 
+# A ordem das cores do gráfico de anos: o ano de agora é a linha verde, como o "este ano"
+# do Dashboard; o ano passado é a laranja, como o "ano passado"; o retrasado é a azul.
+PAPEIS_DOS_ANOS = ("agora", "antes", "retrasado")
+
+
+@dataclass
+class LinhaDoAno:
+    """Um ano do gráfico de anos (1.48.0), de janeiro a dezembro.
+
+    `valores` são os doze meses, com None onde não há número: o mês que ainda não chegou,
+    ou o mês que a foto do SET não traz inteiro. O mês que ainda corre (`mes_parcial`, só
+    no ano de agora) sai tracejado, como na linha do Dashboard, e só o ano de agora leva a
+    área por baixo. Mês sem vizinho com número não tem com quem formar linha: vira ponto
+    (`pontos`), senão um janeiro sozinho sumiria do desenho.
+    """
+
+    ano: int
+    valores: list
+    papel: str = "agora"
+    mes_parcial: int | None = None
+    caminho: str = ""
+    area: str = ""
+    parcial: str = ""
+    pontos: str = ""
+
+
+@dataclass
+class GraficoDeAnos:
+    """Contas pagas de janeiro a dezembro, uma linha para cada um dos últimos três anos.
+
+    Pedido do Edson em 04/11/2026, em Contas a pagar: *"nesse mesmo gráfico do contas a
+    pagar manter sempre os últimos 3 anos"*. É o desenho da linha do tempo do Dashboard
+    (mesma escala, mesmas faixas no eixo, mesmo SVG esticado), com o mês fixo no eixo de
+    baixo em vez dos 13 meses que andam: assim cada ano é uma linha inteira, e o mês que
+    costuma pesar aparece nos três anos, um sobre o outro.
+    """
+
+    linhas: list = field(default_factory=list)   # do ano mais antigo ao de agora: o de agora por cima
+    marcas: list = field(default_factory=list)
+    colunas: int = 12
+
+    @property
+    def tem(self):
+        return any(linha.caminho or linha.parcial or linha.pontos for linha in self.linhas)
+
+    @property
+    def legenda(self):
+        """Do ano de agora para o mais antigo, a ordem em que se lê a legenda e a tabela."""
+        return list(reversed(self.linhas))
+
+
+def _trechos(meses_e_valores):
+    """Os pedaços seguidos de (mês, valor): onde falta um mês, a linha para e recomeça."""
+    trechos, atual, anterior = [], [], None
+    for mes, valor in meses_e_valores:
+        if atual and mes != anterior + 1:
+            trechos.append(atual)
+            atual = []
+        atual.append((mes, valor))
+        anterior = mes
+    if atual:
+        trechos.append(atual)
+    return trechos
+
+
+def _grafico_de_anos(linhas, faixas=FAIXAS_DO_FATURAMENTO):
+    """A geometria de cada ano: a linha cheia, a área do ano de agora, o tracejado e os pontos."""
+    valores = [valor for linha in linhas for valor in linha.valores if valor is not None]
+    if not valores:
+        return GraficoDeAnos()
+    topo, passo = _escala(max(valores))
+
+    def ponto(mes, valor):
+        x = (mes - 0.5) / 12 * LARGURA_DA_LINHA
+        y = ALTURA_DA_LINHA - float(valor) / topo * ALTURA_DA_LINHA
+        return f"{_coordenada(x)} {_coordenada(y)}"
+
+    for linha in linhas:
+        cheios = [(mes, valor) for mes, valor in enumerate(linha.valores, start=1)
+                  if valor is not None and mes != linha.mes_parcial]
+        trechos = _trechos(cheios)
+        juntos = [trecho for trecho in trechos if len(trecho) > 1]
+        soltos = [trecho[0] for trecho in trechos if len(trecho) == 1]
+        linha.caminho = " ".join("M" + " L".join(ponto(m, v) for m, v in trecho) for trecho in juntos)
+        if linha.papel == "agora":
+            linha.area = " ".join(
+                f"M{ponto(trecho[0][0], 0)} L" + " L".join(ponto(m, v) for m, v in trecho)
+                + f" L{ponto(trecho[-1][0], 0)} Z"
+                for trecho in juntos
+            )
+        parcial = linha.mes_parcial
+        if parcial and linha.valores[parcial - 1] is not None:
+            anterior = linha.valores[parcial - 2] if parcial > 1 else None
+            if anterior is not None:
+                linha.parcial = f"M{ponto(parcial - 1, anterior)} L{ponto(parcial, linha.valores[parcial - 1])}"
+            else:
+                soltos.append((parcial, linha.valores[parcial - 1]))
+        # Ponto é um traço de tamanho zero com a ponta redonda (`.monitor-tempo-ponto`):
+        # círculo de verdade, porque o traço não estica junto com o desenho.
+        linha.pontos = " ".join(f"M{ponto(m, v)} l0 0" for m, v in soltos)
+
+    return GraficoDeAnos(linhas=list(linhas), marcas=_marcas(topo, passo, faixas))
+
+
 # Os desenhos do Dashboard servem a outras telas no mesmo formato (1.47.0: Contas a
 # pagar). Os nomes com sublinhado continuam sendo os de dentro deste arquivo e dos testes.
-grafico_de_linha = _grafico_de_linha
+grafico_de_anos = _grafico_de_anos
 fatiar = _fatiar
 porcento = _porcento
+variacao = _variacao
 
 
 @dataclass

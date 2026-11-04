@@ -7,6 +7,26 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.48.0 — 04/11/2026
+
+Pedido dele (04/11/2026, com o print do gráfico de Contas a pagar): *"gráfico ficou bom /
+nesse mesmo gráfico do contas a pagar manter sempre os últimos 3 anos letivos"*.
+
+- **Contas pagas mês a mês com os últimos três anos**: o mesmo quadro, agora de janeiro a
+  dezembro, com uma linha para cada ano (este ano em verde, o ano passado em laranja e o
+  retrasado em azul). A porcentagem embaixo do mês continua sendo este ano contra o ano
+  passado, na cor do caixa, e o mês que corre continua tracejado e comparado com o mesmo
+  pedaço do ano passado. Em "Ver o valor de cada mês" estão os três anos lado a lado e uma
+  linha com cada ano de 1º de janeiro até o dia dos dados. O Dashboard não muda.
+- **A importação lê três anos de contas pagas**, desde o dia 1º de 36 meses antes; as contas
+  recebidas continuam em 24 meses. Até a primeira importação depois da atualização, o ano
+  retrasado aparece só a partir de onde a foto anterior começava.
+- **Mês que o SET não tem fica em branco, e não em zero**: a primeira conta paga do SET da
+  loja é de 27/02/2024, então janeiro e fevereiro de 2024 ficam em branco, e a tabela diz
+  por quê.
+- No celular, a tabela dos três anos mostra os valores em reais redondos, para a variação
+  caber na tela.
+
 ## 1.47.1 — 04/11/2026
 
 Pedido dele (04/11/2026, com o print de `C:\instalacao\pacote`): *"padronizar envio do pacote

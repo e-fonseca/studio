@@ -28,13 +28,16 @@ dele: "usar esse formato de gráfico também em contas a pagar". O desenho é o 
 sempre a loja toda: a busca e o filtro mudam só a lista de baixo.{% endcomment %}
 <div class="monitor monitor-embutido">
   <div class="monitor-grade">
-    {% if quadros.linha.tem %}
+    {% if quadros.pagas.grafico.tem %}
+    {% comment %}Os últimos três anos, de janeiro a dezembro (1.48.0): "nesse mesmo gráfico do
+    contas a pagar manter sempre os últimos 3 anos", Edson em 04/11/2026.{% endcomment %}
     <section class="monitor-quadro monitor-meses" id="pagas-mes-a-mes">
       <div class="monitor-titulo-linha">
         <h2 class="monitor-titulo">Contas pagas mês a mês</h2>
-        {% include "painel/_monitor_info.html" with nome="as contas pagas mês a mês" texto="Tudo o que a loja pagou em cada mês, pelo lançamento do SET: fornecedor, aluguel, folha e o resto. A linha verde é este ano e a laranja é o mesmo mês do ano passado. Aqui a cor da porcentagem é a do caixa: vermelho é mês em que a loja pagou mais do que no ano anterior, verde é mês em que pagou menos. O último mês ainda está correndo: o trecho dele é tracejado e a comparação é com o mesmo pedaço do ano passado. O valor de cada mês aparece com o mouse em cima e na tabela logo abaixo do gráfico." %}
+        {% include "painel/_monitor_info.html" with nome="as contas pagas mês a mês" texto="Tudo o que a loja pagou em cada mês, pelo lançamento do SET: fornecedor, aluguel, folha e o resto. São os últimos três anos, de janeiro a dezembro, uma linha para cada ano: a verde é este ano, a laranja é o ano passado e a azul é o ano retrasado. Assim o mês que costuma pesar aparece nos três anos, e os meses que ainda faltam neste ano mostram quanto a loja pagou neles antes. A porcentagem embaixo do mês compara este ano com o ano passado, na cor do caixa: vermelho é mês em que a loja pagou mais, verde é mês em que pagou menos. O mês que ainda corre é tracejado e se compara com o mesmo pedaço do ano passado. O valor de cada mês aparece com o mouse em cima e na tabela logo abaixo do gráfico." %}
       </div>
-      {% include "painel/_monitor_linha.html" with g=quadros.linha meses=quadros.meses o_que="Contas pagas" %}
+      <p class="monitor-sub">os últimos três anos, de janeiro a dezembro</p>
+      {% include "painel/_monitor_anos.html" with pagas=quadros.pagas o_que="Contas pagas" %}
     </section>
     {% endif %}
 

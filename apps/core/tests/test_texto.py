@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from apps.contas.perfis import ADMINISTRACAO
 from apps.core.fabricas import SENHA_TESTE, usuario
-from apps.core.templatetags.cabana import reais
+from apps.core.templatetags.cabana import reais, reais_redondo
 from apps.core.texto import consertar
 from apps.fornecedores.models import Fornecedor
 
@@ -84,3 +84,12 @@ class DinheiroEmPortugues(TestCase):
 
     def test_sem_valor_continua_travessao(self):
         self.assertEqual(reais(None), "—")
+
+    def test_reais_redondos_para_a_tabela_do_celular(self):
+        """A tabela dos três anos de Contas a pagar (1.48.0) tem que caber em 390 px."""
+        self.assertEqual(reais_redondo(Decimal("122399.52")), "122.400")
+        self.assertEqual(reais_redondo(Decimal("1142592.07")), "1.142.592")
+        self.assertEqual(reais_redondo(Decimal("12.50")), "13")
+        self.assertEqual(reais_redondo(Decimal("-335.49")), "-335")
+        self.assertEqual(reais_redondo(0), "0")
+        self.assertEqual(reais_redondo(None), "—")

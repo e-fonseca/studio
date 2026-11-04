@@ -270,9 +270,11 @@ inclui o mesmo arquivo e a mesma rosca (`_monitor_rosca.html`), dentro de
 `<div class="monitor monitor-embutido">`, que traz as cores do Dashboard (`--mon-*`) para
 dentro da tela escura comum. As contas estão em `apps/financeiro/quadros.py`:
 
-- **Contas pagas mês a mês**: 13 meses, com o mesmo mês do ano passado. `Mes.mais_e_bom`
-  (novo, `True` no faturamento) é `False` aqui: pagar mais é vermelho. O mês que corre se
-  compara com o mesmo pedaço do ano passado, do dia 1º ao dia do corte.
+- **Contas pagas mês a mês**: na 1.47.0, 13 meses com o mesmo mês do ano passado; desde a
+  1.48.0, os últimos três anos de janeiro a dezembro (ver abaixo). Pagar mais é vermelho
+  (`Mes.mais_e_bom`, `True` no faturamento, é `False` aqui; o gráfico de anos tem a mesma
+  regra em `quadros.Coluna.sentido`). O mês que corre se compara com o mesmo pedaço do ano
+  passado, do dia 1º ao dia do corte.
 - **O que está em aberto**: as fatias dos filtros da lista (atrasadas, vencem em até 7 dias,
   depois, sem data), e o nome de cada fatia abre a lista dela (`Fatia.endereco`, novo).
 - **Para onde vai o dinheiro**: o pago em 12 meses pela classificação do SET, a conta da tela
@@ -280,7 +282,37 @@ dentro da tela escura comum. As contas estão em `apps/financeiro/quadros.py`:
 
 O ano passado só se compara quando o mês dele está inteiro na foto. Até a 1.46.0 a leitura do
 pago começava em "corte menos 730 dias", no meio de um mês, e o primeiro mês do gráfico
-compararia um mês cheio com dez dias. Desde a 1.47.0 a importação lê o pago e o recebido
-desde o dia 1º de 24 meses antes (`firebird.inicio_do_financeiro`) e grava a data
-(`financeiro_desde` no detalhe da importação); foto mais antiga vale a regra antiga, e o
-primeiro mês aparece sem comparação até a próxima importação.
+compararia um mês cheio com dez dias. Na 1.47.0 a importação passou a ler o pago e o recebido
+desde o dia 1º de 24 meses antes e a gravar a data (`financeiro_desde` no detalhe da
+importação); foto mais antiga vale a regra antiga.
+
+## Três anos em Contas pagas mês a mês (1.48.0)
+
+Pedido dele (04/11/2026, com o print do gráfico da 1.47.0): *"gráfico ficou bom / nesse mesmo
+gráfico do contas a pagar manter sempre os últimos 3 anos letivos"*. Ficou o mesmo quadro,
+com o mês fixo embaixo (janeiro a dezembro) e uma linha para cada ano: o do corte em verde,
+com a área e o mês que corre tracejado, o ano passado em laranja e o retrasado em azul. Com o
+mês fixo, o mês que costuma pesar aparece nos três anos, um sobre o outro, e os meses que
+ainda faltam neste ano mostram o que a loja pagou neles antes. A escolha foi para ele num
+cartão, com as outras duas formas (36 meses seguidos; os 13 meses de antes com uma terceira
+linha); a de janeiro a dezembro foi a recomendada.
+
+- **Desenho**: `dashboard.GraficoDeAnos` e `dashboard.LinhaDoAno`, em
+  `templates/painel/_monitor_anos.html`, com as classes da linha do tempo do Dashboard. O
+  Dashboard continua com `_monitor_linha.html` e os 13 meses, sem mudança nenhuma. Mês sem
+  vizinho com número vira ponto (`.monitor-tempo-ponto`): corte em 10 de janeiro, o ano de
+  agora é só o pedaço de janeiro, e uma linha de um ponto não aparece.
+- **Contas**: `quadros.pagas_por_ano`. A porcentagem embaixo do mês é o ano do corte contra
+  o ano passado; a tabela "Ver o valor de cada mês" tem os três anos e uma última linha com
+  cada ano de 1º de janeiro até o dia do corte. No celular a tabela mostra reais redondos
+  (`reais_redondo`): com R$ e centavos a variação, a coluna que decide, saía da tela.
+- **Leitura**: o pago entra com 36 meses inteiros (`firebird.inicio_das_pagas`), que cobrem o
+  janeiro do retrasado em qualquer mês; o recebido fica em 24 (`inicio_das_recebidas`),
+  porque é ele que traz o nome do cliente. A importação grava as duas datas
+  (`pagas_desde` e `recebidas_desde`). Até a primeira importação depois de atualizar, o
+  retrasado aparece só a partir do mês em que a foto antiga começa.
+- **O começo do SET**: no backup de 20/09/2026 a primeira conta paga é de 27/02/2024 (o
+  primeiro caixa é do mesmo dia). Mês de antes não é mês sem pagamento, é mês que o SET não
+  tem: fica em branco, nunca em zero, e o desenho começa no primeiro mês inteiro depois da
+  primeira conta (`quadros._comeco_do_lancado`). A tabela diz isso numa linha. Março e abril
+  de 2024 aparecem baixos (R$ 12,7 mil e R$ 72,9 mil) porque é o que o SET tem lançado.

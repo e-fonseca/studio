@@ -2377,12 +2377,18 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
 .monitor-tempo-desenho svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .monitor-tempo-grade { stroke: var(--mon-grade); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .monitor-tempo-area { fill: url(#monitor-degrade-meses); }
-.monitor-tempo-agora, .monitor-tempo-antes, .monitor-tempo-parcial {
+.monitor-tempo-agora, .monitor-tempo-antes, .monitor-tempo-parcial, .monitor-tempo-retrasado {
   fill: none; stroke-width: 2.2; vector-effect: non-scaling-stroke; stroke-linejoin: round;
 }
 .monitor-tempo-agora { stroke: var(--mon-verde); }
 .monitor-tempo-parcial { stroke: var(--mon-verde); stroke-dasharray: 6 5; }
 .monitor-tempo-antes { stroke: var(--mon-laranja); opacity: .9; }
+/* O ano retrasado do gráfico de anos de Contas a pagar (1.48.0, _monitor_anos.html). */
+.monitor-tempo-retrasado { stroke: var(--mon-azul); opacity: .9; }
+/* Mês sem vizinho com número (um janeiro sozinho): traço de tamanho zero com a ponta
+   redonda, que o navegador desenha como bolinha. Fica depois das cores para ganhar delas
+   na espessura. */
+.monitor-tempo-ponto { stroke-width: 7; stroke-linecap: round; }
 /* A dica de cada mês: uma coluna invisível por cima do desenho, com o valor no title. */
 .monitor-tempo-dicas {
   position: absolute; inset: 0; display: grid; margin: 0; padding: 0; list-style: none;
@@ -2405,6 +2411,7 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
 .monitor-legenda-linhas span { display: inline-flex; align-items: center; gap: .4rem; }
 .monitor-legenda-linhas i { display: inline-block; width: 1.4rem; height: 0; border-top: 3px solid var(--mon-verde); }
 .monitor-legenda-linhas .monitor-traco-antes { border-top-color: var(--mon-laranja); }
+.monitor-legenda-linhas .monitor-traco-retrasado { border-top-color: var(--mon-azul); }
 .monitor-legenda-linhas .monitor-traco-parcial { border-top: 3px dashed var(--mon-verde); }
 
 /* O mostrador da margem: meia-volta, como o "Disponibilidade" do modelo. */
@@ -2556,6 +2563,11 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
 .monitor-tabela tbody tr:hover { background: rgba(255, 255, 255, .06); }
 .monitor-tabela tbody th { font-weight: 600; }
 .monitor-tabela tbody th small { display: block; font-weight: 400; font-size: .7rem; color: var(--mon-texto-suave); }
+/* A soma de cada ano até o dia do corte, embaixo dos doze meses (1.48.0). */
+.monitor-tabela tfoot th, .monitor-tabela tfoot td { font-weight: 700; border-top: 1px solid var(--mon-borda); border-bottom: 0; }
+/* O valor exato no computador e o redondo no celular (a tabela de três anos, 1.48.0): com
+   R$ e centavos a variação, a coluna que decide, saía da tela de 390 px. */
+.monitor-valor-curto { display: none; }
 .monitor-tabela-nota { margin: .4rem 0 0; font-size: .74rem; color: var(--mon-texto-suave); }
 
 /* Tela de notebook: os seis números em duas fileiras de três, senão o faturamento não
@@ -2594,6 +2606,8 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
   .monitor-tempo-meses small { display: none; }
   .monitor-tabela { font-size: .74rem; }
   .monitor-tabela th, .monitor-tabela td { padding: .3rem .28rem; }
+  .monitor-valor-longo { display: none; }
+  .monitor-valor-curto { display: inline; }
   .monitor-lista-problemas li { grid-template-columns: minmax(0, 1fr) auto; }
   .monitor-lista-problemas li.monitor-lista-cabeca { display: none; }
   .monitor-lista-problemas .monitor-problema { grid-column: 1 / -1; grid-row: 2; }

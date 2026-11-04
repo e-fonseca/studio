@@ -8,7 +8,7 @@ não pode chegar nesta tela (ela é toda valor de dinheiro).
 from datetime import date, timedelta
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -491,6 +491,84 @@ class TestQuadrosDoGrafana(BaseDashboard):
         self.assertEqual(cobertura.nivel, "atencao")
         cobertura.valor = Decimal("3")
         self.assertEqual(cobertura.nivel, "neutro")
+
+
+class TestGraficoDeAnos(SimpleTestCase):
+    """O gráfico de anos de Contas a pagar (1.48.0): janeiro a dezembro, uma linha por ano.
+
+    Pedido do Edson em 04/11/2026: "manter sempre os últimos 3 anos". O desenho tem que
+    dizer o mesmo que a tabela: mês sem número é buraco na linha (nunca zero), o mês que
+    corre é tracejado e fica fora da área, e um mês sozinho não some do desenho.
+    """
+
+    def linha(self, ano, valores, papel="agora", mes_parcial=None):
+        valores = [None if v is None else Decimal(v) for v in valores]
+        return dashboard.LinhaDoAno(ano=ano, valores=valores + [None] * (12 - len(valores)),
+                                    papel=papel, mes_parcial=mes_parcial)
+
+    def test_o_ano_de_agora_fica_por_cima_e_a_legenda_comeca_por_ele(self):
+        g = dashboard.grafico_de_anos([
+            self.linha(2024, ["100"] * 12, "retrasado"),
+            self.linha(2025, ["100"] * 12, "antes"),
+            self.linha(2026, ["100"] * 9, "agora", mes_parcial=9),
+        ])
+        self.assertEqual([linha.ano for linha in g.linhas], [2024, 2025, 2026])
+        self.assertEqual([linha.ano for linha in g.legenda], [2026, 2025, 2024])
+        self.assertEqual(g.colunas, 12)
+
+    def test_o_mes_do_meio_da_coluna_e_o_x_do_ponto(self):
+        g = dashboard.grafico_de_anos([self.linha(2025, ["100"] * 12, "antes")])
+        caminho = g.linhas[0].caminho
+        self.assertTrue(caminho.startswith("M41.7 "))
+        self.assertIn("L958.3 ", caminho)
+        self.assertEqual(caminho.count("L"), 11)
+        self.assertNotIn(",", caminho)
+
+    def test_o_mes_que_corre_sai_tracejado_e_fora_da_area(self):
+        g = dashboard.grafico_de_anos([self.linha(2026, ["100"] * 8 + ["50"], mes_parcial=9)])
+        agora = g.linhas[0]
+        self.assertEqual(agora.caminho.count("L"), 7)            # janeiro a agosto
+        self.assertTrue(agora.parcial.startswith("M625.0 "))     # de agosto...
+        self.assertIn("L708.3 ", agora.parcial)                  # ...a setembro
+        self.assertIn("L625.0 300.0 Z", agora.area)              # a área para em agosto
+        self.assertEqual(agora.pontos, "")
+
+    def test_so_o_ano_de_agora_tem_area(self):
+        g = dashboard.grafico_de_anos([self.linha(2025, ["100"] * 12, "antes"),
+                                       self.linha(2026, ["100"] * 5)])
+        self.assertEqual(g.linhas[0].area, "")
+        self.assertTrue(g.linhas[1].area)
+
+    def test_mes_em_branco_para_a_linha_e_ela_recomeca(self):
+        g = dashboard.grafico_de_anos([self.linha(2024, ["100", "90", None, "80", "70"], "retrasado")])
+        self.assertEqual(g.linhas[0].caminho.count("M"), 2)
+
+    def test_janeiro_sozinho_vira_ponto(self):
+        """Corte em 10 de janeiro: o ano de agora é só o pedaço de janeiro."""
+        g = dashboard.grafico_de_anos([self.linha(2025, ["100"] * 12, "antes"),
+                                       self.linha(2027, ["40"], mes_parcial=1)])
+        agora = g.linhas[1]
+        self.assertEqual((agora.caminho, agora.parcial, agora.area), ("", "", ""))
+        self.assertTrue(agora.pontos.startswith("M41.7 "))
+        self.assertTrue(agora.pontos.endswith(" l0 0"))
+        self.assertTrue(g.tem)
+
+    def test_mes_cheio_sozinho_vira_ponto_e_o_que_corre_sai_dele(self):
+        g = dashboard.grafico_de_anos([self.linha(2027, ["100", "30"], mes_parcial=2)])
+        agora = g.linhas[0]
+        self.assertTrue(agora.pontos.startswith("M41.7 "))
+        self.assertTrue(agora.parcial.startswith("M41.7 "))
+        self.assertIn("L125.0 ", agora.parcial)
+
+    def test_a_escala_cobre_os_tres_anos(self):
+        g = dashboard.grafico_de_anos([self.linha(2024, ["228153"], "retrasado"),
+                                       self.linha(2026, ["100000", "90000"])])
+        self.assertEqual(g.marcas[-1].rotulo, "R$ 300 mil")
+
+    def test_sem_numero_nenhum_nao_ha_grafico(self):
+        g = dashboard.grafico_de_anos([self.linha(2026, [None] * 12)])
+        self.assertFalse(g.tem)
+        self.assertFalse(dashboard.GraficoDeAnos().tem)
 
 
 class TestTela(BaseDashboard):

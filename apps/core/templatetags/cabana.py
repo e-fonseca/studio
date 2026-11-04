@@ -1,4 +1,4 @@
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django import template
 from django.utils.safestring import mark_safe
@@ -21,6 +21,24 @@ def reais(valor, vazio="—"):
     sinal = "-" if numero < 0 else ""
     texto = f"{abs(numero):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     return f"{sinal}R$ {texto}"
+
+
+@register.filter
+def reais_redondo(valor, vazio="—"):
+    """Reais redondos, sem o símbolo e sem os centavos: 122.400 em vez de R$ 122.399,52.
+
+    Para a tabela que tem que caber inteira no celular: a do gráfico de anos de Contas a
+    pagar (1.48.0) tem três anos e a variação lado a lado, e com R$ e centavos a variação,
+    que é a coluna que decide, saía da tela. O valor exato continua no computador.
+    """
+    if valor is None or valor == "":
+        return vazio
+    try:
+        numero = Decimal(str(valor)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, ValueError):
+        return vazio
+    sinal = "-" if numero < 0 else ""
+    return f"{sinal}{abs(numero):,}".replace(",", ".")
 
 
 @register.filter

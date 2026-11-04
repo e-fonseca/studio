@@ -32,13 +32,20 @@ PRAZO_MAXIMO_PLAUSIVEL = 180  # acima disso é erro de digitação na data de en
 # vendeu"); entra como mercadoria a caminho, que reduz o que ainda falta comprar.
 SITUACAO_PENDENTE = "Pendente"
 # Quanto do financeiro do SET entra na foto. Tudo o que está em aberto entra sempre,
-# porque é o que ainda mexe no caixa; do que já foi pago ou recebido valem os 24 meses
-# INTEIROS antes do mês do corte, a partir do dia 1º (`inicio_do_financeiro`). Até a
-# 1.46.0 eram 730 dias contados do corte, e o mês mais antigo entrava pela metade: o
-# gráfico "Contas pagas mês a mês" de Contas a pagar (1.47.0) compara cada um dos seus 13
-# meses com o mesmo mês do ano passado, e o primeiro comparava um mês inteiro com dez dias.
-# É a mesma lição da venda por mês, logo abaixo.
+# porque é o que ainda mexe no caixa; do que já foi recebido valem os 24 meses INTEIROS
+# antes do mês do corte, a partir do dia 1º (`inicio_das_recebidas`), e do que já foi pago,
+# três anos (logo abaixo). Até a 1.46.0 eram 730 dias contados do corte para os dois, e o
+# mês mais antigo entrava pela metade: o gráfico "Contas pagas mês a mês" de Contas a pagar
+# (1.47.0) comparava cada mês com o mesmo mês do ano passado, e o primeiro comparava um mês
+# inteiro com dez dias. É a mesma lição da venda por mês, logo abaixo.
 JANELA_FINANCEIRO_MESES = 24
+# As contas PAGAS entram com três anos inteiros; as recebidas ficam nos 24 meses de cima.
+# Pedido do Edson em 04/11/2026, no gráfico de Contas a pagar: *"manter sempre os últimos 3
+# anos"*. O gráfico mostra de janeiro a dezembro o ano do corte e os dois anteriores, e em
+# dezembro o janeiro do retrasado fica 35 meses para trás: 36 meses inteiros, do dia 1º,
+# cobrem o ano todo. O recebido não cresce junto porque é ele que traz o nome do cliente, e
+# dado de pessoa só entra na foto o tanto que uma tela usa.
+JANELA_PAGAS_MESES = 36
 # Quantos MESES de venda por produto e por mês entram na foto, e a leitura começa sempre
 # no dia 1º do mês mais antigo. Duas coisas moram nesta linha:
 #
@@ -292,10 +299,17 @@ def _texto(valor, limite=200):
     return (valor or "").strip()[:limite]
 
 
-def inicio_do_financeiro(corte):
-    """O primeiro dia do que já foi pago ou recebido que entra na foto: o dia 1º de 24
-    meses antes do mês do corte. Corte em 20/09/2026 lê desde 01/09/2024."""
+def inicio_das_recebidas(corte):
+    """O primeiro dia do que já foi recebido que entra na foto: o dia 1º de 24 meses antes
+    do mês do corte. Corte em 20/09/2026 lê desde 01/09/2024."""
     return _primeiro_dia_de_meses_atras(corte, JANELA_FINANCEIRO_MESES)
+
+
+def inicio_das_pagas(corte):
+    """O primeiro dia do que já foi pago que entra na foto: o dia 1º de 36 meses antes do
+    mês do corte. Corte em 20/09/2026 lê desde 01/09/2023, e o gráfico de Contas a pagar
+    tem 2024, 2025 e 2026 inteiros."""
+    return _primeiro_dia_de_meses_atras(corte, JANELA_PAGAS_MESES)
 
 
 def _ler_financeiro(linhas, corte):
@@ -306,11 +320,10 @@ def _ler_financeiro(linhas, corte):
     contas dele (GRUPO traz "1.01.05 - Aluguel"), então a classificação vem pronta: o
     sistema não inventa categoria nenhuma.
     """
-    desde = inicio_do_financeiro(corte)
     lancamentos = []
-    for tipo, tabela, chave, coluna_parte, coluna_origem in (
-        ("pagar", "contaspag", "idcontapag", "fornecedor", "idcompra"),
-        ("receber", "contasrec", "idcontarec", "cliente", "idvenda"),
+    for tipo, tabela, chave, coluna_parte, coluna_origem, desde in (
+        ("pagar", "contaspag", "idcontapag", "fornecedor", "idcompra", inicio_das_pagas(corte)),
+        ("receber", "contasrec", "idcontarec", "cliente", "idvenda", inicio_das_recebidas(corte)),
     ):
         for (id_set, nome, documento, parcela, situacao, cadastro, vencimento, pagamento,
              valor, valor_pago, grupo, forma, parte, origem, plano) in linhas(f"""
@@ -997,9 +1010,11 @@ def extrair(copia, biblioteca_cliente=None, progresso=_nada) -> Extracao:
                 "contas_a_pagar_em_aberto": sum(1 for l in lancamentos if l["tipo"] == "pagar" and not l["pagamento"]),
                 "contas_a_receber_em_aberto": sum(1 for l in lancamentos if l["tipo"] == "receber" and not l["pagamento"]),
                 "lancamentos_financeiros": len(lancamentos),
-                # De quando em diante o pago está inteiro na foto. Contas a pagar só compara
-                # com o ano passado o mês que começa depois deste dia (apps/financeiro/quadros.py).
-                "financeiro_desde": inicio_do_financeiro(corte).isoformat(),
+                # De quando em diante o pago e o recebido estão inteiros na foto. Contas a
+                # pagar só desenha o mês que começa depois da data do pago
+                # (apps/financeiro/quadros.py). Até a 1.47.1 era uma data só, "financeiro_desde".
+                "pagas_desde": inicio_das_pagas(corte).isoformat(),
+                "recebidas_desde": inicio_das_recebidas(corte).isoformat(),
                 "caixas_importados": len(caixas),
                 "caixas_abertos": sum(1 for c in caixas if c["situacao"] == "aberto"),
                 "fichas_de_fornecedor": len(fichas_fornecedor),
