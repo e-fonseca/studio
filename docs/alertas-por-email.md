@@ -205,3 +205,30 @@ senha de uma caixa de e-mail. O relatório é montado uma vez e serve aos dois: 
 dessas contas passam por onze mil produtos.
 
 Na tela de **Últimos envios**, cada linha diz por onde saiu e para quem.
+
+## O grupo das metas (1.47.0)
+
+Pedido dele (04/11/2026): o aviso de **meta batida** no grupo METAS do Telegram. É o mesmo
+robô, com outro destino e outro interruptor (`ConfiguracaoDeTelegram.metas_ativo`,
+`metas_chat_id`, `metas_chat_nome`; migração `alertas.0006`): os relatórios continuam indo
+para a conversa de cima, a meta batida vai para o grupo. Os relatórios desligados não calam a
+meta, e vice-versa.
+
+- **Não tem hora.** A tarefa de hora em hora (`--rotina devido`) pergunta a
+  `apps/alertas/metas.py` se a última importação trouxe um sábado, domingo ou feriado dos
+  últimos três dias que bateu a meta e ainda não foi avisado, ou cujo prêmio subiu de degrau
+  depois do aviso. Roda antes dos interruptores dos relatórios, como o vigia do backup.
+  `--rotina metas` faz só ele; rodar um relatório à mão (`--rotina contas`) não avisa o grupo.
+- **A conta é a da tela Descontos e metas**, com as metas e o prêmio da tela Regras e metas
+  (ver `descontos-e-metas.md`).
+- **O registro** é um `EnvioDeRelatorio` com a rotina `metas`, o dia da meta e o prêmio
+  avisado: é com ele que o sistema sabe o que já saiu. Três tentativas por dia de meta em cada
+  dia, como os relatórios; o teste do grupo fica como "Teste de configuração".
+- **O robô entra no grupo pelas mãos de alguém do grupo** (Adicionar membro, pelo nome de
+  usuário dele): link de convite não serve para robô. Ao ser adicionado, o Telegram manda ao
+  robô um aviso com o grupo, e é ele que o **Descobrir o grupo** lê (`my_chat_member`).
+- Três erros novos viram frase de loja: o grupo que virou supergrupo e mudou de número, o
+  robô tirado do grupo e o robô que não está no grupo.
+- **O log da tarefa não cai com emoji.** A tarefa do Windows lê a saída por um cano que não é
+  UTF-8; nome de grupo com emoji levantava erro depois de o aviso já ter saído. A linha do
+  log troca o que não sabe escrever por "?" (`_cabe_no_console`).

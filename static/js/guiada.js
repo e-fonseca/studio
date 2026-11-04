@@ -188,7 +188,12 @@
       campo.addEventListener("keydown", function (e) {
         if (e.key !== "Enter" || e.isComposing) { return; }
         e.preventDefault();
-        var proximo = campos[i + 1];
+        // A linha escondida pela procura (1.47.0) é pulada: foco nela não vai a lugar nenhum.
+        var proximo = null;
+        for (var j = i + 1; j < campos.length && !proximo; j += 1) {
+          var linhaDele = campos[j].closest("[data-linha]");
+          if (!linhaDele || !linhaDele.hidden) { proximo = campos[j]; }
+        }
         if (proximo) { proximo.focus(); proximo.select(); } else { campo.blur(); }
       });
     });
@@ -207,6 +212,37 @@
     // Voltar pelo navegador devolve a página como ela estava ao sair, com os campos travados.
     window.addEventListener("pageshow", function () {
       formulario.querySelectorAll("input:disabled").forEach(function (campo) { campo.disabled = false; });
+    });
+  }
+
+  // ------------------------------------------------------------ procurar nos outros
+  // Fornecedor grande tem centenas de produtos na tabela dos outros (1.47.0). O campo
+  // esconde as linhas que não têm o que se digitou, sem ir ao servidor; a quantidade já
+  // escrita numa linha escondida continua no formulário. Sem acento dos dois lados:
+  // "ceramica" acha CERÂMICA.
+  var procurar = document.querySelector("[data-procurar-outros]");
+  if (procurar) {
+    var campoProcura = procurar.querySelector("input");
+    var contaProcura = procurar.querySelector("[data-procurar-conta]");
+    var outras = Array.prototype.slice.call(document.querySelectorAll("[data-tabela-outros] tbody tr"));
+    var semAcento = function (texto) {
+      return String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    };
+    var textos = outras.map(function (linha) { return semAcento(linha.getAttribute("data-procura")); });
+    procurar.hidden = false;
+    campoProcura.addEventListener("input", function () {
+      var termo = semAcento(campoProcura.value).trim();
+      var vistas = 0;
+      outras.forEach(function (linha, i) {
+        var mostra = !termo || textos[i].indexOf(termo) >= 0;
+        linha.hidden = !mostra;
+        if (mostra) { vistas += 1; }
+      });
+      contaProcura.textContent = termo ? (vistas + " de " + outras.length) : "";
+    });
+    // Enter aqui é "procurar", e não "salvar": o formulário inteiro está em volta.
+    campoProcura.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); }
     });
   }
 })();

@@ -602,3 +602,100 @@ class AsTelas(BaseGuiada):
         self.entrar("gerencia", ADMINISTRACAO)
         self.assertContains(self.client.get(reverse("compras:lista")),
                             f'class="guiada-convite" href="{reverse("compras:guiada")}"')
+
+
+class OsOutrosProdutosDoFornecedor(BaseGuiada):
+    """1.47.0, pedido de 04/11/2026: "exibir todos os produtos de cada fornecedor, priorizar
+    os produtos em falta E acabando e em seguida todos os demais"."""
+
+    def setUp(self):
+        super().setUp()
+        # Estoque para dois anos: a conta não pede, mas vendeu no ano.
+        self.produto("G10", estoque=Decimal("50"), vendas_12m=Decimal("24"), vendas_90d=Decimal("6"),
+                     receita_12m=Decimal("2000"))
+        # Não vendeu no ano: um com saldo no SET (parado) e um sem nada.
+        self.produto("G8", estoque=Decimal("3"), vendas_12m=Decimal("0"), vendas_90d=Decimal("0"),
+                     receita_12m=Decimal("0"))
+        self.produto("G9", estoque=Decimal("0"), vendas_12m=Decimal("0"), vendas_90d=Decimal("0"),
+                     receita_12m=Decimal("0"))
+        self.quem = usuario("gerencia", ADMINISTRACAO)
+
+    def demais(self, compra):
+        return guiada.os_demais(self.montar(compra), self.importacao)
+
+    def salvar(self, compra, **campos):
+        guiada.salvar_resposta(compra, guiada.REVISAO, dados(**campos), self.quem, self.importacao)
+
+    def test_todo_o_cadastro_do_fornecedor_aparece_depois_do_pedido(self):
+        compra = self.compra(self.quem)
+        no_pedido = {linha.codigo for linha in self.montar(compra).linhas}
+        demais = self.demais(compra)
+        self.assertEqual([linha.codigo for linha in demais], ["G10", "G7", "G8", "G9"],
+                         "o que vendeu (do que mais faturou), o parado, o que não vendeu")
+        self.assertFalse(no_pedido & {linha.codigo for linha in demais})
+        self.assertEqual([linha.nota for linha in demais], [
+            "o que tem dá até a próxima compra", "o que tem dá até a próxima compra",
+            "parado: não vendeu no ano", "não vendeu no ano"])
+        self.assertTrue(all(linha.quantidade == 0 for linha in demais))
+
+    def test_o_que_ficou_fora_pelo_tipo_vem_primeiro_entre_os_outros(self):
+        compra = self.compra(self.quem, tipos=["ALMOFADA"])
+        demais = self.demais(compra)
+        primeiros = [linha for linha in demais if "fora do que você escolheu" in linha.nota]
+        self.assertTrue(primeiros)
+        self.assertEqual(demais[:len(primeiros)], primeiros)
+        self.assertIn("G1", {linha.codigo for linha in primeiros})
+
+    def test_o_numero_posto_a_mao_entra_no_pedido_e_fica_entre_os_outros(self):
+        compra = self.compra(self.quem)
+        self.salvar(compra, **{"q-G10": "3", "q-G8": "0", "q-G9": ""})
+        self.assertEqual(compra.respostas["outros"], {"G10": "3"})
+        proposta = self.montar(compra)
+        linha = proposta.linha("G10")
+        self.assertTrue(linha.a_mao)
+        self.assertEqual(linha.quantidade, 3)
+        self.assertIn(linha, proposta.no_pedido)
+        demais = guiada.os_demais(proposta, self.importacao)
+        self.assertEqual(demais[0].codigo, "G10")
+        self.assertEqual(demais[0].nota, "posto por você")
+
+    def test_zerar_o_posto_a_mao_tira_do_pedido(self):
+        compra = self.compra(self.quem, outros={"G10": "3"})
+        self.salvar(compra, **{"q-G10": "0", "era-G10": "3"})
+        self.assertEqual(compra.respostas["outros"], {})
+        self.assertIsNone(self.montar(compra).linha("G10"))
+
+    def test_numero_negativo_nos_outros_e_recusado_como_nos_da_conta(self):
+        compra = self.compra(self.quem)
+        with self.assertRaises(guiada.RespostaInvalida):
+            self.salvar(compra, **{"q-G10": "-2"})
+        self.assertNotIn("outros", compra.respostas)
+
+    def test_resposta_antiga_do_produto_que_saiu_pelo_tipo_nao_volta(self):
+        """O número dos outros é guardado à parte: o "dobro" de antes não ressuscita."""
+        compra = self.compra(self.quem, tipos=["ALMOFADA"], quantidades={"G1": "dobro"})
+        self.assertIsNone(self.montar(compra).linha("G1"))
+        self.salvar(compra, **{"q-G1": "2"})
+        self.assertEqual(self.montar(compra).linha("G1").quantidade, 2)
+        self.assertNotIn("G1", compra.respostas["quantidades"])
+        # Mesmo com a resposta antiga ainda guardada, vale o número posto à mão.
+        compra.respostas["quantidades"] = {"G1": "dobro"}
+        self.assertEqual(self.montar(compra).linha("G1").quantidade, 2)
+
+    def test_o_pedido_leva_o_posto_a_mao(self):
+        compra = self.compra(self.quem, outros={"G10": "2"})
+        proposta = self.montar(compra)
+        pedido = guiada.gerar_pedido(compra, proposta, self.quem, emitido_por="Teste")
+        self.assertTrue(ItemDoPedido.objects.filter(pedido=pedido, codigo="G10", quantidade=2).exists())
+
+    def test_a_conferencia_mostra_as_duas_tabelas(self):
+        self.client.login(username="gerencia", password=SENHA_TESTE)
+        compra = self.compra(self.quem, outros={"G10": "2"})
+        pagina = self.client.get(reverse("compras:guiada_passo", args=[compra.pk, guiada.REVISAO]))
+        self.assertContains(pagina, "Em falta e acabando")
+        self.assertContains(pagina, f"Os outros produtos de {FORNECEDOR}")
+        self.assertContains(pagina, "data-tabela-outros")
+        self.assertContains(pagina, "parado: não vendeu no ano")
+        self.assertContains(pagina, "posto por você")
+        # Doze ou menos não precisam de busca.
+        self.assertNotContains(pagina, "data-procurar-outros")

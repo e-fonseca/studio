@@ -86,3 +86,31 @@ todas as vendas com a regra nova, inclusive as que já estavam na tela.
 
 O e-mail **Vendas do dia** traz a meta do dia (no sábado, no domingo e no feriado) e as
 vendas fora da regra, com o link desta tela. Dia sem nada fora da regra não ganha o bloco.
+
+## No grupo das metas, no Telegram
+
+Desde a versão 1.47.0, quando o sábado, o domingo ou um feriado bate a meta, o robô do
+Telegram avisa no grupo das metas: o dia, quanto vendeu, a meta e o prêmio por pessoa. As
+metas são as desta tela: sábado e feriado **R$ 12.000**, domingo **R$ 15.000**.
+
+**Ligar, uma vez só** (em **Sistema > Alertas**, parte **Grupo das metas**):
+
+1. Se o robô ainda não existe, crie no **@BotFather** e grave o token em **Aviso no
+   Telegram**, como a tela explica.
+2. No Telegram, abra o grupo METAS, toque no nome do grupo, **Adicionar membro**, e procure o
+   robô pelo nome de usuário dele (o que termina em *bot*). O link de convite não serve para
+   robô.
+3. Na tela, clique em **Descobrir o grupo** e, na linha do grupo, em **Usar para as metas**.
+4. Clique em **Enviar teste ao grupo das metas**. O teste já explica as metas e o prêmio a
+   quem lê o grupo.
+5. Marque **avisar no grupo das metas quando a meta bater** e clique em **Salvar o grupo das
+   metas**.
+
+**Quando chega**: depois da importação que traz as vendas do dia. Se o SET faz o backup só à
+noite, o aviso do sábado chega no domingo de manhã. A mensagem diz até que hora há venda na
+conta. Se o prêmio subir de degrau numa importação seguinte, vem outro aviso; o mesmo número
+não se repete.
+
+**Quando a meta dependeu de desconto fora da regra**, o aviso diz numa linha quantas vendas
+foram, quanto e como o dia ficaria sem elas. Não diz o nome de ninguém: isso fica nesta tela.
+Anotar a aprovação aqui tira a linha dos avisos seguintes.

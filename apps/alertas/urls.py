@@ -10,6 +10,8 @@ urlpatterns = [
     path("telegram/testar/", views.testar_telegram, name="testar_telegram"),
     path("telegram/descobrir/", views.descobrir_chat, name="descobrir_chat"),
     path("telegram/conversa/", views.usar_chat, name="usar_chat"),
+    path("telegram/metas/", views.configurar_metas, name="configurar_metas"),
+    path("telegram/metas/testar/", views.testar_metas, name="testar_metas"),
     path("<str:rotina>/mandar/", views.mandar_agora, name="mandar_agora"),
     path("<str:rotina>/previa/", views.previa, name="previa"),
 ]

@@ -151,3 +151,54 @@ class TelegramForm(forms.ModelForm):
         if commit:
             configuracao.save()
         return configuracao
+
+
+class MetasNoTelegramForm(forms.ModelForm):
+    """O grupo das metas (1.47.0): o interruptor e o número do grupo.
+
+    O robô é o mesmo dos relatórios, então o token não aparece aqui: ele se grava no
+    formulário de cima. O número do grupo se preenche pelo botão "Usar para as metas" da
+    lista de conversas; o campo existe para quem já sabe o número, e confere o formato.
+    """
+
+    field_order = ["metas_ativo", "metas_chat_id"]
+
+    class Meta:
+        model = ConfiguracaoDeTelegram
+        fields = ["metas_ativo", "metas_chat_id"]
+        widgets = {
+            "metas_chat_id": forms.TextInput(attrs={"inputmode": "numeric", "autocomplete": "off"}),
+        }
+
+    def clean_metas_chat_id(self):
+        bruto = (self.cleaned_data.get("metas_chat_id") or "").strip()
+        if bruto and not bruto.lstrip("-").isdigit():
+            raise forms.ValidationError(
+                "O grupo é um número que começa com - (como -1001234567890). Use o botão "
+                "\"Usar para as metas\" da lista de conversas para preencher sem errar."
+            )
+        return bruto
+
+    def clean(self):
+        dados = super().clean()
+        if not dados.get("metas_ativo"):
+            return dados
+        faltas = []
+        if not self.instance.tem_token:
+            faltas.append("o token do robô (no Aviso no Telegram, acima)")
+        if not (dados.get("metas_chat_id") or "").strip():
+            faltas.append("o grupo das metas")
+        if faltas:
+            raise forms.ValidationError(
+                "Para ligar o aviso das metas falta preencher: " + ", ".join(faltas) + "."
+            )
+        return dados
+
+    def save(self, commit=True):
+        configuracao = super().save(commit=False)
+        # Número digitado à mão é outro grupo: o nome que a lista tinha dado já não vale.
+        if "metas_chat_id" in self.changed_data:
+            configuracao.metas_chat_nome = ""
+        if commit:
+            configuracao.save()
+        return configuracao

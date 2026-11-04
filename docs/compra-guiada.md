@@ -34,7 +34,7 @@ O passo a passo de quem compra está em `manual/compra-guiada.md`. Aqui fica com
 | 6-10 | `.../produto-1/` a `produto-5/` | Quantas unidades de cada um dos 5 que mais vendem? | Sugestão, metade, dobro, não comprar ou outro número. Guarda a PALAVRA: "metade" acompanha a conta se outra resposta mudar |
 | 11 | `.../encomendas/` | Algum cliente encomendou? A equipe pediu? | Soma por cima da conta; a sugestão da equipe marcada é respondida quando o pedido sai |
 | 12 | `.../orcamento/` | Até quanto o pedido pode chegar? | O que sobra no teto do mês (já tirados os pedidos daqui que não chegaram), um valor, ou sem limite. Corta pelo fim da fila; escolha e encomenda não se cortam |
-| 13 | `.../revisao/` | Confira e gere | A tabela inteira, editável; recado ao fornecedor; Gerar o pedido |
+| 13 | `.../revisao/` | Confira e gere | Duas tabelas editáveis: **Em falta e acabando** (o que a conta pede) e **Os outros produtos** do fornecedor (desde a 1.47.0, em zero); recado ao fornecedor; Gerar o pedido |
 
 O número de perguntas de produto é `QUANTOS_PRINCIPAIS` (5); a pergunta do prazo some quando
 a ficha já tem prazo. Endereço de pergunta que deixou de existir (o fornecedor tem só 3
@@ -58,6 +58,29 @@ produtos e alguém abre o `produto-4`) leva à primeira que falta.
 - `CompraGuiada` (migração `compras.0007_compra_guiada`): fornecedor, situação (em
   andamento, concluída, deixada de lado), respostas em JSON, quem, quando, a data dos dados,
   o número do pedido, o valor e o resumo.
+
+## Todos os produtos do fornecedor (desde a 1.47.0)
+
+Pedido dele (04/11/2026): *"em compra guiada, exibir todos os produtos de cada fornecedor,
+priorizar os produtos em falta E acabando e em seguida todos os demais."* A conferência
+passou a ter duas tabelas:
+
+1. **Em falta e acabando**: o pedido que a conta monta, como antes (a mesma conta da Lista
+   de compra, do que mais faz falta para o que menos faz).
+2. **Os outros produtos de <fornecedor>** (`guiada.os_demais`): o resto do cadastro do SET
+   deste fornecedor (só mercadoria), em zero, nesta ordem: o que a conta pede mas ficou fora
+   pelos tipos ou pelo "o que entra"; o que vendeu no ano, do que mais faturou para o que
+   menos; o parado (não vendeu e tem saldo); o que não vendeu nem tem saldo. Cada linha diz
+   por que está ali ("o que tem dá até a próxima compra", "parado: não vendeu no ano").
+
+Escrever um número nos outros põe o produto no pedido (`respostas["outros"]`, guardado à
+parte das respostas da conta): ele continua no lugar dele na segunda tabela, marcado "posto
+por você", e vai na folha e no pedido como os outros. Zerar devolve. Guardado à parte para
+uma resposta antiga (um "dobro" de quando o produto era da conta) não voltar por baixo do
+número digitado. A escolha e a encomenda não se cortam no orçamento, e o número posto à mão
+também não. Com mais de doze outros, aparece a busca por nome ou código, sem acento; com mais
+de oito na primeira tabela, o título dela leva o atalho para os outros. STARBELLA, na cópia
+do SET de setembro: 244 na conta e 406 outros.
 
 ## Decisões
 
@@ -91,4 +114,6 @@ produtos e alguém abre o `produto-4`) leva à primeira que falta.
 `apps/compras/tests/test_compra_guiada.py`: a conta igual à da Lista, cada resposta mudando o
 pedido, o corte do orçamento, o teto do mês, as perguntas, o pedido da gerência, da Líder e de
 quem só monta, as telas pelo navegador de teste (o caminho inteiro até o pedido, o Enter, as
-encomendas, a conferência, o que dura mais de um ano).
+encomendas, a conferência, o que dura mais de um ano) e, desde a 1.47.0, os outros produtos do
+fornecedor (`OsOutrosProdutosDoFornecedor`: a ordem, o número posto à mão no pedido, o zero
+que devolve, a resposta antiga que não volta).

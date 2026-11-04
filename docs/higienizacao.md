@@ -8,18 +8,33 @@ o que tira o que já não serve.
 
 ## Os comandos
 
-No PowerShell, como administrador, no servidor da loja:
+No PowerShell, como administrador, no servidor da loja, da pasta do pacote:
 
 ```
 # ver o que tem para limpar, sem limpar nada
-powershell -ExecutionPolicy Bypass -File C:\cabana-sistema\scripts\higienizar.ps1 -Conferir
+powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\higienizar.ps1 -Conferir
 
 # limpar agora
-powershell -ExecutionPolicy Bypass -File C:\cabana-sistema\scripts\higienizar.ps1
+powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\higienizar.ps1
 
 # atualizar o sistema; anda junto com os de cima, a pedido do Edson (19/10/2026)
-powershell -ExecutionPolicy Bypass -File C:\instalacao\atualizar.ps1
+powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\atualizar.ps1
 ```
+
+**Uma pasta só desde a 1.47.1** (pedido do Edson em 04/11/2026: *"padronizar envio do
+pacote de atualização sempre no diretório /pacote"*): o zip novo chega em
+`C:\instalacao\pacote`, e os dois comandos rodam de lá. O `atualizar.ps1` acha o zip nessa
+pasta (e ainda em `C:\instalacao`, o lugar de antes), guarda o zip em `historico` antes de
+trocar a versão e esvazia a pasta em vez de apagá-la, porque o Windows não apaga pasta
+aberta num PowerShell. O `higienizar.ps1` acha o sistema sozinho: da cópia instalada em
+`C:\cabana-sistema\scripts`, que é a que a tarefa da madrugada roda, ele sobe uma pasta;
+da pasta do pacote, ele vai para `C:\cabana-sistema`. Antes da 1.47.1, o mesmo script
+rodado fora de `scripts` procurava o Python na pasta errada e saía calado.
+
+Os comandos de antes continuam valendo (`C:\instalacao\atualizar.ps1` é uma cópia que o
+próprio atualizador mantém em dia, e `C:\cabana-sistema\scripts\higienizar.ps1` é a cópia
+instalada). É pelo de antes que um servidor numa versão anterior à 1.47.1 sai dela, porque
+o atualizador antigo ainda não procura o zip em `pacote`.
 
 **Os dois comandos nunca aparecem sozinhos.** Quem abre o PowerShell no servidor
 costuma fazer as duas coisas na mesma visita, e procurar o outro comando em outro

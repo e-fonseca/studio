@@ -259,3 +259,28 @@ explicação leva `atencao_acima_de`, e passa a laranja acima dele, como a cober
 de 3 meses. Na fileira de cima do Dashboard entram os quatro da venda e a cobertura; os
 outros números do estoque são desenhados (mostrador e roscas), e um número novo do
 estoque pede quadro próprio no template.
+
+## Os mesmos desenhos em Contas a pagar (1.47.0)
+
+Pedido dele (04/11/2026, com o print do Dashboard): *"usar esse formato de gráfico também em
+contas a pagar"*. O gráfico de linha saiu do `dashboard.html` para
+`templates/painel/_monitor_linha.html` (parâmetros `g`, `meses` e `o_que`), e o Dashboard o
+inclui como antes: o HTML que ele gera é o mesmo, conferido linha a linha. Contas a pagar
+inclui o mesmo arquivo e a mesma rosca (`_monitor_rosca.html`), dentro de
+`<div class="monitor monitor-embutido">`, que traz as cores do Dashboard (`--mon-*`) para
+dentro da tela escura comum. As contas estão em `apps/financeiro/quadros.py`:
+
+- **Contas pagas mês a mês**: 13 meses, com o mesmo mês do ano passado. `Mes.mais_e_bom`
+  (novo, `True` no faturamento) é `False` aqui: pagar mais é vermelho. O mês que corre se
+  compara com o mesmo pedaço do ano passado, do dia 1º ao dia do corte.
+- **O que está em aberto**: as fatias dos filtros da lista (atrasadas, vencem em até 7 dias,
+  depois, sem data), e o nome de cada fatia abre a lista dela (`Fatia.endereco`, novo).
+- **Para onde vai o dinheiro**: o pago em 12 meses pela classificação do SET, a conta da tela
+  Despesas; os oito maiores e o resto junto, sem o número do plano de contas no nome.
+
+O ano passado só se compara quando o mês dele está inteiro na foto. Até a 1.46.0 a leitura do
+pago começava em "corte menos 730 dias", no meio de um mês, e o primeiro mês do gráfico
+compararia um mês cheio com dez dias. Desde a 1.47.0 a importação lê o pago e o recebido
+desde o dia 1º de 24 meses antes (`firebird.inicio_do_financeiro`) e grava a data
+(`financeiro_desde` no detalhe da importação); foto mais antiga vale a regra antiga, e o
+primeiro mês aparece sem comparação até a próxima importação.

@@ -3,13 +3,15 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.alertas import agenda, envio, relatorios, telegram
-from apps.alertas.forms import ConfiguracaoForm, TelegramForm
-from apps.alertas.models import ConfiguracaoDeEmail, ConfiguracaoDeTelegram, Rotina
+from apps.alertas import agenda, envio, metas, relatorios, telegram
+from apps.alertas.forms import ConfiguracaoForm, MetasNoTelegramForm, TelegramForm
+from apps.alertas.models import Canal, ConfiguracaoDeEmail, ConfiguracaoDeTelegram, EnvioDeRelatorio, Rotina
 from apps.auditoria.servicos import registrar
+from apps.caixa.models import RegraDeDesconto
 from apps.financeiro import servicos as financeiro
 from apps.importacao import servicos as importacao_servicos
 
@@ -50,7 +52,7 @@ def _linhas_das_rotinas(importacao):
     ]
 
 
-def _contexto(configuracao, form=None, form_telegram=None, chats=None):
+def _contexto(configuracao, form=None, form_telegram=None, chats=None, form_metas=None):
     importacao = importacao_servicos.ultima_concluida()
     no_telegram = ConfiguracaoDeTelegram.atual()
     return {
@@ -64,6 +66,12 @@ def _contexto(configuracao, form=None, form_telegram=None, chats=None):
         # Preenchido só depois do botão "descobrir a conversa": é a resposta do Telegram,
         # e ela não sobrevive ao redirect, então a tela a mostra na mesma resposta.
         "chats": chats or [],
+        # O grupo das metas (1.47.0): o mesmo robô, outro destino.
+        "form_metas": form_metas or MetasNoTelegramForm(instance=no_telegram),
+        "faltas_metas": no_telegram.metas_o_que_falta,
+        "regra_das_metas": RegraDeDesconto.atual(),
+        "ultimos_avisos_de_meta": list(EnvioDeRelatorio.objects.filter(
+            rotina=Rotina.METAS, canal=Canal.TELEGRAM)[:3]),
         "proximo": agenda.proximo_envio(configuracao),
         "ultimos": envio.ultimos_envios(),
         "rotinas": _linhas_das_rotinas(importacao),
@@ -242,8 +250,10 @@ def descobrir_chat(request):
         messages.error(request, erro)
     elif not achados:
         messages.error(request, "Nenhuma conversa encontrada.")
-    return render(request, "alertas/painel.html",
-                  _contexto(ConfiguracaoDeEmail.atual(), chats=achados))
+    contexto = _contexto(ConfiguracaoDeEmail.atual(), chats=achados)
+    # Do botão do grupo das metas, a lista aparece lá, com o botão de usar para as metas.
+    contexto["chats_para"] = "metas" if request.POST.get("para") == "metas" else ""
+    return render(request, "alertas/painel.html", contexto)
 
 
 @login_required
@@ -261,8 +271,21 @@ def usar_chat(request):
     if not identificador.lstrip("-").isdigit():
         messages.error(request, "Conversa inválida.")
         return redirect("alertas:painel")
+    nome = (request.POST.get("chat_nome") or "")[:120]
+    if request.POST.get("para") == "metas":
+        # O mesmo botão, para o grupo das metas (1.47.0).
+        configuracao.metas_chat_id, configuracao.metas_chat_nome = identificador, nome
+        configuracao.save(update_fields=["metas_chat_id", "metas_chat_nome", "atualizado_em"])
+        registrar("alertas.telegram_configurado", usuario=request.user, recurso=configuracao,
+                  recurso_rotulo="grupo das metas do Telegram",
+                  depois={"metas_chat_id": identificador, "metas_chat_nome": nome})
+        messages.success(
+            request,
+            f"Grupo das metas gravado: {configuracao.metas_para_quem}. Agora use o botão de "
+            "teste do grupo das metas para ver se o aviso chega lá.")
+        return redirect(f"{reverse('alertas:painel')}#grupo-das-metas")
     configuracao.chat_id = identificador
-    configuracao.chat_nome = (request.POST.get("chat_nome") or "")[:120]
+    configuracao.chat_nome = nome
     configuracao.save(update_fields=["chat_id", "chat_nome", "atualizado_em"])
     registrar("alertas.telegram_configurado", usuario=request.user, recurso=configuracao,
               recurso_rotulo="conversa do Telegram",
@@ -272,3 +295,44 @@ def usar_chat(request):
         f"Conversa gravada: {configuracao.para_quem}. Agora use o botão de teste para ver "
         "se o aviso chega no celular.")
     return redirect("alertas:painel")
+
+
+@login_required
+@configurar
+@require_POST
+def configurar_metas(request):
+    """Liga ou desliga o aviso de meta batida, e grava o número do grupo."""
+    configuracao = ConfiguracaoDeTelegram.atual()
+    form = MetasNoTelegramForm(request.POST, instance=configuracao)
+    if not form.is_valid():
+        return render(request, "alertas/painel.html",
+                      _contexto(ConfiguracaoDeEmail.atual(), form_metas=form))
+    antes = {"metas_ativo": configuracao.metas_ativo, "metas_chat_id": configuracao.metas_chat_id}
+    salva = form.save()
+    registrar("alertas.telegram_configurado", usuario=request.user, recurso=salva,
+              recurso_rotulo="grupo das metas do Telegram", antes=antes,
+              depois={"metas_ativo": salva.metas_ativo, "metas_chat_id": salva.metas_chat_id})
+    if salva.metas_ativo:
+        messages.success(request, "Aviso das metas ligado. Ele sai na primeira volta da tarefa "
+                                  "depois da importação que trouxer um dia que bateu a meta.")
+    else:
+        messages.success(request, "Aviso das metas gravado, desligado.")
+    return redirect(f"{reverse('alertas:painel')}#grupo-das-metas")
+
+
+@login_required
+@configurar
+@require_POST
+def testar_metas(request):
+    """Manda o teste no grupo das metas, com as metas e o prêmio de hoje."""
+    registro = metas.enviar_teste(disparado_por=request.user.get_username())
+    registrar("alertas.telegram_teste", usuario=request.user, recurso=registro,
+              recurso_rotulo="teste do grupo das metas",
+              resultado="sucesso" if registro.deu_certo else "falha",
+              depois={"erro": registro.erro[:200]} if registro.erro else None)
+    if registro.deu_certo:
+        messages.success(request, "Teste enviado no grupo das metas (" + registro.destinatarios +
+                                  "). Confira no Telegram.")
+    else:
+        messages.error(request, registro.erro)
+    return redirect(f"{reverse('alertas:painel')}#grupo-das-metas")

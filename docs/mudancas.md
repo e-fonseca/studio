@@ -7,6 +7,65 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.47.1 — 04/11/2026
+
+Pedido dele (04/11/2026, com o print de `C:\instalacao\pacote`): *"padronizar envio do pacote
+de atualização sempre no diretório /pacote / apartir desse caminho atualizar o script de
+atualização e higienizacao"*. Traz junto tudo da 1.47.0, que não chegou a ser instalada.
+
+- **Uma pasta só para atualizar**: o zip novo vai em `C:\instalacao\pacote`, e os dois
+  comandos rodam dela, `C:\instalacao\pacote\atualizar.ps1` e
+  `C:\instalacao\pacote\higienizar.ps1`. O atualizador acha o zip ali (e ainda em
+  `C:\instalacao`, o lugar de antes), guarda o zip em `historico` antes de trocar a versão e
+  esvazia a pasta em vez de apagá-la, porque o Windows não apaga pasta aberta num
+  PowerShell. Se a troca falhar, o zip volta para a pasta e o sistema fica como estava.
+- **O `higienizar.ps1` roda da pasta do pacote**: até aqui ele achava o sistema subindo uma
+  pasta a partir de onde estava, e da pasta do pacote procurava o Python em `C:\instalacao`
+  e saía calado. Agora, fora de `C:\cabana-sistema\scripts`, ele vai para
+  `C:\cabana-sistema`, e mostra na tela o que limpou.
+- A Ficha técnica, o `LEIA-ME.txt`, os avisos de erro da importação e a documentação mostram
+  os comandos novos (`higienizacao.md`). Os de antes continuam valendo.
+- **Só desta vez**: o atualizador que está no servidor, o da 1.46.0, ainda procura o zip em
+  `C:\instalacao`. Para instalar a 1.47.1, o zip vai em `C:\instalacao` e o comando é o de
+  antes; daí em diante, a pasta do pacote.
+
+## 1.47.0 — 04/11/2026
+
+Pedido dele (04/11/2026, com o print do Dashboard): *"usar esse formato de gráfico também em
+contas a pagar / em compra guiada, exibir todos os produtos de cada fornecedor, priorizar os
+produtos em falta E acabando e em seguida todos os demais. / enviar notificação de telegram
+meta batida feriado 12mil, sábado 12 mil reais e domingo 15 mil reais"*, no grupo METAS.
+
+- **Contas a pagar com os gráficos do Dashboard**, no alto da tela: **Contas pagas mês a mês**
+  (13 meses, a linha laranja é o mesmo mês do ano passado, e aqui pagar mais é vermelho), **O
+  que está em aberto** (atrasadas, vencem em até 7 dias, depois e sem data; o nome de cada
+  fatia abre a lista dela) e **Para onde vai o dinheiro** (o pago em 12 meses pela
+  classificação do SET). O mês que corre se compara com o mesmo pedaço do ano passado. São os
+  mesmos desenhos, do mesmo arquivo do Dashboard (`dashboard.md`).
+- **A importação lê o pago e o recebido em meses inteiros**: desde o dia 1º de 24 meses antes,
+  e não mais "corte menos 730 dias", que começava no meio de um mês e faria o primeiro mês do
+  gráfico comparar um mês cheio com dez dias. Até a primeira importação depois da
+  atualização, o primeiro mês aparece sem comparação.
+- **Compra guiada com todos os produtos do fornecedor**: a conferência mostra primeiro **Em
+  falta e acabando** (o que a conta pede, como antes) e logo depois **Os outros produtos** do
+  fornecedor, em zero: o que a conta pedia mas ficou fora da escolha, o que vendeu no ano (do
+  que mais faturou para o que menos), o parado e o que não vendeu, cada um dizendo por que
+  está ali. Escrever um número põe o produto no pedido; a busca acha pelo nome ou pelo código
+  (`compra-guiada.md`).
+- **Aviso de meta batida no grupo das metas, pelo Telegram**: quando o sábado, o domingo ou o
+  feriado bate a meta, o robô manda no grupo o vendido, a meta, o prêmio por pessoa e o
+  próximo degrau, e outro aviso se o prêmio subir. Sai depois da importação que traz o dia
+  (com o backup do SET feito à noite, o sábado chega no domingo de manhã). Quando a meta só
+  bateu por venda com desconto fora da regra sem aprovação, o aviso diz isso numa linha, sem o
+  nome de ninguém. Liga-se em **Alertas > Grupo das metas**: o robô precisa ser adicionado ao
+  grupo por alguém de lá, porque o link de convite não serve para robô
+  (`descontos-e-metas.md`, `alertas-por-email.md`).
+- **Meta do domingo de R$ 15.000** (era R$ 18.000). A atualização muda a regra da loja
+  sozinha, só se ela ainda estiver nos R$ 18.000, e deixa o antes e o depois na auditoria.
+  Sábado e feriado continuam R$ 12.000.
+- **O log da tarefa dos relatórios não cai mais com emoji** no nome de um grupo do Telegram:
+  o console do Windows não é UTF-8, e o erro vinha depois de a mensagem já ter saído.
+
 ## 1.46.0 — 02/11/2026
 
 Pedido dele (02/11/2026): as regras de pagamento que a gerência passa à equipe (*"À vista, no

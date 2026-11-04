@@ -2,7 +2,8 @@
 Rosca com a legenda ao lado, como os quadros "Status dos Hosts" do Grafana. O traço e o
 giro de cada fatia vêm prontos do Python, com ponto decimal: dentro de um style= o
 Django escreveria vírgula e o navegador ignoraria a linha inteira.
-`formato`: "contagem" (produtos), "reais" ou "fatia" (só a porcentagem).
+`formato`: "contagem" (produtos), "reais" ou "fatia" (só a porcentagem). Fatia com
+`endereco` vira link na legenda (a rosca das contas em aberto abre a lista dela).
 {% endcomment %}<div class="monitor-rosca">
   <div class="monitor-rosca-desenho">
     <svg viewBox="0 0 42 42" role="img" aria-label="{{ descricao }}">
@@ -18,7 +19,7 @@ Django escreveria vírgula e o navegador ignoraria a linha inteira.
     {% for f in rosca.fatias %}
     <li>
       <i style="background: var({{ f.cor }})" aria-hidden="true"></i>
-      <span class="monitor-legenda-nome">{{ f.nome }}</span>
+      <span class="monitor-legenda-nome">{% if f.endereco %}<a href="{{ f.endereco }}">{{ f.nome }}</a>{% else %}{{ f.nome }}{% endif %}</span>
       <span class="monitor-legenda-valor">{% if formato == "contagem" %}{{ f.quantos|contagem }} <small>({{ f.fatia }}%)</small>{% elif formato == "reais" %}{{ f.valor|reais }} <small>({{ f.fatia }}%)</small>{% else %}{{ f.fatia }}%{% endif %}</span>
     </li>
     {% endfor %}

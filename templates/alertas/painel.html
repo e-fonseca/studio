@@ -123,7 +123,7 @@ botão rola de lado no celular justamente onde ficam os botões.{% endcomment %}
 </section>
 {% endif %}
 
-{% if chats %}
+{% if chats and chats_para != "metas" %}
 <section class="cartao">
   <h2>Conversas que já falaram com o robô</h2>
   <p class="ajuda">Escolha para onde o aviso vai. Se a conversa certa não está aqui, mande
@@ -163,6 +163,104 @@ botão rola de lado no celular justamente onde ficam os botões.{% endcomment %}
   {% if telegram.pronta %}
   <form method="post" action="{% url 'alertas:testar_telegram' %}">{% csrf_token %}
     <button type="submit" class="botao secundario">Enviar aviso de teste</button>
+  </form>
+  {% endif %}
+</div>
+
+<h2 id="grupo-das-metas">Grupo das metas</h2>
+<p class="ajuda">Quando o sábado, o domingo ou um feriado bate a meta, o robô avisa no grupo
+   das metas: quanto o dia vendeu, a meta e o prêmio por pessoa. Um aviso por dia de meta, e
+   outro só se o prêmio subir de degrau. As metas são as da tela Regras e metas: sábado e
+   feriado <strong>{{ regra_das_metas.meta_sabado|reais }}</strong>, domingo
+   <strong>{{ regra_das_metas.meta_domingo|reais }}</strong>{% if perms.caixa.controlar_descontos %}
+   (<a href="{% url 'caixa:regras_de_desconto' %}">mudar as metas</a>){% endif %}.</p>
+<p class="ajuda">O aviso sai quando a importação traz as vendas do dia, na volta seguinte da
+   tarefa de hora em hora. Se o SET faz o backup só à noite, o sábado chega no domingo de
+   manhã, e o aviso também. Ele diz até que hora há venda na conta.</p>
+
+{% if faltas_metas %}
+<section class="cartao cartao-destaque">
+  <h2>Como ligar o aviso das metas</h2>
+  <p>Falta: <strong>{{ faltas_metas|join:", " }}</strong>.</p>
+  <ol>
+    {% if not telegram.tem_token %}
+    <li>Primeiro o robô: os dois primeiros passos do <strong>Aviso no Telegram</strong>, acima
+        (criar o robô no @BotFather e gravar o token). A conversa dos relatórios pode ficar
+        para depois.</li>
+    {% endif %}
+    <li>No Telegram, abra o grupo das metas, toque no nome do grupo e em
+        <strong>Adicionar membro</strong>, e procure o robô pelo nome de usuário dele (o que
+        termina em <em>bot</em>). O link de convite do grupo não serve: robô só entra quando
+        alguém do grupo o adiciona.</li>
+    <li>Volte aqui e clique em <strong>Descobrir o grupo</strong>, logo abaixo. Na linha do
+        grupo, clique em <strong>Usar para as metas</strong>. Se o grupo não aparecer, mande
+        no grupo uma mensagem marcando o robô (@ e o nome dele) e clique de novo.</li>
+    <li>Mande o teste e marque <strong>avisar no grupo das metas</strong>.</li>
+  </ol>
+  <p class="ajuda">Se o grupo só deixa os administradores escreverem, o robô precisa ser
+     administrador do grupo para conseguir mandar o aviso.</p>
+</section>
+{% elif not telegram.metas_ativo %}
+<section class="cartao cartao-destaque">
+  <h2>O grupo está escolhido, mas o aviso está desligado</h2>
+  <p>Os avisos iriam para <strong>{{ telegram.metas_para_quem }}</strong>. Mande o teste,
+     marque <strong>avisar no grupo das metas</strong> abaixo e salve.</p>
+</section>
+{% else %}
+<section class="cartao cartao-destaque">
+  <h2>Aviso das metas ligado</h2>
+  <p>A meta batida vai para <strong>{{ telegram.metas_para_quem }}</strong>.</p>
+  {% if ultimos_avisos_de_meta %}
+  <ul class="lista-avisos-de-meta">
+    {% for e in ultimos_avisos_de_meta %}
+    <li>{{ e.quando|date:"d/m \à\s H:i" }}: {{ e.resumo }}
+      {% if e.deu_certo %}<span class="etiqueta">entregue</span>{% else %}<span class="etiqueta etiqueta-atencao">não saiu</span> <small>{{ e.erro }}</small>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="ajuda">Nenhuma meta avisada ainda.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if chats and chats_para == "metas" %}
+<section class="cartao">
+  <h2>Conversas e grupos que o robô conhece</h2>
+  <p class="ajuda">Escolha o grupo das metas. Se ele não está aqui, ponha o robô no grupo,
+     mande no grupo uma mensagem marcando o robô e clique em descobrir de novo.</p>
+  <ul class="lista-chats">
+    {% for chat in chats %}
+    <li>
+      <span><strong>{{ chat.nome }}</strong> · {{ chat.id }}</span>
+      <form method="post" action="{% url 'alertas:usar_chat' %}">{% csrf_token %}
+        <input type="hidden" name="para" value="metas">
+        <input type="hidden" name="chat_id" value="{{ chat.id }}">
+        <input type="hidden" name="chat_nome" value="{{ chat.nome }}">
+        <button type="submit" class="botao secundario">Usar para as metas</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<form method="post" action="{% url 'alertas:configurar_metas' %}" class="formulario formulario-metas">
+  {% csrf_token %}
+  {% include "_form.html" with form=form_metas %}
+  <div class="acoes">
+    <button type="submit" class="botao">Salvar o grupo das metas</button>
+  </div>
+</form>
+<div class="acoes acoes-telegram">
+  {% if telegram.tem_token %}
+  <form method="post" action="{% url 'alertas:descobrir_chat' %}#grupo-das-metas">{% csrf_token %}
+    <input type="hidden" name="para" value="metas">
+    <button type="submit" class="botao secundario">Descobrir o grupo</button>
+  </form>
+  {% endif %}
+  {% if telegram.metas_pronta %}
+  <form method="post" action="{% url 'alertas:testar_metas' %}">{% csrf_token %}
+    <button type="submit" class="botao secundario">Enviar teste ao grupo das metas</button>
   </form>
   {% endif %}
 </div>
@@ -214,6 +312,11 @@ botão rola de lado no celular justamente onde ficam os botões.{% endcomment %}
     "seletor": ".formulario-telegram",
     "titulo": "O robô do Telegram",
     "texto": "O token vem do @BotFather, dentro do próprio Telegram, e é tratado como senha: gravado cifrado e nunca mostrado de volta. A conversa é descoberta pelo botão, depois de você mandar qualquer mensagem para o robô: ele não consegue escrever para quem nunca falou com ele primeiro."
+  },
+  {
+    "seletor": ".formulario-metas",
+    "titulo": "O grupo das metas",
+    "texto": "O mesmo robô avisa num grupo à parte quando o sábado, o domingo ou um feriado bate a meta, com o vendido e o prêmio por pessoa. O robô precisa estar no grupo: alguém do grupo o adiciona pelo nome de usuário dele, porque o link de convite não serve para robô. Depois, Descobrir o grupo e Usar para as metas."
   },
   {
     "seletor": ".cartoes-relatorio",

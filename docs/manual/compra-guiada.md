@@ -64,9 +64,14 @@ canto do cartão. No celular, o botão **Continuar** fica sempre no fim da tela.
 8. **Orçamento.** Até o que sobra no teto do mês (o recomendado), até um valor que você
    escreve, ou sem limite. Se passar, saem primeiro os que menos vendem. O que você escolheu
    à mão e as encomendas não saem.
-9. **Conferir e gerar.** A tabela com todos os produtos do pedido. Mude qualquer quantidade
-   (zero tira do pedido; Enter desce para a linha de baixo), escreva o recado ao fornecedor
-   (sai na folha) e:
+9. **Conferir e gerar.** Primeiro vem **Em falta e acabando**, a tabela com os produtos que
+   a conta pede. Mude qualquer quantidade (zero tira do pedido; Enter desce para a linha de
+   baixo). Logo depois vem **Os outros produtos** do fornecedor, todos os que o SET tem
+   dele, em zero: primeiro os que a conta pedia mas ficaram fora da sua escolha, depois os
+   que venderam no ano (do que mais vendeu para o que menos), por último os parados e os que
+   não venderam. Escreva a quantidade para pôr no pedido; com muitos produtos, **Procurar
+   nesta lista** acha pelo nome ou pelo código. Escreva o recado ao fornecedor (sai na
+   folha) e:
    - **Gerar o pedido** guarda o pedido em **Pedidos**, com a folha anexada;
    - **Salvar as mudanças** guarda e fica na conferência;
    - **Ver a folha em PDF** abre a folha como está salva (salve antes, se mudou algo).

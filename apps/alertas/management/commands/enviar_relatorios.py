@@ -13,6 +13,10 @@ o Telegram sai com o e-mail desligado e vice-versa, cada um tem o seu interrupto
 tela, e cada um fica devendo por conta própria (apps/alertas/agenda.py). O relatório é
 montado uma vez e serve aos dois: algumas contas passam por onze mil produtos.
 
+Desde a 1.47.0 a mesma volta manda também o aviso de meta batida no grupo das metas
+(apps/alertas/metas.py), que não tem hora: sai quando a importação traz o sábado, o
+domingo ou o feriado que bateu a meta. `--rotina metas` faz só ele.
+
 Sai com código 0 mesmo quando o e-mail falha: a tarefa agendada marcada como "com erro"
 no Windows não diz nada a ninguém, e quem precisa saber do erro é a tela de alertas,
 onde ele fica escrito em português. Só erro de uso (rotina que não existe) devolve
@@ -33,6 +37,7 @@ GRUPOS = {
     "todas": [r.value for r in DIARIAS + SEMANAIS],
 }
 DEVIDO = "devido"
+METAS = "metas"
 
 registrador = logging.getLogger(__name__)
 
@@ -44,7 +49,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--rotina", default=DEVIDO,
             help=f"{DEVIDO} (o que já passou da hora na tela), diaria, semanal, todas, "
-                 "ou o nome de um relatório: " + ", ".join(GRUPOS["todas"]),
+                 f"{METAS} (só o aviso de meta batida), ou o nome de um relatório: "
+                 + ", ".join(GRUPOS["todas"]),
         )
         parser.add_argument(
             "--forcar", action="store_true",
@@ -62,10 +68,10 @@ class Command(BaseCommand):
         vez por canal e depois dos interruptores: um nome inválido com os dois canais
         desligados sairia como "nada enviado", escondendo o erro de digitação.
         """
-        if rotina != DEVIDO and rotina not in GRUPOS and rotina not in GRUPOS["todas"]:
+        if rotina not in (DEVIDO, METAS) and rotina not in GRUPOS and rotina not in GRUPOS["todas"]:
             raise CommandError(
-                f"Não conheço a rotina '{rotina}'. Use {DEVIDO}, diaria, semanal, todas, ou um de: "
-                + ", ".join(GRUPOS["todas"])
+                f"Não conheço a rotina '{rotina}'. Use {DEVIDO}, diaria, semanal, todas, {METAS}, "
+                "ou um de: " + ", ".join(GRUPOS["todas"])
             )
 
     def _nomes(self, rotina, configuracao, canal=Canal.EMAIL):
@@ -118,10 +124,37 @@ class Command(BaseCommand):
         if gasto:
             self.stdout.write(f"Contas da abertura adiantadas em {gasto:.1f}s.")
 
+    def _avisar_as_metas(self):
+        """O aviso de meta batida no grupo das metas, se a tela o ligou.
+
+        Roda antes dos interruptores dos relatórios pelo mesmo motivo do backup: o grupo
+        das metas tem o seu, e os relatórios desligados não podem calar a meta batida.
+        Nada aqui levanta erro: a meta não pode deixar a loja sem os relatórios.
+        """
+        try:
+            from apps.alertas import metas  # noqa: PLC0415
+
+            no_telegram = ConfiguracaoDeTelegram.atual()
+            if not no_telegram.metas_ativo:
+                return
+            if no_telegram.metas_o_que_falta:
+                self.stdout.write("Falta preencher na tela de alertas, para o grupo das metas: "
+                                  + ", ".join(no_telegram.metas_o_que_falta) + ".")
+                return
+            for registro in metas.avisar(no_telegram, disparado_por="tarefa"):
+                self._contar("Telegram", "Grupo das metas", registro)
+        except Exception:  # noqa: BLE001 - ver o último parágrafo acima
+            registrador.exception("Não consegui mandar o aviso de meta batida")
+
     def handle(self, *args, rotina, forcar, mesmo_desligado, **opcoes):
         self._conferir(rotina)
+        if rotina == METAS:
+            self._avisar_as_metas()
+            return
         self._cuidar_do_backup()
         self._adiantar_as_contas_da_abertura()
+        if rotina == DEVIDO:
+            self._avisar_as_metas()
         configuracao = ConfiguracaoDeEmail.atual()
         no_telegram = ConfiguracaoDeTelegram.atual()
         por_email = configuracao.ativo or mesmo_desligado
@@ -169,8 +202,23 @@ class Command(BaseCommand):
     def _contar(self, canal, rotulo, registro):
         """Uma linha por tentativa, no texto que fica no log da tarefa agendada."""
         if registro.deu_certo:
-            self.stdout.write(f"{canal} · {rotulo}: enviado para {registro.destinatarios}. {registro.resumo}")
+            texto = f"{canal} · {rotulo}: enviado para {registro.destinatarios}. {registro.resumo}"
         elif registro.sem_noticia:
-            self.stdout.write(f"{canal} · {rotulo}: sem novidade hoje, não foi mandado. {registro.resumo}")
+            texto = f"{canal} · {rotulo}: sem novidade hoje, não foi mandado. {registro.resumo}"
         else:
-            self.stdout.write(f"{canal} · {rotulo}: não enviado. {registro.erro}")
+            texto = f"{canal} · {rotulo}: não enviado. {registro.erro}"
+        self.stdout.write(_cabe_no_console(texto, self.stdout))
+
+
+def _cabe_no_console(texto, saida):
+    """O texto com o que o console da tarefa não sabe escrever trocado por "?".
+
+    A tarefa do Windows lê a saída por um cano que não é UTF-8, e nome de grupo do Telegram
+    costuma ter emoji. Escrever o emoji ali levantava erro DEPOIS de o aviso já ter saído,
+    e a volta parava antes dos avisos seguintes.
+    """
+    codificacao = getattr(getattr(saida, "_out", saida), "encoding", None) or "utf-8"
+    try:
+        return texto.encode(codificacao, "replace").decode(codificacao)
+    except LookupError:
+        return texto

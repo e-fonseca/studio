@@ -21,6 +21,50 @@
 </section>
 {% endif %}
 
+{% if quadros.tem %}
+{% comment %}Os gráficos no formato do Dashboard, pedido do Edson em 04/11/2026 com o print
+dele: "usar esse formato de gráfico também em contas a pagar". O desenho é o do Dashboard
+(templates/painel/_monitor_*.html) e as contas estão em apps/financeiro/quadros.py. É
+sempre a loja toda: a busca e o filtro mudam só a lista de baixo.{% endcomment %}
+<div class="monitor monitor-embutido">
+  <div class="monitor-grade">
+    {% if quadros.linha.tem %}
+    <section class="monitor-quadro monitor-meses" id="pagas-mes-a-mes">
+      <div class="monitor-titulo-linha">
+        <h2 class="monitor-titulo">Contas pagas mês a mês</h2>
+        {% include "painel/_monitor_info.html" with nome="as contas pagas mês a mês" texto="Tudo o que a loja pagou em cada mês, pelo lançamento do SET: fornecedor, aluguel, folha e o resto. A linha verde é este ano e a laranja é o mesmo mês do ano passado. Aqui a cor da porcentagem é a do caixa: vermelho é mês em que a loja pagou mais do que no ano anterior, verde é mês em que pagou menos. O último mês ainda está correndo: o trecho dele é tracejado e a comparação é com o mesmo pedaço do ano passado. O valor de cada mês aparece com o mouse em cima e na tabela logo abaixo do gráfico." %}
+      </div>
+      {% include "painel/_monitor_linha.html" with g=quadros.linha meses=quadros.meses o_que="Contas pagas" %}
+    </section>
+    {% endif %}
+
+    <div class="monitor-coluna">
+      {% if quadros.em_aberto.tem %}
+      <section class="monitor-quadro">
+        <div class="monitor-titulo-linha">
+          <h2 class="monitor-titulo">O que está em aberto</h2>
+          {% include "painel/_monitor_info.html" with nome="o que está em aberto" texto="As contas a pagar que estão em aberto no SET, nas mesmas fatias dos filtros da lista: o que já venceu, o que vence nesta semana, o que vence depois e o que está sem data no SET. O número do meio é quanto do total já está atrasado. Clique no nome de uma fatia para ver as contas dela. Os pagamentos previstos que a loja registrou aqui ficam de fora: eles estão em Quando o dinheiro sai." %}
+        </div>
+        <p class="monitor-sub">{{ quadros.total_em_aberto|reais }} em aberto no SET</p>
+        {% include "painel/_monitor_rosca.html" with rosca=quadros.em_aberto formato="reais" descricao="Contas em aberto no SET, das atrasadas às que vencem depois de uma semana" %}
+      </section>
+      {% endif %}
+
+      {% if quadros.destino.tem %}
+      <section class="monitor-quadro">
+        <div class="monitor-titulo-linha">
+          <h2 class="monitor-titulo">Para onde vai o dinheiro</h2>
+          {% include "painel/_monitor_info.html" with nome="para onde vai o dinheiro" texto="O que a loja pagou nos últimos 12 meses, pela classificação do plano de contas do SET. As oito maiores aparecem pelo nome; as outras somam numa fatia só. A lista inteira, com os valores, está em Ver para onde o dinheiro vai, no alto desta tela." %}
+        </div>
+        <p class="monitor-sub">pago em 12 meses, pela classificação do SET</p>
+        {% include "painel/_monitor_rosca.html" with rosca=quadros.destino formato="fatia" descricao="O que a loja pagou em 12 meses, por classificação do plano de contas do SET" %}
+      </section>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <section class="cartao">
   <h2>Quando o dinheiro sai</h2>
   <p>O que já está lançado no SET, mais os pagamentos previstos que a loja registrou aqui.</p>

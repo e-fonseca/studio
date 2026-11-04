@@ -35,6 +35,9 @@ class Rotina(models.TextChoices):
     # Vigia do backup no GitHub (1.33.0). Diária, e calada quando está tudo bem: ela
     # existe para a cópia fora do servidor não parar em silêncio.
     BACKUP = "backup", "Cópia do programa no GitHub (todo dia)"
+    # O aviso do grupo das metas (1.47.0). Não tem hora: sai quando a importação traz o
+    # sábado, o domingo ou o feriado que bateu a meta (apps/alertas/metas.py).
+    METAS = "metas", "Meta batida (grupo das metas)"
     TESTE = "teste", "Teste de configuração"
 
 
@@ -201,6 +204,12 @@ class EnvioDeRelatorio(models.Model):
         "quem mandou", max_length=60, blank=True,
         help_text="A tarefa agendada, ou o usuário que apertou o botão.",
     )
+    # Só no aviso de meta batida (1.47.0): de que dia ele fala e o prêmio que ele deu.
+    # É com eles que o sistema sabe que aquele dia já foi avisado, e se o prêmio subiu
+    # de degrau depois do aviso, o que pede um aviso novo.
+    dia_da_meta = models.DateField("dia da meta avisada", null=True, blank=True)
+    premio_avisado = models.DecimalField(
+        "prêmio por pessoa no aviso", max_digits=9, decimal_places=2, null=True, blank=True)
 
     class Meta:
         ordering = ["-quando", "-id"]
@@ -256,6 +265,20 @@ class ConfiguracaoDeTelegram(models.Model):
         "nome da conversa", max_length=120, blank=True, default="",
         help_text="Só para a tela mostrar para quem está indo o aviso.",
     )
+    # O grupo das metas (1.47.0, pedido do Edson em 04/11/2026). É outro destino com o
+    # mesmo robô: os relatórios vão para a conversa de cima, a meta batida vai para o
+    # grupo das metas. Os dois interruptores são independentes, como o e-mail e o Telegram.
+    metas_ativo = models.BooleanField(
+        "avisar no grupo das metas quando a meta bater", default=False,
+        help_text="Desligado, o grupo das metas não recebe nada. Os relatórios não mudam.",
+    )
+    metas_chat_id = models.CharField(
+        "grupo das metas", max_length=40, blank=True, default="",
+        help_text="O número do grupo. Use o botão \"Descobrir o grupo\" depois de pôr o "
+                  "robô no grupo.",
+    )
+    metas_chat_nome = models.CharField("nome do grupo das metas", max_length=120, blank=True,
+                                       default="")
     atualizado_em = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -301,3 +324,22 @@ class ConfiguracaoDeTelegram(models.Model):
         if self.chat_nome and self.chat_id:
             return f"{self.chat_nome} ({self.chat_id})"
         return self.chat_id or ""
+
+    @property
+    def metas_pronta(self):
+        return bool(self.tem_token and self.metas_chat_id)
+
+    @property
+    def metas_o_que_falta(self):
+        faltas = []
+        if not self.tem_token:
+            faltas.append("o token do robô")
+        if not self.metas_chat_id:
+            faltas.append("o grupo das metas")
+        return faltas
+
+    @property
+    def metas_para_quem(self):
+        if self.metas_chat_nome and self.metas_chat_id:
+            return f"{self.metas_chat_nome} ({self.metas_chat_id})"
+        return self.metas_chat_id or ""

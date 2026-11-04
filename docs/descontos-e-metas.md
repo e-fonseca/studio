@@ -34,7 +34,7 @@ nasce com o que ele mandou:
 | Folga | R$ 1,00 | Para o arredondamento: R$ 107,50 fechado em R$ 100,00 no Pix é 6,98% e não é passar da regra |
 | Quem autoriza | os três nomes da mensagem dele | Separados por vírgula ou "ou"; viram as opções do campo "Quem aprovou" |
 | Meta do sábado e do feriado | R$ 12.000 | |
-| Meta do domingo | R$ 18.000 | Feriado que cai no domingo fica com a do domingo |
+| Meta do domingo | R$ 15.000 | Era R$ 18.000 até 04/11/2026, quando ele baixou (1.47.0). Feriado que cai no domingo fica com a do domingo |
 | Prêmio na meta | R$ 30 por pessoa | |
 | A mais | R$ 10 por pessoa a cada R$ 1.000 acima da meta | Vendeu R$ 13.500 no sábado: R$ 30 + R$ 10 = R$ 40 cada |
 | Outros feriados | vazio | Um por linha: `20/01` vale todo ano, `16/02/2027` só aquele dia |
@@ -110,8 +110,9 @@ recebimento aparece como "sem nome no caixa".
 
 ## As metas
 
-Sábado e feriado, R$ 12.000; domingo, R$ 18.000. Batida, cada pessoa que trabalhou no dia
-ganha R$ 30, e mais R$ 10 a cada R$ 1.000 inteiros acima da meta. O SET não sabe quem
+Sábado e feriado, R$ 12.000; domingo, R$ 15.000 (R$ 18.000 até 04/11/2026: ele baixou, e a
+atualização da 1.47.0 muda a regra da loja sozinha, só se ela ainda estiver nos R$ 18.000, com o
+antes e o depois na auditoria). Batida, cada pessoa que trabalhou no dia ganha R$ 30, e mais R$ 10 a cada R$ 1.000 inteiros acima da meta. O SET não sabe quem
 trabalhou (freela não tem usuário), então o prêmio sai **por pessoa**, e a tela mostra os
 nomes de quem abriu caixa ou passou venda naquele dia.
 
@@ -123,8 +124,8 @@ feriados". A tela de regras mostra a lista do ano.
 
 **O que liga as duas coisas, e é a razão do pedido**: o dia que só bateu a meta, ou só chegou
 naquele prêmio, por causa de venda fora da regra. A conta tira do dia as vendas fora da
-regra que ninguém aprovou e diz como ele ficaria. Em agosto de 2026, as **três** metas
-batidas dependeram disso: num sábado a meta não teria sido batida (R$ 12.758,50, e R$
+regra que ninguém aprovou e diz como ele ficaria. Em agosto de 2026, com a meta do domingo de
+então (R$ 18.000), as **três** metas batidas dependeram disso: num sábado a meta não teria sido batida (R$ 12.758,50, e R$
 11.784,00 sem elas) e nos outros dois o prêmio teria sido R$ 30 em vez de R$ 60 e de R$ 40.
 
 ## A aprovação do grupo
@@ -146,6 +147,35 @@ O e-mail diário ganhou dois blocos, quando houver o que dizer:
   meta dependeu de venda fora da regra.
 - **Descontos fora da regra**: venda, quem recebeu, o motivo e quanto passou, com o link da
   tela. Dia sem venda fora da regra não ganha o bloco.
+
+## O aviso no grupo das metas (desde a 1.47.0)
+
+Pedido dele (04/11/2026): *"enviar notificação de telegram meta batida feriado 12mil, sábado 12
+mil reais e domingo 15 mil reais"*, no grupo METAS do Telegram. O robô é o mesmo dos
+relatórios (tela Alertas); o grupo é outro destino, com interruptor próprio, e se liga em
+Alertas > Grupo das metas. A conta é a desta tela (`descontos.do_dia`), nunca outra.
+
+- **Quando sai**: na volta da tarefa de hora em hora (`enviar_relatorios`) depois da
+  importação que trouxe o dia. O sistema só sabe do sábado quando o backup do SET traz o
+  sábado: com backup à noite, o aviso do sábado chega no domingo de manhã. A mensagem diz
+  até que hora há venda na conta ("vendas até 17:56").
+- **Quantas vezes**: uma por dia de meta e, se uma importação seguinte trouxer o prêmio um
+  degrau acima, outra ("O prêmio subiu!"). O mesmo número não se repete. Só os dias de meta
+  dos últimos três dias entram: ligar o aviso não despeja no grupo os fins de semana antigos.
+- **O que diz**: o dia, o vendido, a meta, o prêmio por pessoa e o próximo degrau. Quando a
+  meta só bateu (ou o prêmio só subiu) por venda fora da regra sem aprovação anotada, uma
+  linha diz quantas vendas, quanto, e como o dia ficaria sem elas. **Nenhum nome**: o grupo
+  é de muita gente, e quem passou cada venda está nesta tela.
+- **Se falha**: três tentativas por dia de meta em cada dia, o erro em português na tela
+  Alertas, e a tarefa segue com os relatórios. Nome de grupo com emoji não derruba mais o
+  log da tarefa (o console do Windows não é UTF-8).
+- **O robô no grupo**: o link de convite não serve para robô. Alguém do grupo o adiciona pelo
+  nome de usuário dele; depois, em Alertas, "Descobrir o grupo" e "Usar para as metas". Grupo
+  em que só administrador escreve pede o robô como administrador.
+
+Fica em `EnvioDeRelatorio` com a rotina `metas`, o dia da meta e o prêmio avisado (migração
+`alertas.0006`), que é como o sistema sabe o que já saiu. Rodar só o aviso, no servidor:
+`manage.py enviar_relatorios --rotina metas`.
 
 ## O que o sistema não faz
 
@@ -173,7 +203,10 @@ desconto do fechamento até a primeira importação depois da atualização.
 - `apps/caixa/feriados.py`: os feriados e a Páscoa.
 - `apps/caixa/forms.py`: as regras (número com vírgula: `12.000`, `12.000,00` e `7,5`) e a
   aprovação.
-- `apps/caixa/models.py`: `RegraDeDesconto` e `DescontoAprovado`; migração `caixa.0002`.
+- `apps/caixa/models.py`: `RegraDeDesconto` e `DescontoAprovado`; migração `caixa.0002`, e a
+  `caixa.0003`, que baixa a meta do domingo para R$ 15.000.
+- `apps/alertas/metas.py`: o aviso no grupo das metas (1.47.0), com os testes em
+  `apps/alertas/tests/test_metas.py`.
 - `apps/importacao/models.py`: os campos novos da venda e do item; migração `importacao.0014`.
 - `templates/caixa/descontos.html` e `templates/caixa/regras_de_desconto.html`.
 - Testes: `apps/caixa/tests/test_descontos.py`, e os novos de

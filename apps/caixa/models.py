@@ -151,8 +151,8 @@ class RegraDeDesconto(models.Model):
     no dinheiro, 7% de desconto; no crédito, até 3x sem desconto; "qualquer condição
     diferente precisa de aprovação no grupo antes de ser confirmada ao cliente", e quem
     autoriza é Miranda, Henriett ou Edson. A meta do sábado e do feriado é R$ 12.000, a do
-    domingo R$ 18.000; batida, cada funcionário que trabalhou no dia ganha R$ 30, e mais
-    R$ 10 a cada R$ 1.000 acima dela.
+    domingo R$ 15.000 (era R$ 18.000 até 04/11/2026, quando ele baixou, na 1.47.0); batida,
+    cada funcionário que trabalhou no dia ganha R$ 30, e mais R$ 10 a cada R$ 1.000 acima.
 
     Fica no banco, e não no código, porque é a gerência que muda: a porcentagem, a meta e
     o prêmio mudam com a estação, e quem muda não pode depender de programador. É uma
@@ -179,7 +179,7 @@ class RegraDeDesconto(models.Model):
     meta_sabado = models.DecimalField(
         "meta do sábado e do feriado (R$)", max_digits=12, decimal_places=2, default=Decimal("12000"))
     meta_domingo = models.DecimalField(
-        "meta do domingo (R$)", max_digits=12, decimal_places=2, default=Decimal("18000"))
+        "meta do domingo (R$)", max_digits=12, decimal_places=2, default=Decimal("15000"))
     premio = models.DecimalField(
         "prêmio de quem trabalhou, meta batida (R$)", max_digits=9, decimal_places=2,
         default=Decimal("30"))

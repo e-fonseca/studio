@@ -239,10 +239,21 @@ class Mes:
     # Mês que ainda não terminou: o do corte dos dados, quase sempre.
     parcial: bool = False
     dia_parcial: int | None = None
+    # Faturamento que sobe é bom; conta paga que sobe é ruim. O mesmo desenho serve às
+    # duas telas (Contas a pagar, 1.47.0), e só a cor da porcentagem troca de lado.
+    mais_e_bom: bool = True
 
     @property
     def variacao(self):
         return _variacao(self.valor, self.valor_ano_passado)
+
+    @property
+    def sentido(self):
+        """A cor da porcentagem embaixo do mês: "bom", "ruim" ou "neutro"."""
+        variacao = self.variacao
+        if variacao is None or variacao == 0:
+            return "neutro"
+        return "bom" if (variacao > 0) == self.mais_e_bom else "ruim"
 
     @property
     def ate_o_dia(self):
@@ -263,6 +274,9 @@ class Fatia:
     curto: str = ""
     complemento: str = ""
     quantos: int = 0
+    # Para onde o nome da fatia leva, quando leva: a rosca das contas em aberto abre a
+    # lista daquela fatia (1.47.0). Vazio, a legenda é só texto, como no Dashboard.
+    endereco: str = ""
 
 
 @dataclass
@@ -349,7 +363,7 @@ _FOLGA_SEMPRE = 5.5
 _FOLGA_NO_ALTO = 2.8
 
 
-def _marcas(topo, passo):
+def _marcas(topo, passo, faixas=FAIXAS_DO_FATURAMENTO):
     """As linhas de grade: as redondas do passo e as faixas pedidas, de baixo para cima.
 
     Quando dois rótulos ficariam um em cima do outro, ganha a faixa que o Edson pediu,
@@ -361,7 +375,7 @@ def _marcas(topo, passo):
     while valor <= topo + 0.001:
         valores[round(valor, 2)] = 1 if valor else 0
         valor += passo
-    for faixa in FAIXAS_DO_FATURAMENTO:
+    for faixa in faixas:
         if faixa < topo:
             valores[float(faixa)] = 2
 
@@ -412,7 +426,13 @@ def _reais_curto(valor):
     return f"R$ {int(valor)}"
 
 
-def _grafico_de_linha(meses):
+def _grafico_de_linha(meses, faixas=FAIXAS_DO_FATURAMENTO):
+    """A linha do tempo de qualquer valor mês a mês, com o mesmo mês do ano passado.
+
+    `faixas` são as linhas de grade pedidas além das redondas. Contas a pagar usa as
+    mesmas do faturamento: a loja paga e vende na mesma escala de mês, e o Edson pediu o
+    mesmo formato de gráfico (04/11/2026).
+    """
     if len(meses) < 2:
         return GraficoDeLinha()
     maior = max(max(m.valor, m.valor_ano_passado or ZERO) for m in meses)
@@ -447,7 +467,14 @@ def _grafico_de_linha(meses):
     antes = " ".join("M" + " L".join(trecho) for trecho in trechos if len(trecho) > 1)
 
     return GraficoDeLinha(agora=agora, agora_area=area, parcial=parcial, antes=antes,
-                          marcas=_marcas(topo, passo), colunas=quantos)
+                          marcas=_marcas(topo, passo, faixas), colunas=quantos)
+
+
+# Os desenhos do Dashboard servem a outras telas no mesmo formato (1.47.0: Contas a
+# pagar). Os nomes com sublinhado continuam sendo os de dentro deste arquivo e dos testes.
+grafico_de_linha = _grafico_de_linha
+fatiar = _fatiar
+porcento = _porcento
 
 
 @dataclass

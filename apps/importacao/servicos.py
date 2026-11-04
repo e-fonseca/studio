@@ -45,6 +45,7 @@ ROTULOS_DETALHE = {
     "vendas_mes": "meses com venda apurados",
     "bytes_fora_da_tabela_de_caracteres": "caracteres do SET fora da tabela (descartados)",
     "lancamentos_financeiros": "lançamentos do financeiro lidos",
+    "financeiro_desde": "pago e recebido lidos do SET desde",
     "contas_a_pagar_em_aberto": "contas a pagar em aberto",
     "contas_a_receber_em_aberto": "contas a receber em aberto",
     "clientes_cadastrados": "clientes cadastrados (sem o cliente do balcão)",

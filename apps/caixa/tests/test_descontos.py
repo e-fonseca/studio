@@ -2,7 +2,8 @@
 
 Pedido do Edson em 02/11/2026, com as regras que a gerência passa à equipe: Pix e dinheiro
 com até 7%, crédito em até 3x sem desconto, o resto só com aprovação do grupo; meta de
-R$ 12.000 no sábado e no feriado e de R$ 18.000 no domingo, com R$ 30 por pessoa e R$ 10
+R$ 12.000 no sábado e no feriado e de R$ 18.000 no domingo (R$ 15.000 desde 04/11/2026,
+1.47.0), com R$ 30 por pessoa e R$ 10
 a cada R$ 1.000 acima. "A ideia é controlar os descontos para que os funcionários não
 deem desconto sem parâmetros só objetivando a premiação."
 
@@ -308,11 +309,13 @@ class MetaTest(ComDados):
         self.assertEqual(tela.sem_aprovacao, [])
 
     def test_domingo_tem_a_meta_do_domingo_e_dia_de_semana_nao_tem_meta(self):
-        self.venda(DOMINGO, "18500")
+        self.venda(DOMINGO, "15500")
         self.venda(SEGUNDA, "30000")
         tela = descontos.montar(self.importacao)
         self.assertEqual([dia.dia for dia in tela.metas], [DOMINGO])
-        self.assertEqual(tela.metas[0].meta, Decimal("18000"))
+        # R$ 15 mil desde 04/11/2026 (1.47.0); era R$ 18 mil.
+        self.assertEqual(tela.metas[0].meta, Decimal("15000"))
+        self.assertEqual(tela.metas[0].premio, Decimal("30"))
 
     def test_quem_trabalhou_vem_do_caixa_e_de_quem_recebeu(self):
         self.venda(SABADO, "100", quem="CAIXA TESTE")
@@ -438,7 +441,7 @@ class TelaTest(ComDados):
         dados = {
             "desconto_a_vista": "8,5", "desconto_no_debito": "0", "desconto_no_credito": "0",
             "parcelas_no_credito": "3", "folga": "1,00", "quem_autoriza": "Miranda, Henriett ou Edson",
-            "meta_sabado": "12.000", "meta_domingo": "18.000,00", "premio": "30", "premio_a_mais": "10",
+            "meta_sabado": "12.000", "meta_domingo": "15.000,00", "premio": "30", "premio_a_mais": "10",
             "passo": "1.000", "outros_feriados": "16/02/2027 Carnaval",
         }
         resposta = self.client.post(reverse("caixa:regras_de_desconto"), dados)
@@ -457,7 +460,7 @@ class TelaTest(ComDados):
         pagina = self.client.post(reverse("caixa:regras_de_desconto"), {
             "desconto_a_vista": "150", "desconto_no_debito": "0", "desconto_no_credito": "0",
             "parcelas_no_credito": "3", "folga": "1", "quem_autoriza": "Edson",
-            "meta_sabado": "12000", "meta_domingo": "18000", "premio": "30", "premio_a_mais": "10",
+            "meta_sabado": "12000", "meta_domingo": "15000", "premio": "30", "premio_a_mais": "10",
             "passo": "1000", "outros_feriados": "31/02 dia que não existe",
         })
         self.assertEqual(pagina.status_code, 200)

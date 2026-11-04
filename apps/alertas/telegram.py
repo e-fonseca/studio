@@ -62,6 +62,17 @@ TRADUCOES = (
     ("not enough rights",
      "O robô está no grupo mas não tem permissão para escrever nele. Dê permissão de "
      "enviar mensagem ao robô nas configurações do grupo."),
+    # O grupo comum vira supergrupo quando alguém muda certas configurações dele, e o
+    # número muda junto; o número antigo passa a dar este erro para sempre.
+    ("upgraded to a supergroup",
+     "O grupo mudou de número no Telegram (virou supergrupo). Use \"Descobrir a conversa\" "
+     "aqui na tela e escolha o grupo de novo."),
+    ("bot was kicked",
+     "O robô foi tirado do grupo. Ponha o robô de volta no grupo pelo Telegram (Adicionar "
+     "membro) e mande o teste de novo."),
+    ("bot is not a member",
+     "O robô não está nesse grupo. Ponha o robô no grupo pelo Telegram (Adicionar membro) e "
+     "use \"Descobrir a conversa\" aqui na tela."),
     ("name or service not known",
      "O servidor da loja não conseguiu resolver api.telegram.org. É internet do servidor "
      "ou DNS; o e-mail usa outro caminho e pode continuar funcionando."),
@@ -74,7 +85,8 @@ TRADUCOES = (
 )
 
 
-def _explicar(erro):
+def explicar(erro):
+    """O erro do Telegram em frase de loja, com a resposta original no fim."""
     texto = str(erro)
     achatado = texto.lower()
     for pedaco, explicacao in TRADUCOES:
@@ -119,6 +131,19 @@ def _cortar(texto):
     if len(texto) <= MAXIMO:
         return texto
     return texto[:MAXIMO].rstrip() + "\n\n[…] O relatório inteiro está no sistema."
+
+
+def mandar_texto(token, chat_id, texto):
+    """Manda um texto pronto a uma conversa. Levanta ErroDoTelegram se não deu.
+
+    Sem formatação e sem prévia de link, pelos motivos do alto deste arquivo. É o que o
+    relatório e o aviso das metas (apps/alertas/metas.py) usam para sair.
+    """
+    return _pedir(token, "sendMessage", {
+        "chat_id": chat_id,
+        "text": _cortar(texto),
+        "disable_web_page_preview": "true",
+    })
 
 
 def texto_do_relatorio(relatorio, configuracao_de_email=None):
@@ -169,13 +194,9 @@ def enviar(relatorio, configuracao=None, disparado_por=""):
         registro.save()
         return registro
     try:
-        _pedir(configuracao.token, "sendMessage", {
-            "chat_id": configuracao.chat_id,
-            "text": texto_do_relatorio(relatorio),
-            "disable_web_page_preview": "true",
-        })
+        mandar_texto(configuracao.token, configuracao.chat_id, texto_do_relatorio(relatorio))
     except ErroDoTelegram as erro:
-        registro.erro = _explicar(erro)
+        registro.erro = explicar(erro)
     else:
         registro.deu_certo = True
     registro.save()
@@ -227,7 +248,7 @@ def descobrir_chats(configuracao=None):
     try:
         atualizacoes = _pedir(configuracao.token, "getUpdates", {"limit": 50}) or []
     except ErroDoTelegram as erro:
-        return [], _explicar(erro)
+        return [], explicar(erro)
 
     achados, vistos = [], set()
     for atualizacao in reversed(atualizacoes):

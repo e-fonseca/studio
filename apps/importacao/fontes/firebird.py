@@ -32,9 +32,13 @@ PRAZO_MAXIMO_PLAUSIVEL = 180  # acima disso é erro de digitação na data de en
 # vendeu"); entra como mercadoria a caminho, que reduz o que ainda falta comprar.
 SITUACAO_PENDENTE = "Pendente"
 # Quanto do financeiro do SET entra na foto. Tudo o que está em aberto entra sempre,
-# porque é o que ainda mexe no caixa; do que já foi pago ou recebido vale a janela
-# abaixo, que é o bastante para comparar mês a mês sem guardar dez anos de histórico.
-JANELA_FINANCEIRO_DIAS = 730
+# porque é o que ainda mexe no caixa; do que já foi pago ou recebido valem os 24 meses
+# INTEIROS antes do mês do corte, a partir do dia 1º (`inicio_do_financeiro`). Até a
+# 1.46.0 eram 730 dias contados do corte, e o mês mais antigo entrava pela metade: o
+# gráfico "Contas pagas mês a mês" de Contas a pagar (1.47.0) compara cada um dos seus 13
+# meses com o mesmo mês do ano passado, e o primeiro comparava um mês inteiro com dez dias.
+# É a mesma lição da venda por mês, logo abaixo.
+JANELA_FINANCEIRO_MESES = 24
 # Quantos MESES de venda por produto e por mês entram na foto, e a leitura começa sempre
 # no dia 1º do mês mais antigo. Duas coisas moram nesta linha:
 #
@@ -288,6 +292,12 @@ def _texto(valor, limite=200):
     return (valor or "").strip()[:limite]
 
 
+def inicio_do_financeiro(corte):
+    """O primeiro dia do que já foi pago ou recebido que entra na foto: o dia 1º de 24
+    meses antes do mês do corte. Corte em 20/09/2026 lê desde 01/09/2024."""
+    return _primeiro_dia_de_meses_atras(corte, JANELA_FINANCEIRO_MESES)
+
+
 def _ler_financeiro(linhas, corte):
     """Contas a pagar e a receber do SET, uma linha por parcela.
 
@@ -296,7 +306,7 @@ def _ler_financeiro(linhas, corte):
     contas dele (GRUPO traz "1.01.05 - Aluguel"), então a classificação vem pronta: o
     sistema não inventa categoria nenhuma.
     """
-    desde = corte - timedelta(days=JANELA_FINANCEIRO_DIAS)
+    desde = inicio_do_financeiro(corte)
     lancamentos = []
     for tipo, tabela, chave, coluna_parte, coluna_origem in (
         ("pagar", "contaspag", "idcontapag", "fornecedor", "idcompra"),
@@ -309,7 +319,7 @@ def _ler_financeiro(linhas, corte):
                    c.{coluna_parte}, c.{coluna_origem}, p.tipo
             from {tabela} c
             left join planodeconta p on p.idplanoconta = c.idplanoconta
-            where c.empresa = ? and (c.datapag is null or c.datapag > ?)
+            where c.empresa = ? and (c.datapag is null or c.datapag >= ?)
         """, (EMPRESA, desde)):
             lancamentos.append({
                 "tipo": tipo,
@@ -987,6 +997,9 @@ def extrair(copia, biblioteca_cliente=None, progresso=_nada) -> Extracao:
                 "contas_a_pagar_em_aberto": sum(1 for l in lancamentos if l["tipo"] == "pagar" and not l["pagamento"]),
                 "contas_a_receber_em_aberto": sum(1 for l in lancamentos if l["tipo"] == "receber" and not l["pagamento"]),
                 "lancamentos_financeiros": len(lancamentos),
+                # De quando em diante o pago está inteiro na foto. Contas a pagar só compara
+                # com o ano passado o mês que começa depois deste dia (apps/financeiro/quadros.py).
+                "financeiro_desde": inicio_do_financeiro(corte).isoformat(),
                 "caixas_importados": len(caixas),
                 "caixas_abertos": sum(1 for c in caixas if c["situacao"] == "aberto"),
                 "fichas_de_fornecedor": len(fichas_fornecedor),

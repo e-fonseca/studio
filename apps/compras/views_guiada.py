@@ -313,6 +313,11 @@ def _contexto(request, compra, proposta, lista, passo, estado, importacao, erro,
         contexto["vai_esperar"] = contexto["pode_gerar"] and not pedidos.aprova(request.user)
         contexto["recado"] = respostas.get("recado", "")
         contexto["tempo"] = guiada.lista_de_compra.duracao(proposta.tempo_ate_chegar)
+        # Primeiro o que a conta pede (em falta e acabando), depois todos os outros
+        # produtos do fornecedor, pedido do Edson em 04/11/2026. O posto à mão fica na
+        # segunda tabela, no lugar dele (guiada.os_demais).
+        contexto["pedidas"] = [linha for linha in proposta.linhas if not linha.a_mao]
+        contexto["demais"] = guiada.os_demais(proposta, importacao)
     if "marcado" in contexto:
         contexto["marcado"] = str(contexto["marcado"])
         campo = CAMPO_DA_ESCOLHA.get(passo[:len(guiada.PRODUTO)] if passo.startswith(guiada.PRODUTO)

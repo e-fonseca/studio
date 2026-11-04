@@ -66,22 +66,23 @@
 
 <h2>Como o sistema é atualizado</h2>
 <p>Toda entrega é um pacote completo, um arquivo <code>.zip</code> único. Quem atualiza
-   salva esse arquivo em <code>C:\instalacao</code> e roda, no PowerShell como
-   administrador:</p>
-<p><code>powershell -ExecutionPolicy Bypass -File C:\instalacao\atualizar.ps1</code></p>
+   salva esse arquivo em <code>C:\instalacao\pacote</code> e roda, da mesma pasta, no
+   PowerShell como administrador:</p>
+<p><code>powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\atualizar.ps1</code></p>
 <p>O script faz backup do banco, troca os arquivos do programa, aplica as mudanças de
    banco, confere se elas entraram, refaz as permissões dos perfis e roda uma importação
    no fim. Ele também limpa a pasta <code>C:\instalacao</code>: guarda os três últimos
    pacotes, logs de 90 dias e as duas versões anteriores do sistema. Não existe "pacote de
    correção" avulso: se o número da versão no topo da tela não mudou, a atualização não
-   entrou.</p>
+   entrou. Desde a 1.47.1 é uma pasta só: o zip chega em <code>C:\instalacao\pacote</code>,
+   e os dois comandos, o de atualizar e o de higienizar, rodam dela.</p>
 
 <h2>Como o sistema é higienizado</h2>
 <p>Todo dia às 03:40 o sistema limpa sozinho o que acumulou: a cópia do banco do SET que a
    importação já leu, as fotos de dados além das dez últimas sincronizações, sessões
    vencidas, registros de acesso e de envio com mais de 90 dias e arquivo de anexo sem
    dono. Para ver o que há para limpar, sem limpar nada:</p>
-<p><code>powershell -ExecutionPolicy Bypass -File C:\cabana-sistema\scripts\higienizar.ps1 -Conferir</code></p>
+<p><code>powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\higienizar.ps1 -Conferir</code></p>
 <p>O mesmo comando sem o <code>-Conferir</code> limpa na hora. O que uma pessoa digitou
    &mdash; ficha de fornecedor, pagamento previsto, inventário, extrato conferido,
    auditoria &mdash; nunca entra nessa limpeza, e nada nela encosta no SET.</p>
@@ -92,11 +93,11 @@ outro lugar da página é o que ele não quer fazer.{% endcomment %}
 <h3>Os comandos do servidor, na ordem em que se usam</h3>
 <dl class="lista-dados">
   <dt>Atualizar o sistema</dt>
-  <dd><code>powershell -ExecutionPolicy Bypass -File C:\instalacao\atualizar.ps1</code></dd>
+  <dd><code>powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\atualizar.ps1</code></dd>
   <dt>Conferir a limpeza, sem limpar</dt>
-  <dd><code>powershell -ExecutionPolicy Bypass -File C:\cabana-sistema\scripts\higienizar.ps1 -Conferir</code></dd>
+  <dd><code>powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\higienizar.ps1 -Conferir</code></dd>
   <dt>Higienizar agora</dt>
-  <dd><code>powershell -ExecutionPolicy Bypass -File C:\cabana-sistema\scripts\higienizar.ps1</code></dd>
+  <dd><code>powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\higienizar.ps1</code></dd>
 </dl>
 <p class="ajuda">Nenhum dos dois é obrigatório no dia a dia: a higienização roda sozinha
    às 03:40 e a atualização só quando chega pacote novo. Estão aqui para quando alguém

@@ -1771,6 +1771,7 @@ summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; al
 }
 .lista-chats form { margin: 0; }
 .lista-chats button { margin: 0; }
+.lista-avisos-de-meta { margin: .6rem 0 0; padding-left: 1.1rem; display: grid; gap: .4rem; }
 .acoes-telegram { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-top: .6rem; }
 .acoes-telegram form { margin: 0; }
 .acoes-telegram button { margin: 0; }
@@ -2180,8 +2181,10 @@ input[type=text].campo-quantidade {
    bom, laranja pede atenção, vermelho pede ação, azul é número sem juízo. Escrito junto
    da cor sempre vai a palavra ou a seta (regra do topo deste arquivo). Desde a 1.43.0 o
    sistema inteiro usa estas cores (os tokens do :root são estes mesmos), e as fatias de
-   gráfico deixaram de ser trocadas aqui: já são as do Grafana em todas as telas. */
-.corpo-monitor {
+   gráfico deixaram de ser trocadas aqui: já são as do Grafana em todas as telas.
+   `.monitor-embutido` (1.47.0) leva os mesmos quadros para dentro de outra tela, como os
+   gráficos de Contas a pagar: as cores vêm junto e o resto da tela não muda. */
+.corpo-monitor, .monitor-embutido {
   --mon-fundo: #13110f;
   --mon-quadro: #1c1916;
   --mon-borda: #312a24;
@@ -2207,6 +2210,8 @@ input[type=text].campo-quantidade {
 .corpo-monitor .navegacao-telas a:hover { background: #26211c; border-color: var(--mon-texto-suave); }
 /* Só dentro do Dashboard: o menu de cima continua com as cores de todas as telas. */
 .monitor a { color: var(--cor-link); }
+/* Dentro de outra tela, os quadros respiram como um cartão. */
+.monitor-embutido { margin: var(--espaco) 0; }
 
 .monitor { container-type: inline-size; }
 .monitor-cabeca {
@@ -2605,7 +2610,7 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
 /* Impressão do Dashboard (1.43.0): os quadros voltam ao papel, como o resto do sistema
    no bloco de impressão do topo deste arquivo. */
 @media print {
-  .corpo-monitor {
+  .corpo-monitor, .monitor-embutido {
     --mon-fundo: #ffffff; --mon-quadro: #ffffff; --mon-borda: #c9bcab; --mon-grade: #e0d8cc;
     --mon-texto: #1b1813; --mon-texto-suave: #5c5449;
   }
@@ -2985,6 +2990,18 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
 .guiada-tabela tr.guiada-cortada > th { box-shadow: inset 4px 0 0 var(--cor-alerta); }
 .guiada-tabela tr.guiada-zerada > th { box-shadow: inset 4px 0 0 var(--cor-borda-forte); }
 .guiada-tabela tr.guiada-mudou > th { box-shadow: inset 4px 0 0 var(--cor-link); }
+/* A conferência em duas tabelas (1.47.0): o que a conta pede, e depois todos os outros
+   produtos do fornecedor. O campo de procurar só aparece com o guiada.js, que é quem
+   esconde as linhas; linha escondida some também no cartão do celular, onde a linha da
+   tabela vira bloco e o `hidden` sozinho não venceria. */
+.guiada-subtitulo { margin: 1.7rem 0 .35rem; font-size: 1.12rem; line-height: 1.3; }
+.guiada-pular { margin-left: .5rem; font-family: var(--fonte-texto); font-size: .88rem; font-weight: 400; }
+.guiada-procurar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .8rem; margin: .7rem 0 0;
+}
+.guiada-procurar label { margin: 0; font-weight: 600; }
+.guiada-procurar input { flex: 1 1 16rem; max-width: 26rem; min-height: 44px; margin: 0; }
+.guiada-procurar[hidden], .guiada-tabela tbody tr[hidden] { display: none; }
 .guiada-formulario .guiada-recado { margin-top: 1.1rem; }
 .guiada-formulario textarea { max-width: none; }
 .guiada-registro .tabela-rolavel table { min-width: 44rem; }

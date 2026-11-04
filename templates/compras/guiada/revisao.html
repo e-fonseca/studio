@@ -54,11 +54,15 @@ guiada.js, o Enter nem chega aqui: ele pula para a linha de baixo, como numa pla
 </div>
 {% endif %}
 {% endwith %}
-{% if proposta.linhas %}
-{% with linhas=proposta.linhas %}
+{% comment %}Duas tabelas, pedido do Edson em 04/11/2026: "exibir todos os produtos de cada
+fornecedor, priorizar os produtos em falta E acabando e em seguida todos os demais". A de
+cima é o que a conta pede; a de baixo é o resto do cadastro do fornecedor no SET, em zero.
+Quem digita lá põe o produto no pedido, e ele continua na linha dele (guiada.os_demais).{% endcomment %}
+<h2 class="guiada-subtitulo">Em falta e acabando{% if demais and pedidas|length > 8 %} <a class="guiada-pular" href="#outros-produtos">ir para os outros {{ demais|length }} produtos</a>{% endif %}</h2>
+{% if pedidas %}
 <div class="tabela-rolavel tabela-em-cartao guiada-tabela">
   <table class="tabela-compra">
-    <caption>{{ linhas|length }} produto{{ linhas|length|pluralize }}, do que mais faz falta para o que menos faz. O limite corta pelo fim.</caption>
+    <caption>{{ pedidas|length }} produto{{ pedidas|length|pluralize }} que a conta pede{% if proposta.encomendas %}, com as encomendas{% endif %}, do que mais faz falta para o que menos faz. O limite corta pelo fim.</caption>
     <thead>
       <tr>
         <th scope="col">Produto</th>
@@ -72,7 +76,7 @@ guiada.js, o Enter nem chega aqui: ele pula para a linha de baixo, como numa pla
       </tr>
     </thead>
     <tbody>
-      {% for linha in linhas %}
+      {% for linha in pedidas %}
       <tr class="{% if linha.carro_chefe %}linha-carro-chefe{% endif %}{% if linha.cortada %} guiada-cortada{% endif %}{% if linha.quantidade <= 0 and not linha.cortada %} guiada-zerada{% endif %}" data-linha>
         <th scope="row"><strong>{{ linha.descricao }}</strong>{% if linha.carro_chefe %} <span class="selo selo-carro-chefe">Carro-chefe</span>{% endif %}
           <span class="linha-detalhe">{{ linha.codigo }} · {{ linha.rotulo|lower }}{% if linha.encomenda %} · {{ linha.encomenda|quantidade }} encomendada{{ linha.encomenda|pluralize }}{% endif %}{% if linha.decidida_pela_pessoa %} · escolhida por você{% endif %}{% if linha.cortada %} · fora pelo limite: digite para pôr de volta{% endif %}</span></th>
@@ -91,9 +95,61 @@ guiada.js, o Enter nem chega aqui: ele pula para a linha de baixo, como numa pla
     </tbody>
   </table>
 </div>
-{% endwith %}
 {% else %}
-<p class="guiada-vazio">Nada neste pedido ainda. Volte em "O que entra" ou ponha uma encomenda.</p>
+<p class="guiada-vazio">A conta não pede nada de {{ compra.fornecedor }} agora.{% if demais %} Escreva a quantidade nos outros produtos, logo abaixo,{% else %} Volte em "O que entra"{% endif %} ou ponha uma encomenda.</p>
+{% endif %}
+
+{% if demais %}
+<h2 class="guiada-subtitulo" id="outros-produtos">Os outros produtos de {{ compra.fornecedor }}</h2>
+<p class="guiada-explica">Tudo o mais que o SET tem deste fornecedor, em zero. Escreva a quantidade para pôr no
+  pedido. Primeiro vem o que a conta pede mas ficou fora da sua escolha; depois o que vendeu no ano, do que mais
+  faturou para o que menos; por último o que não vendeu.</p>
+{% if demais|length > 12 %}
+<div class="guiada-procurar" data-procurar-outros hidden>
+  <label for="guiada-procurar-outros">Procurar nesta lista</label>
+  <input type="search" id="guiada-procurar-outros" placeholder="Nome ou código do produto" autocomplete="off" enterkeyhint="search">
+  <span class="ajuda" data-procurar-conta aria-live="polite"></span>
+</div>
+{% endif %}
+<div class="tabela-rolavel tabela-em-cartao guiada-tabela">
+  <table class="tabela-compra" data-tabela-outros>
+    <caption>{{ demais|length }} outro{{ demais|length|pluralize }} produto{{ demais|length|pluralize }} de {{ compra.fornecedor }}.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Produto</th>
+        <th scope="col" class="numerico">Tem</th>
+        <th scope="col" class="numerico">Vende por mês</th>
+        <th scope="col" class="numerico">O sistema pede</th>
+        <th scope="col" class="numerico">Comprar</th>
+        <th scope="col" class="numerico">Custo</th>
+        <th scope="col" class="numerico">Total</th>
+        <th scope="col" class="numerico">Dura</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for linha in demais %}
+      <tr class="{% if linha.carro_chefe %}linha-carro-chefe{% endif %}" data-linha data-procura="{{ linha.descricao }} {{ linha.codigo }}">
+        <th scope="row"><strong>{{ linha.descricao }}</strong>{% if linha.carro_chefe %} <span class="selo selo-carro-chefe">Carro-chefe</span>{% endif %}
+          <span class="linha-detalhe">{{ linha.codigo }} · {{ linha.nota }}</span></th>
+        <td class="numerico" data-rotulo="Tem">{{ linha.estoque|quantidade:"0" }}</td>
+        <td class="numerico" data-rotulo="Vende por mês">{{ linha.por_mes|quantidade:"0" }}</td>
+        <td class="numerico" data-rotulo="O sistema pede">{{ linha.sugerida|quantidade:"0" }}</td>
+        <td class="numerico guiada-celula-quantidade" data-rotulo="Comprar">
+          {% if linha.a_mao %}
+          <input type="text" inputmode="decimal" name="q-{{ linha.codigo }}" value="{{ linha.quantidade|quantidade:'0' }}" maxlength="7" aria-label="Quantas comprar de {{ linha.descricao }}" data-quantidade data-custo="{{ linha.custo|default_if_none:''|unlocalize }}" data-por-dia="{{ linha.demanda_diaria|unlocalize }}">
+          <input type="hidden" name="era-{{ linha.codigo }}" value="{{ linha.quantidade|quantidade:'0' }}">
+          {% else %}
+          <input type="text" inputmode="decimal" name="q-{{ linha.codigo }}" value="0" maxlength="7" aria-label="Quantas comprar de {{ linha.descricao }}" data-quantidade data-custo="{{ linha.custo|default_if_none:''|unlocalize }}" data-por-dia="{{ linha.demanda_diaria|unlocalize }}">
+          {% endif %}
+        </td>
+        <td class="numerico" data-rotulo="Custo">{% if linha.custo is not None %}{{ linha.custo|reais }}{% else %}sem custo{% endif %}</td>
+        <td class="numerico" data-rotulo="Total" data-total-da-linha>{% if linha.a_mao %}{{ linha.valor_do_pedido|reais }}{% else %}{{ 0|reais }}{% endif %}</td>
+        <td class="numerico{% if linha.a_mao and linha.cobre_mais_de_um_ano %} guiada-longe{% endif %}" data-rotulo="Dura" data-dura>{% if linha.a_mao %}{{ linha.cobre|default:"—" }}{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 <label class="guiada-recado" for="guiada-recado">Recado para o fornecedor <span class="ajuda">(sai escrito no pedido)</span></label>
 <textarea id="guiada-recado" name="recado" maxlength="300" rows="2" placeholder="Ex.: entregar até sexta; mandar o XML da nota junto com o PDF.">{% if dados %}{{ dados.recado }}{% else %}{{ recado }}{% endif %}</textarea>

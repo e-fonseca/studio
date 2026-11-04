@@ -1,0 +1,64 @@
+{% load cabana %}{% comment %}
+A linha do tempo mês a mês do Dashboard, com o mesmo mês do ano passado (1.41.0), e
+desde a 1.47.0 também a de Contas a pagar, que o Edson pediu "nesse formato". Recebe:
+`g` (o GraficoDeLinha de apps/painel/dashboard.py), `meses` (a lista de Mes) e `o_que`
+(o nome do valor, para quem não enxerga o desenho). A cor da porcentagem vem pronta em
+`m.sentido`: faturamento que sobe é bom, conta paga que sobe é ruim.
+Uma linha do tempo por página: o degradê da área tem o nome fixo que o sistema.css usa.
+{% endcomment %}<div class="monitor-tempo">
+  <div class="monitor-tempo-eixo" aria-hidden="true">
+    {% for m in g.marcas %}{% if m.escrita %}<span{% if m.escrita == "alto" %} class="monitor-eixo-so-no-alto"{% endif %} style="bottom: {{ m.altura }}%">{{ m.rotulo }}</span>{% endif %}{% endfor %}
+  </div>
+  <div class="monitor-tempo-desenho">
+    <svg viewBox="0 0 1000 300" preserveAspectRatio="none" role="img"
+         aria-label="{{ o_que }} dos últimos {{ g.colunas }} meses, com o mesmo mês do ano passado">
+      <defs>
+        <linearGradient id="monitor-degrade-meses" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" style="stop-color: var(--mon-verde); stop-opacity: .32"></stop>
+          <stop offset="1" style="stop-color: var(--mon-verde); stop-opacity: 0"></stop>
+        </linearGradient>
+      </defs>
+      {% for m in g.marcas %}<line class="monitor-tempo-grade" x1="0" x2="1000" y1="{{ m.y }}" y2="{{ m.y }}"></line>{% endfor %}
+      <path class="monitor-tempo-area" d="{{ g.agora_area }}"></path>
+      {% if g.antes %}<path class="monitor-tempo-antes" d="{{ g.antes }}"></path>{% endif %}
+      <path class="monitor-tempo-agora" d="{{ g.agora }}"></path>
+      {% if g.parcial %}<path class="monitor-tempo-parcial" d="{{ g.parcial }}"></path>{% endif %}
+    </svg>
+    <ol class="monitor-tempo-dicas" style="grid-template-columns: repeat({{ g.colunas }}, minmax(0, 1fr))">
+      {% for m in meses %}<li title="{{ m.rotulo }}: {{ m.valor|reais }}{% if m.parcial %} até o dia {{ m.dia_parcial }}{% endif %}{% if m.valor_ano_passado != None %} · ano passado: {{ m.valor_ano_passado|reais }}{% endif %}"></li>{% endfor %}
+    </ol>
+  </div>
+  <ol class="monitor-tempo-meses" style="grid-template-columns: repeat({{ g.colunas }}, minmax(0, 1fr))">
+    {% for m in meses %}
+    <li><span class="monitor-mes-longo">{{ m.rotulo }}</span><span class="monitor-mes-curto">{{ m.rotulo|slice:":3" }}</span>
+      <small class="monitor-variacao-{{ m.sentido }}">{% if m.variacao != None %}{% if m.variacao > 0 %}+{% endif %}{{ m.variacao|floatformat:"0" }}%{% else %}—{% endif %}</small></li>
+    {% endfor %}
+  </ol>
+</div>
+<p class="monitor-legenda-linhas">
+  <span><i class="monitor-traco-agora" aria-hidden="true"></i> Este ano</span>
+  <span><i class="monitor-traco-antes" aria-hidden="true"></i> Mesmo mês do ano passado</span>
+  {% with ultimo=meses|last %}{% if ultimo.parcial %}<span><i class="monitor-traco-parcial" aria-hidden="true"></i> {{ ultimo.rotulo }} ainda corre ({{ ultimo.ate_o_dia }})</span>{% endif %}{% endwith %}
+</p>
+{% comment %}O gráfico de barras de antes escrevia o valor em cima de cada mês; a linha
+só mostra no mouse, e o celular não tem mouse. Os números continuam aqui, recolhidos.
+{% endcomment %}
+<details class="monitor-detalhe">
+  <summary>Ver o valor de cada mês</summary>
+  <div class="monitor-tabela-area">
+    <table class="monitor-tabela">
+      <thead><tr><th scope="col">Mês</th><th scope="col" class="numerico">Este ano</th><th scope="col" class="numerico">Ano passado</th><th scope="col" class="numerico">Variação</th></tr></thead>
+      <tbody>
+        {% for m in meses %}
+        <tr>
+          <th scope="row">{{ m.rotulo }}{% if m.parcial %}<small>{{ m.ate_o_dia }}</small>{% endif %}</th>
+          <td class="numerico">{{ m.valor|reais }}</td>
+          <td class="numerico">{% if m.valor_ano_passado != None %}{{ m.valor_ano_passado|reais }}{% else %}—{% endif %}</td>
+          <td class="numerico monitor-variacao-{{ m.sentido }}">{% if m.variacao != None %}{% if m.variacao > 0 %}+{% endif %}{{ m.variacao|floatformat:"-1" }}%{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% with ultimo=meses|last %}{% if ultimo.parcial %}<p class="monitor-tabela-nota">{{ ultimo.rotulo }} ainda corre: este ano e o ano passado vão só até o dia {{ ultimo.dia_parcial }}, para a comparação ser do mesmo pedaço.</p>{% endif %}{% endwith %}
+</details>

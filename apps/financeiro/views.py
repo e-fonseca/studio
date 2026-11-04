@@ -18,7 +18,7 @@ from apps.core.templatetags.cabana import reais
 from apps.financeiro import relatorio as relatorio_das_contas
 from apps.importacao import servicos as importacao_servicos
 
-from . import servicos
+from . import quadros, servicos
 from .models import PagamentoPrevisto
 
 VALOR_MAXIMO = Decimal("9999999.99")
@@ -62,6 +62,9 @@ def contas_a_pagar(request):
         # O nome da lista escolhida, para o botão do PDF dizer o que vai sair no papel.
         "rotulo_do_filtro": servicos.rotulo_do_filtro(escolhido),
         "busca": busca,
+        # Os gráficos no formato do Dashboard (1.47.0). Sempre a loja toda: a busca e o
+        # filtro mexem na lista de baixo, não no retrato de cima.
+        "quadros": quadros.montar(estado.importacao, hoje=hoje),
     })
     return render(request, "financeiro/contas_a_pagar.html", contexto)
 

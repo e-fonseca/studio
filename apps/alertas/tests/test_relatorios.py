@@ -308,7 +308,7 @@ class VendasDoDiaTest(BaseRelatorio):
         venda.save()
         relatorio = relatorios.vendas_do_dia(self.importacao)
         meta = next(b for b in relatorio.blocos if b.titulo == "Meta do dia: Domingo")
-        self.assertIn("Vendeu R$ 85,00 de R$ 18.000,00", meta.frase)
+        self.assertIn("Vendeu R$ 85,00 de R$ 15.000,00", meta.frase)
         fora = next(b for b in relatorio.blocos if b.titulo.startswith("Descontos fora da regra"))
         self.assertEqual(fora.titulo, "Descontos fora da regra: 1 venda(s)")
         self.assertIn("recebeu Caixa Teste", fora.linhas[0]["quem"])

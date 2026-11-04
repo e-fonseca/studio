@@ -52,7 +52,8 @@ fechamento, mas nem sempre quem negociou com o cliente. A tela diz isso.
 
 As metas
 --------
-Sábado e feriado, R$ 12.000; domingo, R$ 18.000. Batida, cada funcionário que trabalhou
+Sábado e feriado, R$ 12.000; domingo, R$ 15.000 (era R$ 18.000 até 04/11/2026, quando o
+Edson baixou, na 1.47.0). Batida, cada funcionário que trabalhou
 no dia ganha R$ 30, e mais R$ 10 a cada R$ 1.000 acima. O SET não sabe quem trabalhou
 (freela não tem usuário), então o prêmio sai POR PESSOA, e a tela mostra quem passou
 venda no caixa naquele dia.
@@ -459,6 +460,21 @@ class DiaDeMeta:
             return ZERO
         passos = ((vendido - self.meta) / self.passo).to_integral_value(rounding=ROUND_FLOOR) if self.passo > 0 else 0
         return self.premio_base + self.premio_a_mais * passos
+
+    @property
+    def proximo_degrau(self):
+        """(quanto vender, o prêmio por pessoa lá) do próximo degrau; None sem degrau.
+
+        Antes da meta, o próximo degrau é a própria meta. Serve ao aviso do grupo das metas
+        (1.47.0): "o próximo é R$ 14.000, R$ 50 por pessoa" diz onde está o prêmio maior.
+        """
+        if not self.bateu:
+            return self.meta, self.premio_base
+        if self.passo <= 0 or self.premio_a_mais <= 0:
+            return None
+        passos = ((self.vendido - self.meta) / self.passo).to_integral_value(rounding=ROUND_FLOOR)
+        alvo = self.meta + self.passo * (passos + 1)
+        return alvo, self.premio_com(alvo)
 
     @property
     def bateu(self):

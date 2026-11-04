@@ -1,7 +1,8 @@
 """Os feriados da loja, para a meta do dia.
 
 A meta do Edson (02/11/2026) é por tipo de dia: "Sabado/Feriado 12.000,00" e "Domingo
-18.000,00". O sábado e o domingo o calendário diz; o feriado, este arquivo.
+18.000,00" (15 mil desde 04/11/2026). O sábado e o domingo o calendário diz; o feriado,
+este arquivo.
 
 Entram sozinhos, todo ano:
 

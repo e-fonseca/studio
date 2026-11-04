@@ -52,6 +52,8 @@ decidida. As chaves:
     entra            "tudo", "faltando" ou "carro_chefe"
     media            a janela de venda (as chaves de apps/compras/janela.py)
     quantidades      código -> "sugerida", "metade", "dobro", "nao" ou um número
+    outros           código -> unidades que a pessoa pôs à mão na conferência, entre os
+                     outros produtos do fornecedor (1.47.0)
     encomendas       código -> unidades encomendadas por cliente
     equipe           id da sugestão da equipe -> unidades
     orcamento        "mes", "valor" ou "livre"; orcamento_valor quando "valor"
@@ -73,8 +75,9 @@ from apps.core import procura
 from apps.core.templatetags.cabana import quantidade as escrever, reais
 
 from . import calculos, janela as janelas, limite, lista_de_compra
+from . import politica as politica_de_compra
 from .lista_de_compra import PESO, SEM_FORNECEDOR, Urgencia
-from .models import CompraGuiada, SugestaoDeCompra
+from .models import CompraGuiada, PoliticaDeCompra, SugestaoDeCompra
 from .sugestoes import so_mercadoria
 
 ZERO = Decimal("0")
@@ -210,6 +213,11 @@ class Linha:
     encomenda: Decimal = ZERO
     # Ficou de fora porque o orçamento acabou antes de chegar nela.
     cortada: bool = False
+    # Entrou só porque a pessoa digitou a quantidade nos outros produtos do fornecedor,
+    # na conferência (1.47.0): a conta não pedia, ou pedia fora do que ela escolheu.
+    a_mao: bool = False
+    # Na lista dos outros produtos: por que a conta não pôs este no pedido.
+    nota: str = ""
 
     @property
     def reposicao(self):
@@ -251,7 +259,9 @@ class Linha:
 
     @property
     def rotulo(self):
-        return lista_de_compra.ROTULO.get(self.urgencia, "Encomenda")
+        if self.urgencia:
+            return lista_de_compra.ROTULO.get(self.urgencia, "Encomenda")
+        return "Encomenda" if self.encomenda > ZERO else "Fora da conta"
 
     @property
     def por_mes(self):
@@ -430,6 +440,9 @@ class Proposta:
     tipos: list = field(default_factory=list)
     linhas: list = field(default_factory=list)
     principais: list = field(default_factory=list)
+    # Tudo o que a lista de compra pede deste fornecedor, antes dos tipos e do "o que
+    # entra": a conferência mostra no começo dos outros o que ficou de fora por escolha.
+    itens_da_lista: list = field(default_factory=list)
     # Quantas linhas cada resposta de "o que entra" daria, com os tipos escolhidos.
     por_entra: dict = field(default_factory=dict)
     orcamento: Decimal = None
@@ -584,6 +597,7 @@ def montar(compra, importacao, *, proxima_compra=None, media=None, aplicar_orcam
         proposta.prazo_dias = lista_de_compra.PRAZO_PADRAO_DIAS
 
     itens = bloco.itens if bloco else []
+    proposta.itens_da_lista = itens
     _tipos(proposta, importacao, itens, respostas)
     escolhidos = {tipo.grupo for tipo in proposta.tipos if tipo.escolhido}
 
@@ -613,10 +627,10 @@ def montar(compra, importacao, *, proxima_compra=None, media=None, aplicar_orcam
     # As encomendas: somam à linha do produto, ou trazem o produto que não estava nela.
     encomendas = _encomendas(respostas)
     por_codigo = {linha.codigo: linha for linha in linhas}
+    da_lista = {item.codigo: item for item in itens}
+    carros = {item.codigo for item in itens if item.carro_chefe}
     fora = [codigo for codigo in encomendas if codigo not in por_codigo]
     if fora:
-        da_lista = {item.codigo: item for item in itens}
-        carros = {item.codigo for item in itens if item.carro_chefe}
         produtos = {produto.codigo: produto
                     for produto in importacao.itens.filter(codigo__in=fora)}
         for codigo in fora:
@@ -634,9 +648,38 @@ def montar(compra, importacao, *, proxima_compra=None, media=None, aplicar_orcam
         if codigo in por_codigo:
             por_codigo[codigo].encomenda = unidades
 
+    # O que a pessoa digitou nos outros produtos do fornecedor, na conferência (1.47.0):
+    # o produto entra na compra com o número dela, mesmo sem a conta pedir. Só produto
+    # deste fornecedor, que é a lista que a conferência mostra. Fica numa chave própria,
+    # e não em "quantidades", para a resposta de uma pergunta antiga (o "dobro" de um
+    # produto que depois saiu pelo "o que entra") não voltar sozinha para o pedido.
+    outros = respostas.get("outros") or {}
+    novos = [codigo for codigo in outros if codigo not in por_codigo]
+    if novos:
+        produtos = {produto.codigo: produto for produto in so_mercadoria(
+            importacao.itens.filter(codigo__in=novos, fornecedor=nome))}
+        for codigo in novos:
+            if codigo in da_lista:
+                linha = _linha_do_item(da_lista[codigo])
+            elif codigo in produtos:
+                linha = _linha_do_produto(produtos[codigo], importacao.dias_abertos_12m, carros)
+            else:
+                continue
+            linha.a_mao = True
+            linhas.append(linha)
+            por_codigo[codigo] = linha
+    # Produto posto à mão que depois entrou na conta (outra importação, outra resposta):
+    # continua valendo o número da pessoa, como qualquer quantidade escolhida.
+    for codigo, valor in outros.items():
+        if codigo in por_codigo:
+            por_codigo[codigo].escolha = valor
+            por_codigo[codigo].decidida = _resolver(valor, por_codigo[codigo].sugerida)
+
     for codigo, escolha in (respostas.get("quantidades") or {}).items():
         linha = por_codigo.get(codigo)
-        if linha is None:
+        # A linha posta à mão segue só o número dos outros: a resposta de quando ela era
+        # da conta (um "dobro" antigo) não volta para o pedido por baixo dele.
+        if linha is None or linha.a_mao:
             continue
         linha.escolha = escolha
         linha.decidida = _resolver(escolha, linha.sugerida)
@@ -724,6 +767,57 @@ def _o_que_nao_se_corta(linha):
     if linha.decidida_pela_pessoa:
         return linha.valor_do_pedido
     return _reais_exatos(linha.encomenda * linha.custo) if linha.encomenda > ZERO else ZERO
+
+
+def os_demais(proposta, importacao):
+    """Os outros produtos do fornecedor, para a conferência mostrar o cadastro inteiro.
+
+    Pedido do Edson em 04/11/2026: *"em compra guiada, exibir todos os produtos de cada
+    fornecedor, priorizar os produtos em falta E acabando e em seguida todos os demais."*
+    Os em falta e acabando são o pedido que a conta monta (`proposta.linhas`, a mesma
+    conta da lista de compra); aqui vem o resto do que o SET tem deste fornecedor, com a
+    quantidade em zero, para a pessoa pôr à mão o que a conta não pediu. A ordem:
+
+    1. o que a lista de compra pede, mas ficou fora pelos tipos ou pelo "o que entra";
+    2. o que vendeu no ano, do que mais faturou para o que menos;
+    3. o que não vendeu no ano e tem saldo no SET: o parado deste fornecedor;
+    4. o que não vendeu nem tem saldo.
+
+    O produto que a pessoa já pôs à mão continua no lugar dele nesta lista, com o número
+    dela: trocar de tabela depois de salvar faria a pessoa procurar o que acabou de digitar.
+    """
+    if importacao is None or not proposta.fornecedor:
+        return []
+    na_conta = {linha.codigo for linha in proposta.linhas if not linha.a_mao}
+    a_mao = {linha.codigo: linha for linha in proposta.linhas if linha.a_mao}
+    da_lista = {item.codigo: item for item in proposta.itens_da_lista}
+    carros = set(politica_de_compra.carros_chefe(importacao, PoliticaDeCompra.atual().carros_chefe))
+    linhas = []
+    for produto in so_mercadoria(importacao.itens.filter(fornecedor=proposta.fornecedor)):
+        if produto.codigo in na_conta:
+            continue
+        linha = a_mao.get(produto.codigo)
+        item = da_lista.get(produto.codigo)
+        if linha is None:
+            linha = (_linha_do_item(item) if item is not None
+                     else _linha_do_produto(produto, importacao.dias_abertos_12m, carros))
+        if item is not None:
+            linha.nota = f"{lista_de_compra.ROTULO.get(item.urgencia, '').lower()}, fora do que você escolheu"
+            ordem = (0, PESO.get(item.urgencia, 3), not linha.carro_chefe)
+        elif (linha.vendas_12m or ZERO) > ZERO:
+            linha.nota = "o que tem dá até a próxima compra"
+            ordem = (1, 0, not linha.carro_chefe)
+        elif (linha.estoque or ZERO) > ZERO:
+            linha.nota = "parado: não vendeu no ano"
+            ordem = (2, 0, True)
+        else:
+            linha.nota = "não vendeu no ano"
+            ordem = (3, 0, True)
+        if linha.a_mao:
+            linha.nota = "posto por você"
+        linhas.append((ordem + (-(linha.receita_12m or ZERO), linha.descricao, linha.codigo), linha))
+    linhas.sort(key=lambda par: par[0])
+    return [linha for _, linha in linhas]
 
 
 # --------------------------------------------------------------------------- leituras
@@ -1257,6 +1351,7 @@ def _salvar_conferencia(compra, dados, importacao):
     proposta = montar(compra, importacao)
     quantidades = dict(respostas.get("quantidades") or {})
     encomendas = dict(respostas.get("encomendas") or {})
+    outros = dict(respostas.get("outros") or {})
     for linha in proposta.linhas:
         campo = f"q-{linha.codigo}"
         if campo not in dados:
@@ -1272,10 +1367,31 @@ def _salvar_conferencia(compra, dados, importacao):
             # Menos do que o cliente encomendou: a encomenda diminui junto.
             if linha.codigo in encomendas:
                 encomendas[linha.codigo] = _para_texto(novo)
-            quantidades[linha.codigo] = "0"
+            reposicao = ZERO
         else:
-            quantidades[linha.codigo] = _para_texto(novo - linha.encomenda)
+            reposicao = novo - linha.encomenda
+        if linha.a_mao:
+            # Posto à mão e zerado: volta para a lista dos outros, de onde veio.
+            if reposicao > ZERO:
+                outros[linha.codigo] = _para_texto(reposicao)
+            else:
+                outros.pop(linha.codigo, None)
+            quantidades.pop(linha.codigo, None)
+            continue
+        outros.pop(linha.codigo, None)
+        quantidades[linha.codigo] = "0" if reposicao <= ZERO else _para_texto(reposicao)
+    # Os outros produtos do fornecedor (1.47.0): só o que ganhou número entra na compra.
+    for linha in os_demais(proposta, importacao):
+        if linha.a_mao:
+            continue  # já tratada acima, como linha da compra
+        bruto = (dados.get(f"q-{linha.codigo}") or "").strip()
+        novo = numero(bruto) if bruto else None
+        if novo is not None and novo > ZERO:
+            outros[linha.codigo] = _para_texto(novo)
+            # A decisão mais nova é esta: a resposta de quando ele era da conta sai.
+            quantidades.pop(linha.codigo, None)
     respostas["quantidades"] = quantidades
+    respostas["outros"] = outros
     respostas["encomendas"] = {codigo: valor for codigo, valor in encomendas.items()
                                if (_resolver(valor, ZERO) or ZERO) > ZERO}
     respostas["recado"] = (dados.get("recado") or "").strip()[:300]
