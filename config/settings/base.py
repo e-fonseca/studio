@@ -188,7 +188,7 @@ SESSAO_PARADA_SEGUNDOS = int(env("STUDIO_SESSAO_PARADA_MINUTOS", 30)) * 60
 # Porta segura (HTTPS). O sistema só precisa dela para montar o endereço que a tela de
 # contagem pelo celular indica: a câmera do navegador não liga fora de https. Quem
 # atende nessa porta é o túnel do servir.py, não o Django.
-PORTA_HTTPS = env("STUDIO_PORTA_HTTPS", "8443")
+PORTA_HTTPS = env("STUDIO_PORTA_HTTPS", "8444")
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True

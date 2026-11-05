@@ -20,7 +20,7 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-PORTA_PADRAO = 8443
+PORTA_PADRAO = 8444
 
 # Onde fica escrito por que a porta segura não subiu. O túnel sobe numa linha de
 # trabalho separada, então a falha dele não chega a quem inicia o sistema: até a

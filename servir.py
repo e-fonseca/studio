@@ -23,7 +23,7 @@ def _subir_https(porta_http):
     """Liga a porta HTTPS, se estiver habilitada. Falha aqui nunca derruba o HTTP."""
     if os.environ.get("STUDIO_HTTPS", "1") != "1":
         return
-    porta = int(os.environ.get("STUDIO_PORTA_HTTPS", "8443"))
+    porta = int(os.environ.get("STUDIO_PORTA_HTTPS", "8444"))
     try:
         from apps.core import certificado, tunel_tls
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO, format=formato)
     host = os.environ.get("STUDIO_HOST", "0.0.0.0")
-    porta = int(os.environ.get("STUDIO_PORTA", "8095"))
+    porta = int(os.environ.get("STUDIO_PORTA", "8096"))
     _subir_https(porta)
     serve(application, host=host, port=porta,
           threads=int(os.environ.get("STUDIO_THREADS", "4")), ident="cabana")

@@ -409,26 +409,26 @@ class TestAvisoDeEnderecoSemSeguranca(TestCase):
         self.client.login(username="gerente-https", password=SENHA_TESTE)
 
     def test_a_faixa_aparece_no_endereco_de_rede_em_http(self):
-        resposta = self.client.get(reverse("core:certificado"), HTTP_HOST="192.168.3.254:8095")
+        resposta = self.client.get(reverse("core:certificado"), HTTP_HOST="192.168.3.254:8096")
         self.assertContains(resposta, "faixa-sem-seguranca")
-        self.assertContains(resposta, "https://192.168.3.254:8443")
+        self.assertContains(resposta, "https://192.168.3.254:8444")
 
     def test_nao_aparece_em_localhost_porque_la_a_camera_ja_funciona(self):
-        resposta = self.client.get(reverse("core:certificado"), HTTP_HOST="localhost:8095")
+        resposta = self.client.get(reverse("core:certificado"), HTTP_HOST="localhost:8096")
         self.assertNotContains(resposta, "faixa-sem-seguranca")
 
     def test_nao_aparece_quando_a_pessoa_ja_esta_no_https(self):
         resposta = self.client.get(reverse("core:certificado"), secure=True,
-                                   HTTP_HOST="192.168.3.254:8443")
+                                   HTTP_HOST="192.168.3.254:8444")
         self.assertNotContains(resposta, "faixa-sem-seguranca")
 
     def test_o_endereco_sugerido_leva_para_a_mesma_pagina(self):
-        pedido = RequestFactory().get("/studio/painel/dashboard/", HTTP_HOST="192.168.3.254:8095")
+        pedido = RequestFactory().get("/studio/painel/dashboard/", HTTP_HOST="192.168.3.254:8096")
         self.assertEqual(https.endereco_seguro(pedido),
-                         "https://192.168.3.254:8443/studio/painel/dashboard/")
+                         "https://192.168.3.254:8444/studio/painel/dashboard/")
 
     def test_com_https_desligado_no_cabana_env_nao_promete_endereco_que_nao_existe(self):
-        pedido = RequestFactory().get("/studio/", HTTP_HOST="192.168.3.254:8095")
+        pedido = RequestFactory().get("/studio/", HTTP_HOST="192.168.3.254:8096")
         with mock.patch.dict(os.environ, {"STUDIO_HTTPS": "0"}):
             self.assertFalse(https.sem_seguranca(pedido))
             self.assertEqual(https.conferir().nivel, "ruim")
@@ -465,7 +465,7 @@ class TestAvisoDeEnderecoSemSeguranca(TestCase):
         self.assertIn("TLS", resultado.detalhe)
 
     def test_a_tela_do_certificado_mostra_o_resultado_do_teste(self):
-        resposta = self.client.get(reverse("core:certificado"), HTTP_HOST="192.168.3.254:8095")
+        resposta = self.client.get(reverse("core:certificado"), HTTP_HOST="192.168.3.254:8096")
         self.assertEqual(resposta.status_code, 200)
         self.assertIn("diagnostico", resposta.context)
         self.assertContains(resposta, "estado-" + resposta.context["diagnostico"].nivel)
@@ -693,7 +693,7 @@ class TestTelaMostraAFalhaDoTunel(TestCase):
                     "STUDIO_PORTA_HTTPS": str(_porta_livre())}):
                 https.registrar_falha("PermissionError: [Errno 13] config\\certificado")
                 resposta = self.client.get(reverse("core:certificado"),
-                                           HTTP_HOST="192.168.3.254:8095")
+                                           HTTP_HOST="192.168.3.254:8096")
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, "O que o servidor registrou na última tentativa")
         self.assertContains(resposta, "PermissionError")

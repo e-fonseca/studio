@@ -118,7 +118,7 @@ def pecas():
              "A peça que liga o Django ao PostgreSQL."),
         Peca("Waitress", _pacote("waitress"),
              "O servidor web que entrega as telas; o HTTPS atende na porta "
-             f"{getattr(settings, 'PORTA_HTTPS', '8443')}."),
+             f"{getattr(settings, 'PORTA_HTTPS', '8444')}."),
         Peca("Firebird (motor de leitura)", motor_firebird,
              "Abre a cópia do backup do SET, só para ler. Nunca fala com o Firebird do SET."),
         Peca("firebird-driver", _pacote("firebird-driver"),

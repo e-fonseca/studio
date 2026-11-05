@@ -13,7 +13,7 @@ from .base import env_lista
 # câmera. As duas origens precisam estar aqui, senão o envio de formulário é recusado.
 CSRF_TRUSTED_ORIGINS = env_lista(
     "STUDIO_CSRF_TRUSTED_ORIGINS",
-    "http://192.168.3.254:8095,https://192.168.3.254:8443,https://localhost:8443")
+    "http://192.168.3.254:8096,https://192.168.3.254:8444,https://localhost:8444")
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 SECURE_SSL_REDIRECT = False
