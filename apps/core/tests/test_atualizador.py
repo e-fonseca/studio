@@ -2,7 +2,7 @@
 
 Em 22/10/2026 o Edson abriu o sistema e encontrou a tela de início de 05/10: menu antigo,
 "Transferência de conhecimento" na frente, nenhuma das telas que a loja usa. O programa
-inteiro vive numa pasta só (`C:\\cabana-sistema\\app`), que o instalador apaga e copia de
+inteiro vive numa pasta só (`C:\\studio-sistema\\app`), que o instalador apaga e copia de
 novo a cada atualização, então basta o script escolher o zip errado para a loja voltar
 semanas atrás — e ele escolhia pela DATA DO ARQUIVO, que mente: copiar um zip de uma pasta
 para outra leva junto a data antiga.
@@ -91,8 +91,8 @@ class TestOZipChegaNaPastaDoPacote(SimpleTestCase):
     def test_procura_o_zip_na_pasta_do_pacote_e_no_lugar_de_antes(self):
         busca = self.texto[self.texto.index("$zips = @(Get-ChildItem"):]
         busca = busca[: busca.index("\n")]
-        self.assertIn("(Join-Path $Pacote 'cabana-sistema*.zip')", busca)
-        self.assertIn("(Join-Path $Base 'cabana-sistema*.zip')", busca)
+        self.assertIn("(Join-Path $Pacote 'studio-sistema*.zip')", busca)
+        self.assertIn("(Join-Path $Base 'studio-sistema*.zip')", busca)
 
     def test_o_zip_sai_da_pasta_antes_de_ela_ser_esvaziada(self):
         """Senão o zip novo, que chega dentro dela, sumiria junto com a versão anterior."""
@@ -139,7 +139,7 @@ class TestAHigienizacaoRodaDasDuasPastas(SimpleTestCase):
     """O mesmo higienizar.ps1 roda da cópia instalada (a tarefa das 03:40) e da pasta do pacote.
 
     Até a 1.47.0 ele achava o sistema subindo uma pasta a partir de onde estava: certo em
-    C:\\cabana-sistema\\scripts, errado em C:\\instalacao\\pacote, de onde procurava o Python
+    C:\\studio-sistema\\scripts, errado em C:\\instalacao\\pacote, de onde procurava o Python
     em C:\\instalacao e saía sem dizer nada na tela.
     """
 
@@ -150,7 +150,7 @@ class TestAHigienizacaoRodaDasDuasPastas(SimpleTestCase):
 
     def test_so_sobe_uma_pasta_quando_o_sistema_esta_la(self):
         self.assertIn("[string]$Destino = ''", self.texto)
-        self.assertIn(r"$Destino = 'C:\cabana-sistema'", self.texto)
+        self.assertIn(r"$Destino = 'C:\studio-sistema'", self.texto)
         self.assertIn(
             r"if ($acima -and (Test-Path (Join-Path $acima 'python\python.exe'))) { $Destino = $acima }",
             self.texto,

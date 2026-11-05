@@ -88,7 +88,7 @@ def _de(configuracao):
 
 def _assunto(relatorio):
     quando = timezone.localdate().strftime("%d/%m/%Y")
-    return f"[Cabana] {relatorio.assunto} — {quando}"
+    return f"[Studio] {relatorio.assunto} — {quando}"
 
 
 def montar_mensagem(relatorio, configuracao):

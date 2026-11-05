@@ -337,7 +337,7 @@ class VendasDoDiaTest(BaseRelatorio):
     def test_o_link_leva_para_a_tela_da_relacao(self):
         self.venda(linhas=[("001", "VASO", "100", "50")])
         relatorio = relatorios.vendas_do_dia(self.importacao)
-        self.assertEqual(relatorio.caminho, "/sistema/painel/vendas-do-dia/")
+        self.assertEqual(relatorio.caminho, "/studio/painel/vendas-do-dia/")
 
 
 class CaixaNoEmailDeVendasTest(BaseRelatorio):

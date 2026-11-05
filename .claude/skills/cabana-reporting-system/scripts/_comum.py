@@ -1,7 +1,7 @@
 """Liga o Django para os scripts de conferência. Nada aqui grava no banco.
 
-Rodar da raiz do repositório, com as variáveis CABANA_* do ambiente (ver .env.exemplo).
-No servidor da loja, o cabana.env já as tem; numa máquina de desenvolvimento, exportar
+Rodar da raiz do repositório, com as variáveis STUDIO_* do ambiente (ver .env.exemplo).
+No servidor da loja, o studio.env já as tem; numa máquina de desenvolvimento, exportar
 antes de chamar.
 """
 
@@ -39,7 +39,7 @@ def ligar():
         _parar(
             f"Não consegui ligar o sistema: {erro}",
             "Rode da raiz do repositório (a pasta que tem o manage.py).",
-            "Confira as variáveis CABANA_* do ambiente — veja o .env.exemplo.",
+            "Confira as variáveis STUDIO_* do ambiente — veja o .env.exemplo.",
         )
     _conferir_banco()
     return RAIZ
@@ -56,7 +56,7 @@ def _conferir_banco():
         _parar(
             f"O banco de dados não respondeu: {primeira}",
             "No servidor da loja: confira se o serviço do PostgreSQL está rodando.",
-            "Confira CABANA_DB_HOST, CABANA_DB_PORTA, CABANA_DB_USUARIO e CABANA_DB_NOME.",
+            "Confira STUDIO_DB_HOST, STUDIO_DB_PORTA, STUDIO_DB_USUARIO e STUDIO_DB_NOME.",
             "Isto não é defeito do sistema nem da importação: é o banco fora do ar.",
         )
     except Exception as erro:  # noqa: BLE001

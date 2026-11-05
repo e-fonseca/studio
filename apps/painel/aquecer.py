@@ -22,8 +22,8 @@ digitar a senha. Aqui ela passa para a tarefa.
 
 Por que isto só funciona com o cache em arquivo
 -----------------------------------------------
-Quem importa é a tarefa `CabanaImportacao`; quem mostra a tela é o serviço
-`CabanaSistema`. São dois processos. Com o cache na memória de cada um, aquecer
+Quem importa é a tarefa `StudioImportacao`; quem mostra a tela é o serviço
+`StudioSistema`. São dois processos. Com o cache na memória de cada um, aquecer
 dentro da tarefa não chegaria ao serviço — a conta seria feita duas vezes e a pessoa
 esperaria do mesmo jeito. Por isso `CACHES` aponta para uma pasta (config/settings/base.py).
 """

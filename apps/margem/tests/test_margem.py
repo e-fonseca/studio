@@ -334,8 +334,8 @@ class TestQuemEntra(Base):
 
     def test_o_menu_leva_a_tela_para_quem_ve_painel_e_nao_para_o_vendedor(self):
         self.entrar("gerente-margem", ADMINISTRACAO)
-        self.assertContains(self.client.get(self.endereco), 'href="/sistema/margem/"')
+        self.assertContains(self.client.get(self.endereco), 'href="/studio/margem/"')
         self.client.logout()
         self.entrar("vendedor-margem", VENDEDOR)
         resposta = self.client.get(reverse("importacao:consulta"))
-        self.assertNotContains(resposta, "/sistema/margem/")
+        self.assertNotContains(resposta, "/studio/margem/")

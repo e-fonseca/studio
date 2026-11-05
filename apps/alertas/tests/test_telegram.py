@@ -101,14 +101,14 @@ class MensagemTest(TestCase):
         relatorio = relatorios.de_teste()
         texto = telegram.texto_do_relatorio(relatorio)
         linhas = [linha for linha in texto.splitlines() if linha.strip()]
-        self.assertIn("Cabana", linhas[0])
+        self.assertIn("Studio", linhas[0])
         self.assertIn("sistema consegue mandar e-mail", texto)
 
     def test_leva_o_endereco_do_sistema_inteiro(self):
         """Link relativo numa mensagem de celular não abre nada."""
         texto = telegram.texto_do_relatorio(relatorios.de_teste())
         self.assertIn("https://", texto)
-        self.assertIn("/sistema/alertas/", texto)
+        self.assertIn("/studio/alertas/", texto)
 
     def test_mensagem_comprida_e_cortada_antes_do_telegram_cortar(self):
         """Cortada pelo servidor, ela perde o fim, que é onde está o link."""
@@ -200,13 +200,13 @@ class DescobrirConversaTest(TestCase):
     def test_lista_as_conversas_que_falaram_com_o_robo(self):
         espiao = Espiao(resultado=[
             {"message": {"chat": {"id": 111, "first_name": "Edson", "username": "edson"}}},
-            {"message": {"chat": {"id": -222, "title": "Cabana do Jacarandá"}}},
+            {"message": {"chat": {"id": -222, "title": "Studio Industrial"}}},
         ])
         with mandando_para_o_espiao(espiao):
             achados, erro = telegram.descobrir_chats(telegram_pronto())
         self.assertEqual(erro, "")
         self.assertEqual([c["id"] for c in achados], ["-222", "111"])
-        self.assertEqual(achados[0]["nome"], "Cabana do Jacarandá")
+        self.assertEqual(achados[0]["nome"], "Studio Industrial")
         self.assertEqual(achados[1]["nome"], "Edson (@edson)")
 
     def test_nao_repete_a_mesma_conversa(self):

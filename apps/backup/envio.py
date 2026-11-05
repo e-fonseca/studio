@@ -4,7 +4,7 @@ A lista é montada por **inclusão**: entra o que é código do sistema, e só i
 de exclusão esquecida manda o arquivo que não devia; regra de inclusão esquecida apenas
 deixa de mandar um arquivo, e aí alguém nota.
 
-No servidor, o programa fica em `C:\\cabana-sistema\\app` e os dados ficam em pastas
+No servidor, o programa fica em `C:\\studio-sistema\\app` e os dados ficam em pastas
 IRMÃS (`dados`, `logs`, `backups`, `config`), então banco, anexo e segredo já estão
 fora do alcance desta varredura. As exclusões abaixo existem para o computador de
 desenvolvimento, onde `var/` fica dentro da pasta do projeto, e como cinto de
@@ -48,7 +48,7 @@ TAMANHO_TOTAL_MAXIMO = 60 * 1024 * 1024
 def _proibidas():
     """As pastas de dados pelo caminho de verdade, lido das configurações.
 
-    Não basta o nome: CABANA_MEDIA_ROOT pode apontar para qualquer lugar, e se um dia
+    Não basta o nome: STUDIO_MEDIA_ROOT pode apontar para qualquer lugar, e se um dia
     apontar para dentro da pasta do programa, os anexos de nota fiscal entrariam no
     envio por não se chamarem "anexos".
     """

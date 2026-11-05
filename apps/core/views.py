@@ -131,11 +131,11 @@ def certificado(request):
         "diagnostico": https.conferir(
             endereco_rede=(request.get_host() or "").split(":")[0]),
         # Se o túnel tentou subir e falhou, o motivo ficou anotado em arquivo. Com o
-        # HTTPS desligado no cabana.env não faz sentido mostrar: a porta não subiu
+        # HTTPS desligado no studio.env não faz sentido mostrar: a porta não subiu
         # porque ninguém mandou subir.
         "falha_do_tunel": https.falha_registrada() if https.ligado() else None,
         "endereco_para_abrir": https.endereco_seguro(request).replace(
-            request.path, "/sistema/"),
+            request.path, "/studio/"),
     })
 
 

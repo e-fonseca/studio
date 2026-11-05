@@ -1,8 +1,8 @@
-# Sistema auxiliar da Cabana do Jacarandá
+# Sistema auxiliar do Studio Industrial
 
 Sistema web local de apoio à gestão (orçamento de compras, fornecedores, estoque e
 análise financeira), auxiliar ao SET Sistemas. Não substitui o ERP nem a emissão fiscal.
-Endereço previsto: `https://192.168.3.254/sistema`, acessível só pela VPN.
+Endereço previsto: `https://192.168.3.254/studio`, acessível só pela VPN.
 
 ## O que já funciona (entrega 1, fase 1 parcial)
 
@@ -51,7 +51,7 @@ Requer Python 3.11+ e PostgreSQL 14+.
 ```bash
 python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-export CABANA_SECRET_KEY=dev CABANA_DB_NOME=cabana CABANA_DB_USUARIO=cabana
+export STUDIO_SECRET_KEY=dev STUDIO_DB_NOME=cabana STUDIO_DB_USUARIO=cabana
 python manage.py migrate
 python manage.py configurar_perfis
 python manage.py carregar_roteiro --prazo AAAA-MM-DD   # último dia do aviso prévio
@@ -68,7 +68,7 @@ Abrir `http://127.0.0.1:8000/sistema/`. Para incluir alguém num perfil, use
 python manage.py test --settings=config.settings.test
 ```
 
-Usa o PostgreSQL configurado pelas variáveis `CABANA_DB_*` (cria e apaga um banco de teste).
+Usa o PostgreSQL configurado pelas variáveis `STUDIO_DB_*` (cria e apaga um banco de teste).
 Resultado mais recente em [docs/evidencias-testes.md](docs/evidencias-testes.md).
 
 ## Comandos de operação

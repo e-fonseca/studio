@@ -24,7 +24,7 @@ Relatorio(
     blocos=[Bloco(...)], # título, frase e, às vezes, tabela de DUAS colunas
     tem_noticia=True,    # sem notícia, não manda
     aviso="...",         # dado velho muda o que o e-mail significa
-    caminho="/sistema/painel/vendas-do-dia/",  # o Telegram vira endereço inteiro
+    caminho="/studio/painel/vendas-do-dia/",  # o Telegram vira endereço inteiro
 )
 ```
 

@@ -197,13 +197,13 @@ class EnvioTest(TestCase):
         self.assertTrue(registro.deu_certo, registro.erro)
         self.assertEqual(len(mail.outbox), 1)
         mensagem = mail.outbox[0]
-        self.assertTrue(mensagem.subject.startswith("[Cabana] Teste de envio"))
+        self.assertTrue(mensagem.subject.startswith("[Studio] Teste de envio"))
         self.assertEqual(mensagem.to, ["cabanadojacaranda@gmail.com"])
-        self.assertIn("Sistema da Cabana", mensagem.from_email)
+        self.assertIn("Sistema do Studio", mensagem.from_email)
         self.assertIn("sistema consegue mandar e-mail", mensagem.body)
         tipos = [tipo for _corpo, tipo in mensagem.alternatives]
         self.assertEqual(tipos, ["text/html"])
-        self.assertIn("Cabana do Jacarandá", mensagem.alternatives[0][0])
+        self.assertIn("Studio Industrial", mensagem.alternatives[0][0])
 
     def test_falha_do_servidor_vira_frase_de_loja_no_registro(self):
         import smtplib

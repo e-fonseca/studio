@@ -15,7 +15,7 @@
  *
  * Como rodar, com o servidor de desenvolvimento no ar em 127.0.0.1:8099:
  *
- *     CABANA_SENHA='senha do usuário de teste' \
+ *     STUDIO_SENHA='senha do usuário de teste' \
  *       node docs/ferramentas/conferir-contraste.js edson docs/ferramentas/telas-para-conferir.txt /tmp/prints
  *
  * O terceiro argumento é opcional: com ele, guarda o print de cada tela (até 5000px de
@@ -26,7 +26,7 @@
 const { chromium } = require('/opt/node-tools/node_modules/playwright');
 const fs = require('fs');
 const path = require('path');
-const BASE = process.env.CABANA_ENDERECO || 'http://127.0.0.1:8099';
+const BASE = process.env.STUDIO_ENDERECO || 'http://127.0.0.1:8099';
 
 function medir() {
   const DESENHO = '.estrela, .estrelas-escolha label';
@@ -102,8 +102,8 @@ function medir() {
 
 (async () => {
   const [,, usuario, arquivoRotas, pasta] = process.argv;
-  if (!usuario || !arquivoRotas || !process.env.CABANA_SENHA) {
-    console.error('uso: CABANA_SENHA=... node conferir-contraste.js <usuario> <arquivo-de-rotas> [pasta-dos-prints]');
+  if (!usuario || !arquivoRotas || !process.env.STUDIO_SENHA) {
+    console.error('uso: STUDIO_SENHA=... node conferir-contraste.js <usuario> <arquivo-de-rotas> [pasta-dos-prints]');
     process.exit(2);
   }
   const rotas = fs.readFileSync(arquivoRotas, 'utf8').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
@@ -118,15 +118,15 @@ function medir() {
     const page = await ctx.newPage();
     const erros = [];
     page.on('pageerror', (e) => erros.push(String(e)));
-    await page.goto(BASE + '/sistema/entrar/');
+    await page.goto(BASE + '/studio/entrar/');
     await page.fill('input[name=username]', usuario);
-    await page.fill('input[name=password]', process.env.CABANA_SENHA);
+    await page.fill('input[name=password]', process.env.STUDIO_SENHA);
     await Promise.all([page.waitForNavigation(), page.click('button[type=submit]')]);
     // A área de acessos (1.44.0) pede a senha de novo antes de abrir. Confirma uma vez em
     // cada tamanho; para quem não administra, a tela é o 403 e não há o que confirmar.
-    await page.goto(BASE + '/sistema/usuarios/confirmar/');
+    await page.goto(BASE + '/studio/usuarios/confirmar/');
     if (await page.locator('form.formulario-senha input[name=senha]').count()) {
-      await page.fill('form.formulario-senha input[name=senha]', process.env.CABANA_SENHA);
+      await page.fill('form.formulario-senha input[name=senha]', process.env.STUDIO_SENHA);
       await Promise.all([page.waitForNavigation(), page.click('form.formulario-senha button[type=submit]')]);
     }
     for (const rota of rotas) {

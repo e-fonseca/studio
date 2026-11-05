@@ -94,7 +94,7 @@ def log(request, pk):
     """Baixa o log de uma importação como texto, para anexar num e-mail ou guardar."""
     importacao = get_object_or_404(Importacao, pk=pk)
     cabecalho = [
-        "Log da importação do sistema da Cabana do Jacarandá",
+        "Log da importação do sistema do Studio Industrial",
         f"Início: {timezone.localtime(importacao.iniciada_em):%d/%m/%Y %H:%M:%S}",
         f"Resultado: {importacao.get_situacao_display()}",
         f"Origem: {importacao.get_origem_display()}",

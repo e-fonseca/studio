@@ -235,31 +235,31 @@ class TelasEPermissoesTest(Base):
     def test_quadro_mostra_colunas_e_busca(self):
         self.escrever()
         self.entrar(self.operador)
-        resposta = self.client.get("/sistema/processos/?q=lacre")
+        resposta = self.client.get("/studio/processos/?q=lacre")
         self.assertContains(resposta, "Em teste por outra pessoa")
         self.assertNotContains(resposta, "P-%03d · Recebimento" % self.processo.pk)
-        resposta = self.client.get("/sistema/processos/?q=pedido")
+        resposta = self.client.get("/studio/processos/?q=pedido")
         self.assertContains(resposta, "Recebimento")
 
     def test_vendedor_nao_cadastra_nem_edita(self):
         self.entrar(self.consulta)
-        self.assertEqual(self.client.get("/sistema/processos/novo/").status_code, 403)
-        self.assertEqual(self.client.get(f"/sistema/processos/{self.processo.pk}/procedimento/").status_code, 403)
-        self.assertEqual(self.client.post("/sistema/processos/novo/", {"titulo": "x", "area": "outra"}).status_code, 403)
+        self.assertEqual(self.client.get("/studio/processos/novo/").status_code, 403)
+        self.assertEqual(self.client.get(f"/studio/processos/{self.processo.pk}/procedimento/").status_code, 403)
+        self.assertEqual(self.client.post("/studio/processos/novo/", {"titulo": "x", "area": "outra"}).status_code, 403)
 
     def test_vendedor_nao_envia_para_teste_pela_url(self):
         self.escrever()
         self.entrar(self.consulta)
-        self.client.post(f"/sistema/processos/{self.processo.pk}/enviar-para-teste/")
+        self.client.post(f"/studio/processos/{self.processo.pk}/enviar-para-teste/")
         self.assertEqual(self.recarregar().estado, Estado.EM_DOCUMENTACAO)
 
     def test_vendedor_nao_abre_a_base_de_processos(self):
         """O perfil de balcão não tem nada a fazer aqui: a tela inteira é da gerência e do administrativo."""
         self.entrar(self.consulta)
-        self.assertEqual(self.client.get("/sistema/processos/").status_code, 403)
+        self.assertEqual(self.client.get("/studio/processos/").status_code, 403)
         # O registro de teste devolve para a página do processo com um aviso, em vez de
         # 403: quem não pode nem abrir o processo cai no 403 da própria página.
-        resposta = self.client.post(f"/sistema/processos/{self.processo.pk}/testes/",
+        resposta = self.client.post(f"/studio/processos/{self.processo.pk}/testes/",
                                     {"resultado": "concluiu", "usou_somente_documentacao": "on"})
         self.assertEqual(resposta.status_code, 302)
         self.assertEqual(self.client.get(resposta["Location"]).status_code, 403)
@@ -267,25 +267,25 @@ class TelasEPermissoesTest(Base):
 
     def test_fluxo_pelas_telas(self):
         self.entrar(self.estoque)
-        resposta = self.client.post("/sistema/processos/novo/", {
+        resposta = self.client.post("/studio/processos/novo/", {
             "titulo": "Inventário mensal", "area": "inventario", "criticidade": "alta",
             "fonte_conhecimento": "Bárbara", "titular": self.estoque.pk, "substituto": self.operador.pk,
         })
         novo = Processo.objects.get(titulo="Inventário mensal")
-        self.assertRedirects(resposta, f"/sistema/processos/{novo.pk}/procedimento/")
-        self.client.post(f"/sistema/processos/{novo.pk}/procedimento/",
+        self.assertRedirects(resposta, f"/studio/processos/{novo.pk}/procedimento/")
+        self.client.post(f"/studio/processos/{novo.pk}/procedimento/",
                          {**CONTEUDO, "versao_base": 0, "resumo_mudanca": "Primeira versão."})
-        self.client.post(f"/sistema/processos/{novo.pk}/enviar-para-teste/")
+        self.client.post(f"/studio/processos/{novo.pk}/enviar-para-teste/")
         novo.refresh_from_db()
         self.assertEqual(novo.estado, Estado.EM_TESTE)
-        pagina = self.client.get(f"/sistema/processos/{novo.pk}/")
+        pagina = self.client.get(f"/studio/processos/{novo.pk}/")
         self.assertContains(pagina, "Contar as peças")
         self.assertContains(pagina, "Registrar meu teste")
         self.assertNotContains(pagina, "Validar processo")
 
     def test_procedimento_com_senha_mostra_erro_sem_salvar(self):
         self.entrar(self.estoque)
-        resposta = self.client.post(f"/sistema/processos/{self.processo.pk}/procedimento/",
+        resposta = self.client.post(f"/studio/processos/{self.processo.pk}/procedimento/",
                                     {**CONTEUDO, "passos": "senha=123", "versao_base": 0, "resumo_mudanca": "x"})
         self.assertContains(resposta, "parece conter uma senha")
         self.assertFalse(self.processo.versoes.exists())
@@ -294,7 +294,7 @@ class TelasEPermissoesTest(Base):
         anexo = regras.anexar(self.estoque, self.processo, SimpleUploadedFile("m.pdf", b"%PDF-1"),
                               descricao="m", contem_imagem_de_pessoa=False, autorizacao_registrada=False,
                               tamanho_maximo=10**6)
-        url = f"/sistema/processos/{self.processo.pk}/anexos/{anexo.pk}/"
+        url = f"/studio/processos/{self.processo.pk}/anexos/{anexo.pk}/"
         self.client.logout()
         self.assertEqual(self.client.get(url).status_code, 302)
         self.entrar(self.operador)
@@ -308,21 +308,21 @@ class TelasEPermissoesTest(Base):
         anexo = regras.anexar(self.estoque, outro, SimpleUploadedFile("m.pdf", b"%PDF-1"), descricao="m",
                               contem_imagem_de_pessoa=False, autorizacao_registrada=False, tamanho_maximo=10**6)
         self.entrar(self.operador)
-        self.assertEqual(self.client.get(f"/sistema/processos/{self.processo.pk}/anexos/{anexo.pk}/").status_code, 404)
+        self.assertEqual(self.client.get(f"/studio/processos/{self.processo.pk}/anexos/{anexo.pk}/").status_code, 404)
 
     def test_sem_perfil_nao_ve_quadro(self):
         sem = usuario("sem_perfil")
         self.entrar(sem)
-        self.assertEqual(self.client.get("/sistema/processos/").status_code, 403)
+        self.assertEqual(self.client.get("/studio/processos/").status_code, 403)
 
 
 class RoteiroTest(TestCase):
     def test_telas_abrem_com_processos_sem_responsavel(self):
         call_command("carregar_roteiro", stdout=open("/dev/null", "w"))
         self.client.force_login(usuario("op", ADMINISTRATIVO))
-        self.assertContains(self.client.get("/sistema/processos/"), "a definir")
+        self.assertContains(self.client.get("/studio/processos/"), "a definir")
         for p in Processo.objects.all():
-            self.assertContains(self.client.get(f"/sistema/processos/{p.pk}/"), "Ainda não há procedimento escrito.")
+            self.assertContains(self.client.get(f"/studio/processos/{p.pk}/"), "Ainda não há procedimento escrito.")
 
     def test_carregar_roteiro_e_idempotente(self):
         call_command("carregar_roteiro", "--prazo", "2026-11-04", stdout=open("/dev/null", "w"))

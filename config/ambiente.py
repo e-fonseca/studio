@@ -1,6 +1,6 @@
-"""Carrega as variáveis CABANA_* de um arquivo fora do código (instalação no servidor).
+"""Carrega as variáveis STUDIO_* de um arquivo fora do código (instalação no servidor).
 
-No servidor, o instalador grava C:\\cabana-sistema\\config\\cabana.env, legível só por
+No servidor, o instalador grava C:\\studio-sistema\\config\\studio.env, legível só por
 administradores e pela conta do serviço. Em desenvolvimento o arquivo não existe e nada muda.
 Variáveis já definidas no ambiente têm prioridade sobre o arquivo.
 """
@@ -8,11 +8,11 @@ Variáveis já definidas no ambiente têm prioridade sobre o arquivo.
 import os
 from pathlib import Path
 
-PADRAO = Path(__file__).resolve().parent.parent.parent / "config" / "cabana.env"
+PADRAO = Path(__file__).resolve().parent.parent.parent / "config" / "studio.env"
 
 
 def carregar(caminho=None):
-    arquivo = Path(caminho or os.environ.get("CABANA_ENV_ARQUIVO") or PADRAO)
+    arquivo = Path(caminho or os.environ.get("STUDIO_ENV_ARQUIVO") or PADRAO)
     if not arquivo.is_file():
         return False
     for linha in arquivo.read_text(encoding="utf-8-sig").splitlines():

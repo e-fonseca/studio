@@ -137,7 +137,7 @@ def buscar(latitude, longitude, dias=7, dias_de_previsao=DIAS_DE_PREVISAO, abrir
 
 
 def _abrir(endereco):
-    pedido = Request(endereco, headers={"User-Agent": "cabana-sistema"})
+    pedido = Request(endereco, headers={"User-Agent": "studio-sistema"})
     with urlopen(pedido, timeout=TEMPO_LIMITE) as resposta:  # noqa: S310 - endereço fixo, https
         return resposta.read().decode("utf-8")
 

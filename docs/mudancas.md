@@ -41,8 +41,8 @@ atualização e higienizacao"*. Traz junto tudo da 1.47.0, que não chegou a ser
   PowerShell. Se a troca falhar, o zip volta para a pasta e o sistema fica como estava.
 - **O `higienizar.ps1` roda da pasta do pacote**: até aqui ele achava o sistema subindo uma
   pasta a partir de onde estava, e da pasta do pacote procurava o Python em `C:\instalacao`
-  e saía calado. Agora, fora de `C:\cabana-sistema\scripts`, ele vai para
-  `C:\cabana-sistema`, e mostra na tela o que limpou.
+  e saía calado. Agora, fora de `C:\studio-sistema\scripts`, ele vai para
+  `C:\studio-sistema`, e mostra na tela o que limpou.
 - A Ficha técnica, o `LEIA-ME.txt`, os avisos de erro da importação e a documentação mostram
   os comandos novos (`higienizacao.md`). Os de antes continuam valendo.
 - **Só desta vez**: o atualizador que está no servidor, o da 1.46.0, ainda procura o zip em
@@ -456,7 +456,7 @@ intuitivo [...] eu acho que tem muita informação para tomada de decisão rápi
 Pedido dele: *"verificar o que aconteceu, desconfiguou o sistema, mitigar e corrigir"*,
 com o print da tela de início de 05/10 no lugar do sistema de hoje.
 
-- **O que aconteceu.** O programa inteiro mora numa pasta só, `C:\cabana-sistema\app`,
+- **O que aconteceu.** O programa inteiro mora numa pasta só, `C:\studio-sistema\app`,
   que o instalador apaga e copia de novo a cada atualização. Quem decide o que vai para lá
   é o `atualizar.ps1`, escolhendo um zip entre os que estiverem em `C:\instalacao` — e ele
   escolhia **o de data mais nova**. Data de arquivo mente: copiar um zip de uma pasta para
@@ -795,7 +795,7 @@ derrubava o cache de propósito e a conta de dois segundos sobrava para a primei
 que abrisse o sistema** — três sincronizações por dia, três pessoas pagando a conta.
 
 - **O cache saiu da memória e foi para um arquivo em `dados\cache`.** Quem importa é a
-  tarefa `CabanaImportacao`; quem mostra a tela é o serviço `CabanaSistema`. São dois
+  tarefa `StudioImportacao`; quem mostra a tela é o serviço `StudioSistema`. São dois
   processos: com o cache na memória de cada um, a conta feita pela tarefa nunca chegava ao
   serviço, e por isso adiantar a conta na importação não teria resolvido nada.
 - **A importação passou a adiantar as contas da abertura.** A conta tem que ser feita de
@@ -904,7 +904,7 @@ correção com teste próprio: a suíte foi de 1.395 para 1.452 testes. O que es
 
 Pedido dele: *"revisar github / usuário: e-fonseca / conectar e ativar automaticamente /
 tornar um processo automático sem ação humana"*, com a foto do repositório
-`e-fonseca/sistema` vazio na tela.
+`e-fonseca/studio` vazio na tela.
 
 - **O primeiro envio de todos não funcionava, e é o único que todo mundo faz.** Um
   repositório recém-criado não tem commit nenhum, e nesse estado o GitHub responde
@@ -1013,7 +1013,7 @@ avaliando o período vigente do pedido atual com o mesmo período do ano anterio
   que um produto de verão está "em excesso" em julho porque a demanda ajustada caiu seria
   trocar informação por palpite.
 - **A tela Backup já vem com o repositório dele preenchido**
-  (`e-fonseca/sistema`), como a tela de Alertas já vem com o servidor de e-mail. Só falta
+  (`e-fonseca/studio`), como a tela de Alertas já vem com o servidor de e-mail. Só falta
   colar o token, que é dele e não pode vir escrito no programa. O passo a passo da tela
   mudou junto: o primeiro passo não é mais criar o repositório, é conferir o que está lá.
 - **Conserto de tela, no celular.** A explicação da estação é uma frase, e ela mora na
@@ -1194,7 +1194,7 @@ o clima. Seis viraram tela; o sétimo é decisão de negócio e virou estudo.
   outro número, sem mexer no que a pessoa escolheu
   ([lista-de-compra.md](lista-de-compra.md)).
 - **Botão que gera o pedido para o fornecedor, em papel timbrado.** Um pedido por
-  fornecedor, com o timbre da Cabana do Jacarandá, a razão social Essenza e o endereço
+  fornecedor, com o timbre do Studio Industrial, a razão social Essenza e o endereço
   Largo do Jesuítas, 64; cada fornecedor numa página, para a folha poder ser separada; só
   linha com quantidade maior que zero; quantidade mudada à mão sai em marrom, para quem
   assina ver o que não é sugestão do sistema. Sai do `apps/core/pdf.py` escrito à mão, sem
@@ -1278,7 +1278,7 @@ que estava incompleta desde o começo.
 - **A higienização virou um comando, e passou a rodar sozinha.** O sistema guarda uma
   foto inteira dos dados do SET a cada sincronização e, desde a 1.25.0, sincroniza três
   vezes por dia: o disco e o banco crescem sozinhos todo dia e ninguém olhava. Agora
-  `scripts\higienizar.ps1` limpa o que já não serve, e a tarefa `\Cabana\CabanaHigienizacao`
+  `scripts\higienizar.ps1` limpa o que já não serve, e a tarefa `\Studio\StudioHigienizacao`
   roda todo dia às **03:40**, depois da sincronização da madrugada e do backup, antes de a
   loja abrir. Com `-Conferir` ele só mostra o que achou e não apaga nada, então dá para
   rodar a qualquer hora ([higienizacao.md](higienizacao.md)).
@@ -1536,8 +1536,8 @@ A descrição técnica do sistema virou tela, dentro da Base de processos.
   bibliotecas dizem a que foi instalada. Versão escrita à mão envelheceria na primeira
   atualização, e ficha que mente é pior do que ficha nenhuma. O que não puder ser lido
   aparece escrito "não foi possível ler agora", nunca um palpite.
-- **O instalador passou a gravar qual motor Firebird montou** (`CABANA_FIREBIRD_VERSAO` no
-  `cabana.env`), porque carregar a DLL só para perguntar a versão é caro e é justamente o
+- **O instalador passou a gravar qual motor Firebird montou** (`STUDIO_FIREBIRD_VERSAO` no
+  `studio.env`), porque carregar a DLL só para perguntar a versão é caro e é justamente o
   que falha quando algo está errado. A arquitetura (32 ou 64 bits) continua lida do próprio
   arquivo, que é o defeito que já travou a importação uma vez.
 - **As quatro decisões que explicam o resto** ficam escritas na mesma tela, à mão de
@@ -1617,7 +1617,7 @@ Curva ABC.
   impede. O que resolve é o servidor recusar a sessão parada, e é o que passa a fazer:
   trinta minutos sem uso e a próxima tela pede senha de novo, com a explicação na tela de
   entrada. O limite de quatro horas logado continua valendo. Os dois tempos se mudam no
-  `cabana.env`, em `CABANA_SESSAO_PARADA_MINUTOS` e `CABANA_SESSAO_MAXIMA_HORAS`.
+  `studio.env`, em `STUDIO_SESSAO_PARADA_MINUTOS` e `STUDIO_SESSAO_MAXIMA_HORAS`.
 - **A Curva ABC virou duas faixas repartidas.** A linha subindo num quadro sem números
   dizia alguma coisa para quem já sabe o que é curva ABC. No lugar dela: uma faixa com o
   cadastro repartido em A, B e C, e logo abaixo a mesma repartição do dinheiro. A
@@ -1656,7 +1656,7 @@ Menu **Margem**, e o HTTPS dizendo por que não subiu.
 - **O autodiagnóstico testa também o endereço da rede**, e não só o 127.0.0.1: assim dá
   para separar "o túnel não subiu" de "subiu mas não atende em 192.168.3.254". Quando os
   dois respondem, a tela diz em uma linha o que ainda pode faltar — a regra
-  *Cabana Sistema HTTPS* no firewall e o certificado instalado no aparelho.
+  *Studio Sistema HTTPS* no firewall e o certificado instalado no aparelho.
 - **Sugestões desceu para a fileira de apoio**, ao lado de Sugestões da equipe. Era isso ou
   a fileira de cima passar a ocupar duas linhas com a entrada nova.
 
@@ -1675,12 +1675,12 @@ Correção das duas coisas que o Edson viu logo depois de instalar a 1.19.0.
   Vale para qualquer tela futura que leia algo novo do SET.
 - **O download do certificado dava "Página não encontrada".** A causa é a mesma coisa que
   vinha derrubando o HTTPS desde que ele existe: o certificado estava configurado para
-  nascer em `C:\cabana-sistema\config\certificado`, e a conta que roda o sistema só tem
+  nascer em `C:\studio-sistema\config\certificado`, e a conta que roda o sistema só tem
   **leitura** na pasta `config`. Ela nunca conseguiu criar o arquivo. Como quem tenta criar
   é o `servir.py`, que engole a falha de propósito para não derrubar o site, o erro ia só
   para o log: a porta segura não subia e o download não tinha o que entregar, sem nada
   escrito em lugar nenhum. Quatro mudanças:
-  - o certificado passa a morar em `C:\cabana-sistema\dados\certificado`, onde essa conta
+  - o certificado passa a morar em `C:\studio-sistema\dados\certificado`, onde essa conta
     escreve, e o instalador corrige sozinho quem está apontando para a pasta antiga;
   - a tela do Certificado **cria o certificado na hora** se ele não existir, em vez de
     mandar voltar depois;
@@ -1863,8 +1863,8 @@ Correção das duas coisas que o Edson viu logo depois de instalar a 1.19.0.
   dez linhas e o resto desce na rolagem, com o cabeçalho fixo.
 - **Sessão encerrada em quatro horas.** Quem fica logado mais que isso cai na tela de entrada e
   precisa entrar de novo. O computador fica no balcão e a conta não pode ficar aberta sozinha a
-  tarde toda. O limite é contado da entrada, não do último clique, e dá para mudar no cabana.env
-  (CABANA_SESSAO_MAXIMA_HORAS).
+  tarde toda. O limite é contado da entrada, não do último clique, e dá para mudar no studio.env
+  (STUDIO_SESSAO_MAXIMA_HORAS).
 - **Leitor de código de barras.** A caixa de busca da consulta aceita o código de barras do SET:
   basta deixar o cursor nela e passar o leitor, que ele digita e manda procurar sozinho. Na cópia
   do banco, 11.268 dos 11.274 produtos têm código de barras cadastrado no SET.
@@ -2097,7 +2097,7 @@ Correção das duas coisas que o Edson viu logo depois de instalar a 1.19.0.
 - A versão 4.0 é a certa: a cópia do banco do SET é ODS 13, que é o formato do Firebird 4.
 - A leitura também confere os bits antes de tentar abrir a cópia, e o painel explica esse erro
   em linguagem de loja, com o comando da atualização.
-- Nada muda no SET: o motor fica só dentro de `C:\cabana-sistema\firebird`, embutido, sem
+- Nada muda no SET: o motor fica só dentro de `C:\studio-sistema\firebird`, embutido, sem
   serviço e sem porta.
 
 ## 1.6.2 — 06/10/2026
@@ -2116,11 +2116,11 @@ Correção das duas coisas que o Edson viu logo depois de instalar a 1.19.0.
 ## 1.6.1 — 06/10/2026
 
 - **Correção da atualização.** Na 1.4.0 o nome do pacote mudou de
-  `cabana-sistema-pacote-...zip` para `cabana-sistema-...zip`, e o `atualizar.ps1` do servidor
-  procura justamente por `cabana-sistema-pacote-*`. Resultado: ele não via os pacotes novos,
+  `studio-sistema-pacote-...zip` para `studio-sistema-...zip`, e o `atualizar.ps1` do servidor
+  procura justamente por `studio-sistema-pacote-*`. Resultado: ele não via os pacotes novos,
   reinstalava em silêncio o pacote antigo e dizia "Concluído". Nada das versões 1.4.0, 1.5.0 e
   1.6.0 chegou ao servidor. O nome voltou a ter `pacote-`, e o script passa a aceitar qualquer
-  zip que comece com `cabana-sistema`, a dizer qual pacote e qual versão aplicou e a avisar
+  zip que comece com `studio-sistema`, a dizer qual pacote e qual versão aplicou e a avisar
   quando ignora um zip da pasta.
 - No fim da instalação, o instalador chama as telas principais e avisa se alguma responder
   erro 500, em vez de terminar dizendo que está tudo certo.
@@ -2135,7 +2135,7 @@ Correção das duas coisas que o Edson viu logo depois de instalar a 1.19.0.
   o mês em que a compra passou a venda marcado.
 - O backup do SET pode vir compactado: o sistema abre o `.zip`, pega o `.FDB` ou `.FBK` de dentro
   e lê a cópia. É o formato que a Cabana gera (Set-Cabana-FULL.zip).
-- `--arquivo` e `CABANA_SET_BACKUP` aceitam a pasta, não só o arquivo: antes, apontar para a pasta
+- `--arquivo` e `STUDIO_SET_BACKUP` aceitam a pasta, não só o arquivo: antes, apontar para a pasta
   pelo comando dava "não encontrei o arquivo de origem".
 - Erros novos com explicação em linguagem simples: zip sem banco dentro e zip incompleto.
 
@@ -2157,7 +2157,7 @@ Correção das duas coisas que o Edson viu logo depois de instalar a 1.19.0.
 - As mensagens informativas do Django deixam de sair pela saída de erro, que o PowerShell
   mostrava em vermelho como se fossem falha da instalação.
 - O horário da importação só é regravado quando informado no comando; ajuste feito à mão em
-  `config\cabana.env` passa a ser respeitado.
+  `config\studio.env` passa a ser respeitado.
 
 ## 1.4.0 — 06/10/2026
 
@@ -2171,8 +2171,8 @@ Correção das duas coisas que o Edson viu logo depois de instalar a 1.19.0.
   importação, para saber qual pacote produziu cada número.
 - A tela de Importações explica a sincronização diária: horário da tarefa e
   pasta de onde sai o backup mais recente.
-- O horário da importação passa a ficar em `CABANA_IMPORTACAO_HORA`
-  (`config\cabana.env`), e a tarefa agendada é registrada por ele.
+- O horário da importação passa a ficar em `STUDIO_IMPORTACAO_HORA`
+  (`config\studio.env`), e a tarefa agendada é registrada por ele.
 
 ## 1.3.0 — 05/10/2026
 
@@ -2185,7 +2185,7 @@ Correção das duas coisas que o Edson viu logo depois de instalar a 1.19.0.
 ## 1.2.0 — 05/10/2026
 
 - A importação passa a procurar sozinha o backup mais recente de
-  `C:\backup-Set\Cabana\Set-Cabana`, incluindo subpastas, conferindo a data do
+  `C:\backup-Set\Studio\Set-Studio`, incluindo subpastas, conferindo a data do
   arquivo.
 - Tarefa diária de importação registrada no Windows.
 

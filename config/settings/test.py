@@ -2,7 +2,7 @@
 
 import os
 
-os.environ.setdefault("CABANA_SECRET_KEY", "chave-somente-para-testes")
+os.environ.setdefault("STUDIO_SECRET_KEY", "chave-somente-para-testes")
 
 from .base import *  # noqa: E402,F401,F403
 from .base import BASE_DIR  # noqa: E402

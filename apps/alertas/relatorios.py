@@ -71,7 +71,7 @@ class Relatorio:
     aviso: str = ""
     # A tela que este relatório resume. O aviso do Telegram vira um endereço inteiro a
     # partir daqui, porque link relativo numa mensagem de celular não abre nada.
-    caminho: str = "/sistema/"
+    caminho: str = "/studio/"
 
 
 def _reais(valor):
@@ -108,7 +108,7 @@ def contas_a_pagar(importacao=None, hoje=None):
     importacao = importacao or importacao_servicos.ultima_concluida()
     hoje = hoje or timezone.localdate()
     relatorio = Relatorio(rotina="contas", assunto="Contas a pagar", aviso=_aviso_dos_dados(),
-                          caminho="/sistema/financeiro/")
+                          caminho="/studio/financeiro/")
     if importacao is None:
         relatorio.manchete = "Ainda não há dados importados do SET."
         relatorio.resumo = "Sem importação concluída."
@@ -148,7 +148,7 @@ def contas_a_pagar(importacao=None, hoje=None):
             colunas=["Conta", "Valor"],
             linhas=linhas,
             escondidas=escondidas,
-            link="/sistema/financeiro/?filtro=" + chave,
+            link="/studio/financeiro/?filtro=" + chave,
             link_rotulo="Abrir no sistema",
         ))
 
@@ -176,7 +176,7 @@ def estoque(importacao=None):
     """
     importacao = importacao or importacao_servicos.ultima_concluida()
     relatorio = Relatorio(rotina="estoque", assunto="Estoque da loja", aviso=_aviso_dos_dados(),
-                          caminho="/sistema/painel/")
+                          caminho="/studio/painel/")
     if importacao is None:
         relatorio.manchete = "Ainda não há dados importados do SET."
         relatorio.resumo = "Sem importação concluída."
@@ -192,7 +192,7 @@ def estoque(importacao=None):
         frase=(f"{_reais(prateleira.valor) if prateleira else '—'} ao custo, "
                f"em {_numero(visao.importacao.produtos)} produtos cadastrados. "
                f"{_numero(visao.sem_venda)} deles não venderam nenhuma unidade em 12 meses."),
-        link="/sistema/painel/", link_rotulo="Abrir a Visão geral",
+        link="/studio/painel/", link_rotulo="Abrir a Visão geral",
     ))
 
     # Os três blocos de estoque das Sugestões: o que não devia ter sido comprado, o que
@@ -219,7 +219,7 @@ def estoque(importacao=None):
             colunas=["Produto", bloco.coluna],
             linhas=linhas,
             escondidas=escondidas,
-            link="/sistema/compras/sugestoes/", link_rotulo="Abrir as sugestões",
+            link="/studio/compras/sugestoes/", link_rotulo="Abrir as sugestões",
         ))
 
     parado = next((b for b in todas.blocos if b.chave == "parar"), None)
@@ -248,7 +248,7 @@ def sugestao_de_compra(importacao=None, hoje=None):
     importacao = importacao or importacao_servicos.ultima_concluida()
     hoje = hoje or timezone.localdate()
     relatorio = Relatorio(rotina="compra", assunto="Sugestão de compra", aviso=_aviso_dos_dados(),
-                          caminho="/sistema/compras/lista/")
+                          caminho="/studio/compras/lista/")
     if importacao is None:
         relatorio.manchete = "Ainda não há dados importados do SET."
         relatorio.resumo = "Sem importação concluída."
@@ -296,14 +296,14 @@ def sugestao_de_compra(importacao=None, hoje=None):
             colunas=["Produto", "Valor"],
             linhas=linhas,
             escondidas=escondidas,
-            link="/sistema/compras/lista/", link_rotulo="Abrir a lista de compra",
+            link="/studio/compras/lista/", link_rotulo="Abrir a lista de compra",
         ))
 
     if lista.resto:
         relatorio.blocos.append(Bloco(
             titulo=f"Fora do teto do mês: mais {_numero(lista.resto)} produto(s), {_reais(lista.valor_resto)}",
             frase="Não cabem no teto deste mês. Estão na tela, com o arquivo para o Excel.",
-            link="/sistema/compras/lista/", link_rotulo="Abrir a lista de compra",
+            link="/studio/compras/lista/", link_rotulo="Abrir a lista de compra",
         ))
     return relatorio
 
@@ -325,7 +325,7 @@ def vendas_do_dia(importacao=None, dia=None):
     """
     importacao = importacao or importacao_servicos.ultima_concluida()
     relatorio = Relatorio(rotina="vendas", assunto="Vendas do dia", aviso=_aviso_dos_dados(),
-                          caminho="/sistema/painel/vendas-do-dia/")
+                          caminho="/studio/painel/vendas-do-dia/")
     if importacao is None:
         relatorio.manchete = "Ainda não há dados importados do SET."
         relatorio.resumo = "Sem importação concluída."
@@ -425,7 +425,7 @@ def _descontos_do_dia(importacao, dia):
     O e-mail leva só o que pede ação: venda fora da regra que ninguém aprovou.
     """
     fora, meta, _ = descontos.do_dia(importacao, dia)
-    caminho = "/sistema/caixa/descontos/"
+    caminho = "/studio/caixa/descontos/"
     blocos = []
     if meta is not None:
         if meta.bateu:
@@ -525,7 +525,7 @@ def _caixa_do_dia(importacao, dia, vendas=None):
     caixas = list(importacao.caixas.filter(dia=dia).order_by("aberto_em", "id_set"))
     quando = dia.strftime("%d/%m/%Y")
     bloco = Bloco(titulo="Caixa do dia", colunas=["Caixa", "Valor"],
-                  link="/sistema/caixa/", link_rotulo="Abrir a tela Caixa")
+                  link="/studio/caixa/", link_rotulo="Abrir a tela Caixa")
     if not caixas:
         bloco.frase = f"O SET não tem caixa aberto em {quando}."
         return bloco
@@ -637,7 +637,7 @@ def de_teste():
         manchete="Se esta mensagem chegou, o sistema consegue mandar e-mail.",
         resumo="Teste de configuração.",
         tem_noticia=True,
-        caminho="/sistema/alertas/",
+        caminho="/studio/alertas/",
     )
     agora = timezone.localtime()
     relatorio.blocos.append(Bloco(
@@ -645,7 +645,7 @@ def de_teste():
         frase=(f"O servidor da loja alcançou o servidor de e-mail e foi aceito, às "
                f"{agora:%H:%M de %d/%m/%Y}. Os relatórios de verdade vão sair nos horários "
                f"configurados, e só quando tiverem alguma notícia."),
-        link="/sistema/alertas/", link_rotulo="Abrir a configuração",
+        link="/studio/alertas/", link_rotulo="Abrir a configuração",
     ))
     return relatorio
 

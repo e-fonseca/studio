@@ -1,11 +1,11 @@
 ---
 name: cabana-reporting-system
-description: Como mexer em relatório, tela de número e importação do sistema da Cabana do Jacarandá sem quebrar as regras da loja. Use ao criar ou alterar relatório, painel, exportação, alerta por e-mail ou Telegram, ou ao mexer na leitura do backup do SET.
+description: Como mexer em relatório, tela de número e importação do sistema da Studio Industrial sem quebrar as regras da loja. Use ao criar ou alterar relatório, painel, exportação, alerta por e-mail ou Telegram, ou ao mexer na leitura do backup do SET.
 ---
 
 # Relatórios do sistema da Cabana
 
-Sistema auxiliar da Cabana do Jacarandá: Django 5.2 + PostgreSQL, servido em
+Sistema auxiliar da Studio Industrial: Django 5.2 + PostgreSQL, servido em
 `/sistema` no servidor da loja (Windows, 192.168.3.254). O sistema **lê** uma cópia do
 backup do SET Sistemas e não escreve nada nele. Tudo em português do Brasil, inclusive
 nomes de função, variável e teste.
@@ -13,7 +13,7 @@ nomes de função, variável e teste.
 ## As cinco regras que não se negociam
 
 1. **Nada afeta o SET.** A leitura é sempre de uma CÓPIA do backup do dia, num Firebird
-   4 x64 separado, em `C:\cabana-sistema`. Nunca abrir o `DADOS-SET.FDB` em uso, nunca
+   4 x64 separado, em `C:\studio-sistema`. Nunca abrir o `DADOS-SET.FDB` em uso, nunca
    falar com o serviço Firebird do SET, nunca escrever em `C:\Set Sistemas`.
 2. **Sincronizar não soma.** Cada importação é uma FOTO: todo modelo vindo do SET tem
    `importacao` e toda consulta filtra por ela. Consulta sem esse filtro é o defeito mais
@@ -108,7 +108,7 @@ python3 .claude/skills/cabana-reporting-system/scripts/validar-relatorios.py
 python3 .claude/skills/cabana-reporting-system/scripts/checar-consistencia.py
 ```
 
-Pedem as variáveis `CABANA_*` do ambiente (ver `.env.exemplo`) e são só de leitura.
+Pedem as variáveis `STUDIO_*` do ambiente (ver `.env.exemplo`) e são só de leitura.
 
 ## Referências
 

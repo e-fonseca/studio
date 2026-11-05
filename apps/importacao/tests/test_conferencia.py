@@ -69,7 +69,7 @@ class ConferirTest(TestCase):
             resultado = conferencia_servicos.conferir()
         self.assertTrue(resultado.quebrado)
         self.assertFalse(resultado.achou)
-        self.assertIn("CABANA_SET_BACKUP", resultado.motivos[0].texto)
+        self.assertIn("STUDIO_SET_BACKUP", resultado.motivos[0].texto)
 
     def test_pasta_sem_backup_nenhum(self):
         with tempfile.TemporaryDirectory() as pasta:

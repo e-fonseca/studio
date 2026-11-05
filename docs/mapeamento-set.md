@@ -8,7 +8,7 @@ cada carga deve conferir as tabelas e colunas abaixo antes de importar.
 
 | IDEMPRESA | Nome | Uso |
 |---|---|---|
-| 1 | CABANA DO JACARANDÁ | Loja física; quase todas as vendas desde 2015 |
+| 1 | STUDIO INDUSTRIAL | Loja física; quase todas as vendas desde 2015 |
 | 2 | STUDIO CABANA SUL | 13 vendas (11/2025 a 08/2026) |
 | 3 | SITE CABANA | 48 vendas (09/2025 a 07/2026) |
 

@@ -23,9 +23,9 @@ def env_lista(nome, padrao=""):
     return [item.strip() for item in env(nome, padrao).split(",") if item.strip()]
 
 
-SECRET_KEY = env("CABANA_SECRET_KEY", obrigatorio=True)
+SECRET_KEY = env("STUDIO_SECRET_KEY", obrigatorio=True)
 DEBUG = False
-ALLOWED_HOSTS = env_lista("CABANA_ALLOWED_HOSTS", "192.168.3.254")
+ALLOWED_HOSTS = env_lista("STUDIO_ALLOWED_HOSTS", "192.168.3.254")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -104,11 +104,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("CABANA_DB_NOME", "cabana"),
-        "USER": env("CABANA_DB_USUARIO", "cabana"),
-        "PASSWORD": env("CABANA_DB_SENHA", ""),
-        "HOST": env("CABANA_DB_HOST", "127.0.0.1"),
-        "PORT": env("CABANA_DB_PORTA", "5432"),
+        "NAME": env("STUDIO_DB_NOME", "cabana"),
+        "USER": env("STUDIO_DB_USUARIO", "cabana"),
+        "PASSWORD": env("STUDIO_DB_SENHA", ""),
+        "HOST": env("STUDIO_DB_HOST", "127.0.0.1"),
+        "PORT": env("STUDIO_DB_PORTA", "5432"),
         "CONN_MAX_AGE": 60,
         "ATOMIC_REQUESTS": True,
     }
@@ -126,25 +126,25 @@ TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True  # grava em UTC, exibe em America/Sao_Paulo
 
-# Toda a aplicação vive sob /sistema (rotas, estáticos, cookies e redirecionamentos).
+# Toda a aplicação vive sob /studio (rotas, estáticos, cookies e redirecionamentos).
 # O prefixo fica nas próprias rotas (config/urls.py), sem FORCE_SCRIPT_NAME, para
 # funcionar igual com o proxy repassando o caminho intacto e no servidor de testes.
-PREFIXO = "/sistema"
+PREFIXO = "/studio"
 STATIC_URL = f"{PREFIXO}/static/"
-STATIC_ROOT = Path(env("CABANA_STATIC_ROOT", BASE_DIR / "var" / "static"))
+STATIC_ROOT = Path(env("STUDIO_STATIC_ROOT", BASE_DIR / "var" / "static"))
 STATICFILES_DIRS = [BASE_DIR / "static"]
-MEDIA_ROOT = Path(env("CABANA_MEDIA_ROOT", BASE_DIR / "var" / "anexos"))
+MEDIA_ROOT = Path(env("STUDIO_MEDIA_ROOT", BASE_DIR / "var" / "anexos"))
 # Anexos nunca são servidos diretamente: passam por view com checagem de permissão.
 MEDIA_URL = f"{PREFIXO}/anexos-nao-publicos/"
 
 # O cache do painel em ARQUIVO, e não na memória do processo, porque quem CALCULA e
-# quem MOSTRA são processos diferentes: a importação é a tarefa agendada CabanaImportacao
-# e as telas são o serviço CabanaSistema. Com o cache na memória, a conta feita às 08:30
+# quem MOSTRA são processos diferentes: a importação é a tarefa agendada StudioImportacao
+# e as telas são o serviço StudioSistema. Com o cache na memória, a conta feita às 08:30
 # pela tarefa não chegava ao serviço, e a primeira pessoa a abrir o sistema depois de
 # cada sincronização pagava a conta inteira esperando — três vezes por dia. Em arquivo,
 # os dois processos leem o mesmo, e a conta também sobrevive ao reinício da atualização.
 # Medido em 14/10/2026: montar custa 2,2 s, ler de volta custa 1,3 ms.
-CACHE_PASTA = Path(env("CABANA_CACHE", BASE_DIR / "var" / "cache"))
+CACHE_PASTA = Path(env("STUDIO_CACHE", BASE_DIR / "var" / "cache"))
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
@@ -178,17 +178,17 @@ CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_AGE = 8 * 60 * 60  # uma jornada
 # Quanto tempo uma pessoa pode ficar logada, contado da entrada (pedido do Edson,
 # 07/10/2026). Quem passa disso cai na tela de entrada e precisa entrar de novo.
-SESSAO_MAXIMA_SEGUNDOS = int(env("CABANA_SESSAO_MAXIMA_HORAS", 4)) * 60 * 60
+SESSAO_MAXIMA_SEGUNDOS = int(env("STUDIO_SESSAO_MAXIMA_HORAS", 4)) * 60 * 60
 # Tempo PARADO que encerra a sessão (pedido do Edson, 08/10/2026: fechar e reabrir o
 # navegador voltava logado). O cookie já é de sessão, mas o Chrome restaura cookie de
 # sessão quando está configurado para "continuar de onde parou" ou quando segue rodando
 # em segundo plano — nada do lado do site impede isso. Quem impede é esta trava no
 # servidor: passou do tempo sem usar, a sessão acaba, com navegador aberto ou fechado.
-SESSAO_PARADA_SEGUNDOS = int(env("CABANA_SESSAO_PARADA_MINUTOS", 30)) * 60
+SESSAO_PARADA_SEGUNDOS = int(env("STUDIO_SESSAO_PARADA_MINUTOS", 30)) * 60
 # Porta segura (HTTPS). O sistema só precisa dela para montar o endereço que a tela de
 # contagem pelo celular indica: a câmera do navegador não liga fora de https. Quem
 # atende nessa porta é o túnel do servir.py, não o Django.
-PORTA_HTTPS = env("CABANA_PORTA_HTTPS", "8443")
+PORTA_HTTPS = env("STUDIO_PORTA_HTTPS", "8443")
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -196,17 +196,17 @@ SECURE_REFERRER_POLICY = "same-origin"
 
 # Histórico das atualizações aplicadas: o instalar.ps1 acrescenta uma linha a cada
 # atualização e o sistema mostra na tela de versões.
-ATUALIZACOES_HISTORICO = Path(env("CABANA_HISTORICO_ATUALIZACOES", BASE_DIR / "var" / "atualizacoes.tsv"))
+ATUALIZACOES_HISTORICO = Path(env("STUDIO_HISTORICO_ATUALIZACOES", BASE_DIR / "var" / "atualizacoes.tsv"))
 
 # Importação dos dados do SET (plano A: cópia do backup do banco; plano B: relatórios).
-# CABANA_SET_BACKUP aponta para o arquivo ou a pasta onde o backup do SET é salvo.
-IMPORTACAO_BACKUP_ORIGEM = env("CABANA_SET_BACKUP", "")
-IMPORTACAO_PASTA_TRABALHO = Path(env("CABANA_COPIA_SET", BASE_DIR / "var" / "copia-set"))
-IMPORTACAO_FIREBIRD_CLIENTE = env("CABANA_FIREBIRD_DLL", "")
-IMPORTACAO_FIREBIRD_GBAK = env("CABANA_FIREBIRD_GBAK", "")
+# STUDIO_SET_BACKUP aponta para o arquivo ou a pasta onde o backup do SET é salvo.
+IMPORTACAO_BACKUP_ORIGEM = env("STUDIO_SET_BACKUP", "")
+IMPORTACAO_PASTA_TRABALHO = Path(env("STUDIO_COPIA_SET", BASE_DIR / "var" / "copia-set"))
+IMPORTACAO_FIREBIRD_CLIENTE = env("STUDIO_FIREBIRD_DLL", "")
+IMPORTACAO_FIREBIRD_GBAK = env("STUDIO_FIREBIRD_GBAK", "")
 # Qual motor o instalador montou, só para a ficha técnica mostrar: carregar a DLL para
 # perguntar a versão é caro e capaz de falhar, e quem sabe a resposta é quem instalou.
-IMPORTACAO_FIREBIRD_VERSAO = env("CABANA_FIREBIRD_VERSAO", "")
+IMPORTACAO_FIREBIRD_VERSAO = env("STUDIO_FIREBIRD_VERSAO", "")
 # Abaixo deste tamanho o arquivo não é backup do SET, é gravação interrompida: a
 # conferência impede a leitura e os números que estão na tela continuam valendo.
 IMPORTACAO_BACKUP_MINIMO_BYTES = 1024 * 1024
@@ -215,10 +215,10 @@ IMPORTACAO_DIAS_ATENCAO = 2  # dados com esta idade já recebem aviso
 # Horários da tarefa automática, só para mostrar na tela: a tarefa agendada do Windows é
 # que manda de verdade. Desde a 1.25.0 são vários, separados por vírgula — o Edson pediu
 # 08:30, 12:30 e 19:30, para a tela acompanhar o dia em vez de parar no backup da noite.
-# CABANA_IMPORTACAO_HORA (singular) continua valendo para instalação antiga que só tem ele.
+# STUDIO_IMPORTACAO_HORA (singular) continua valendo para instalação antiga que só tem ele.
 def _horarios_da_importacao():
-    varias = env("CABANA_IMPORTACAO_HORAS", "")
-    uma = env("CABANA_IMPORTACAO_HORA", "")
+    varias = env("STUDIO_IMPORTACAO_HORAS", "")
+    uma = env("STUDIO_IMPORTACAO_HORA", "")
     bruto = varias or uma or "08:30,12:30,19:30"
     horas = []
     for pedaco in bruto.replace(";", ",").split(","):

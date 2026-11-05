@@ -77,7 +77,7 @@ def _firebird():
 
     Não se carrega a DLL aqui. Carregar é o que `manage.py conferir_firebird` faz, e
     é caro e capaz de falhar. A versão vem de quem instalou o motor: o instalador
-    grava `CABANA_FIREBIRD_VERSAO` no `cabana.env`. A arquitetura é lida dos
+    grava `STUDIO_FIREBIRD_VERSAO` no `studio.env`. A arquitetura é lida dos
     primeiros bytes do próprio arquivo, porque motor de 32 bits dentro de um Python
     de 64 já travou a importação uma vez e vale ter à vista.
     """

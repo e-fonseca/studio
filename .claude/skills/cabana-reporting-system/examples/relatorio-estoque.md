@@ -8,7 +8,7 @@ está em duas telas.
 def estoque(importacao=None):
     importacao = importacao or importacao_servicos.ultima_concluida()
     relatorio = Relatorio(rotina="estoque", assunto="Estoque da loja",
-                          aviso=_aviso_dos_dados(), caminho="/sistema/painel/")
+                          aviso=_aviso_dos_dados(), caminho="/studio/painel/")
     if importacao is None:
         relatorio.manchete = "Ainda não há dados importados do SET."
         relatorio.resumo = "Sem importação concluída."

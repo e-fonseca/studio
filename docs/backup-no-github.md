@@ -25,7 +25,7 @@ Limites: 2 MB por arquivo e 60 MB no total. Passando disso o envio para e explic
 sinal de que entrou no backup algo que não é código.
 
 O backup do **banco** continua sendo o local, `scripts\backup.ps1`, todo dia às 23:30 em
-`C:\cabana-sistema\backups` (14 dias). São dois backups com papéis diferentes: o do
+`C:\studio-sistema\backups` (14 dias). São dois backups com papéis diferentes: o do
 GitHub devolve o sistema, o local devolve os dados.
 
 ## Dois caminhos até o GitHub (1.33.1)
@@ -36,7 +36,7 @@ antes de olhar a tela:
 | | De onde sai | O que cobre | O que exige |
 |---|---|---|---|
 | **Do projeto** | Do lugar onde o sistema é escrito | Toda versão entregue | Nada. Já acontece |
-| **Do servidor** | De `C:\cabana-sistema\app` | O que mudar NO SERVIDOR | O token na tela Backup |
+| **Do servidor** | De `C:\studio-sistema\app` | O que mudar NO SERVIDOR | O token na tela Backup |
 
 O primeiro é quem encheu o repositório em 14/10/2026 e é quem o mantém em dia a cada
 entrega — sem token, sem clique, sem nada para a loja fazer. O segundo é o que esta
@@ -58,7 +58,7 @@ de novo, e tentar de novo dava no mesmo.
 Conferido contra a API de verdade em 14/10/2026, no repositório do Edson:
 
 ```
-GET /repos/e-fonseca/sistema/git/ref/heads/main
+GET /repos/e-fonseca/studio/git/ref/heads/main
 409 {"message": "Git Repository is empty."}
 ```
 
@@ -74,7 +74,7 @@ chega, sem dublê.
 
 ## Como ligar (uma vez)
 
-O repositório já vem preenchido desde a 1.32.0: `e-fonseca/sistema`, que foi o que o
+O repositório já vem preenchido desde a 1.32.0: `e-fonseca/studio`, que foi o que o
 Edson indicou em 14/10/2026 (*"fazer conexão com o diretório sistema, destinado para
 este projeto no github"*). É o mesmo princípio da tela Alertas, que já abre com o SMTP
 da Hostinger: o que fica para a pessoa é só o segredo. Trocar o endereço na tela
@@ -130,7 +130,7 @@ A mensagem do commit sai pronta: `Cabana 1.31.0 — 14/10/2026 19:40 (servidor C
 - **Sozinho, quando a última cópia passa de uma semana** (1.33.0). Quem dispara é a tarefa
   de alertas, que já acorda de hora em hora — ver o vigia, mais abaixo.
 
-Na linha de comando, de dentro de `C:\cabana-sistema\app`:
+Na linha de comando, de dentro de `C:\studio-sistema\app`:
 
     ..\python\python.exe manage.py enviar_backup            # respeita o ligado/desligado
     ..\python\python.exe manage.py enviar_backup --forcar    # manda mesmo desligado

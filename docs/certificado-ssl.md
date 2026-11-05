@@ -44,8 +44,8 @@ Android.
 - falta menos de 30 dias para vencer;
 - **não foi assinado pela autoridade atual** — é o caso de quem atualiza da 1.17.0, cujo
   certificado era assinado por ele mesmo;
-- **os endereços do `CABANA_CERTIFICADO_NOMES` mudaram**. Sem esta checagem, acrescentar
-  um endereço no `cabana.env` não teria efeito nenhum e o navegador recusaria o endereço
+- **os endereços do `STUDIO_CERTIFICADO_NOMES` mudaram**. Sem esta checagem, acrescentar
+  um endereço no `studio.env` não teria efeito nenhum e o navegador recusaria o endereço
   novo, com o certificado antigo valendo mais um ano.
 
 ## A instalação no aparelho
@@ -103,18 +103,18 @@ A partir da 1.19.0:
   | Resultado | O que aconteceu | O que fazer |
   |---|---|---|
   | **bom** | a porta respondeu em TLS | se o aparelho ainda reclama, falta instalar a autoridade nele |
-  | **ruim**, ninguém atende | o sistema subiu sem a porta segura | reiniciar a tarefa `\Cabana\CabanaSistema`; o motivo está no fim de `logs\sistema.log` |
+  | **ruim**, ninguém atende | o sistema subiu sem a porta segura | reiniciar a tarefa `\Studio\StudioSistema`; o motivo está no fim de `logs\sistema.log` |
   | **ruim**, não fecha o TLS | certificado ou chave corrompidos | apagar a pasta do certificado e reiniciar |
   | **atenção**, não respondeu a tempo | servidor ocupado | atualizar a tela em alguns segundos |
 
-- `CABANA_HTTPS=0` no `cabana.env` desliga tudo; nesse caso a faixa não aparece (não
+- `STUDIO_HTTPS=0` no `studio.env` desliga tudo; nesse caso a faixa não aparece (não
   adianta oferecer um endereço que não existe) e o diagnóstico diz qual linha mudar.
 
 ## A causa de verdade, achada em 08/10/2026
 
 O HTTPS nunca subiu neste servidor, desde a 1.15.0, e o motivo era permissão de pasta.
 
-O instalador configurava `CABANA_CERTIFICADO_PASTA = C:\cabana-sistema\config\certificado`
+O instalador configurava `STUDIO_CERTIFICADO_PASTA = C:\studio-sistema\config\certificado`
 e, três blocos depois, dava à conta do serviço apenas **leitura** em `config`:
 
 ```powershell
@@ -128,7 +128,7 @@ muda, `/sistema/certificado/autoridade.crt` devolvendo 404, e nada dizendo por q
 
 O que mudou na 1.19.1:
 
-- o certificado mora em `C:\cabana-sistema\dados\certificado` (a conta do serviço tem
+- o certificado mora em `C:\studio-sistema\dados\certificado` (a conta do serviço tem
   **M** em `dados`), e o instalador troca sozinho a configuração de quem aponta para a
   pasta antiga;
 - `pasta_padrao()` testa se dá para gravar e cai para uma pasta que aceite, na ordem
@@ -163,5 +163,5 @@ túnel subiu, e o endereço de rede pelo qual a pessoa chegou na tela (por exemp
 `192.168.3.254`), que diz se ele está escutando na placa de rede. Atender nos dois não
 garante que o firewall do Windows deixe outro aparelho entrar — o servidor falando com ele
 mesmo não passa pela regra —, e por isso a mensagem de sucesso diz, em uma linha, o que
-sobra conferir: a regra *Cabana Sistema HTTPS* na porta 8443 e o certificado instalado no
+sobra conferir: a regra *Studio Sistema HTTPS* na porta 8443 e o certificado instalado no
 aparelho.

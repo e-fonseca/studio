@@ -24,7 +24,7 @@ Fonte: capturas enviadas pelo Edson. O que não aparece nelas está marcado como
 1. **Zero acesso ao SET em uso.** (Leitura de uma cópia do banco é permitida pelo Edson; ver [leitura-firebird.md](leitura-firebird.md).) O sistema não lê nem abre o `DADOS-SET.FDB`, não usa o Firebird, as
    DLLs nem a porta 3050, não instala nada em `C:\Set Sistemas` e não automatiza telas do SET.
    Os dados entram só por relatórios que uma pessoa exporta do SET pelo caminho normal.
-2. **Pasta própria.** Tudo em `C:\cabana-sistema` (programa, dados, anexos, logs, backups).
+2. **Pasta própria.** Tudo em `C:\studio-sistema` (programa, dados, anexos, logs, backups).
    Desinstalar = parar o serviço e apagar a pasta; nada mais muda no servidor.
 3. **Banco separado.** PostgreSQL próprio, ouvindo só em `127.0.0.1` numa porta que não esteja em uso
    (verificada antes), com memória limitada (`shared_buffers` 256 MB, até 20 conexões).
@@ -44,7 +44,7 @@ Fonte: capturas enviadas pelo Edson. O que não aparece nelas está marcado como
 ## Ordem de implantação
 
 1. Rodar o levantamento (comandos em [arquitetura.md](arquitetura.md)) e confirmar a versão do Windows e as portas em uso.
-2. Instalar em `C:\cabana-sistema` com porta própria e acesso só pela rede interna.
+2. Instalar em `C:\studio-sistema` com porta própria e acesso só pela rede interna.
 3. Importar relatórios de teste e conferir com o Edson.
 4. Uma semana de uso paralelo; medir CPU, memória e disco do servidor antes e depois.
 5. Publicar em `/sistema` no IIS, com reversão pronta.

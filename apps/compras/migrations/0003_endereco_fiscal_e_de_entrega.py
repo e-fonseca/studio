@@ -10,7 +10,7 @@ from django.db import migrations, models
 #
 # A UF não veio na mensagem; Embu das Artes é São Paulo.
 INFORMADO = {
-    "nome_fantasia": "Cabana do Jacarandá",
+    "nome_fantasia": "Studio Industrial",
     "razao_social": "ESSENZA DECOR DESIGN E DECORACAO LTDA",
     "documento": "48.634.542/0001-42",
     "inscricao_estadual": "298.589.161.112",
@@ -30,7 +30,7 @@ INFORMADO = {
 
 # O que estava gravado antes de ele informar os dados de verdade. Campo que ainda
 # esteja com um destes é campo que ninguém digitou, e pode ser substituído.
-PADROES_ANTIGOS = {"Essenza", "Largo do Jesuítas, 64", "Cabana do Jacarandá"}
+PADROES_ANTIGOS = {"Essenza", "Largo do Jesuítas, 64", "Studio Industrial"}
 
 
 def preencher_o_que_ele_informou(apps, schema_editor):

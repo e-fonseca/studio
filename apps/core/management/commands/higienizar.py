@@ -1,7 +1,7 @@
 """Limpa o que o sistema acumula sozinho: cópia do SET, fotos antigas e registros.
 
 Sem argumento, só CONFERE e mostra o que achou: pode rodar a qualquer hora, não
-apaga nada. Com --fazer, limpa. Quem roda sozinho é a tarefa \\Cabana\\CabanaHigienizacao,
+apaga nada. Com --fazer, limpa. Quem roda sozinho é a tarefa \\Studio\\StudioHigienizacao,
 todo dia de madrugada, pelo scripts\\higienizar.ps1.
 """
 
@@ -21,7 +21,7 @@ class Command(BaseCommand):
                             help="Não roda o VACUUM no fim (o espaço só volta a ser usado na próxima vez).")
 
     def handle(self, *args, fazer=False, sem_arrumar=False, **opcoes):
-        self.stdout.write("Higienização do sistema da Cabana do Jacarandá")
+        self.stdout.write("Higienização do sistema do Studio Industrial")
         if fazer:
             self.stdout.write("Limpando.")
         else:

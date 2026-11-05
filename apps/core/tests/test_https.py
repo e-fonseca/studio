@@ -193,7 +193,7 @@ class TestTunelHttps(SimpleTestCase):
                 cafile=str(Path(pasta) / certificado.NOME_AUTORIDADE))
             ligacao = http.client.HTTPSConnection("localhost", porta_segura, context=contexto, timeout=10)
             try:
-                ligacao.request("GET", "/sistema/")
+                ligacao.request("GET", "/studio/")
                 resposta = ligacao.getresponse()
                 self.assertEqual(resposta.status, 200)
                 self.assertEqual(resposta.read(), b"ola do sistema")
@@ -232,7 +232,7 @@ class TestTunelHttps(SimpleTestCase):
             ligacao = http.client.HTTPSConnection(
                 "localhost", ouvinte.getsockname()[1], context=contexto, timeout=10)
             try:
-                ligacao.request("GET", "/sistema/")
+                ligacao.request("GET", "/studio/")
                 self.assertEqual(ligacao.getresponse().read(), b"ola do sistema")
             finally:
                 ligacao.close()
@@ -253,7 +253,7 @@ class TestTunelHttps(SimpleTestCase):
             ocupada.listen(1)
             porta = ocupada.getsockname()[1]
             try:
-                with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+                with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                     linha = tunel_tls.em_segundo_plano(
                         porta, ("127.0.0.1", 1), arquivo, chave, host="127.0.0.1")
                     linha.join(timeout=5)
@@ -423,13 +423,13 @@ class TestAvisoDeEnderecoSemSeguranca(TestCase):
         self.assertNotContains(resposta, "faixa-sem-seguranca")
 
     def test_o_endereco_sugerido_leva_para_a_mesma_pagina(self):
-        pedido = RequestFactory().get("/sistema/painel/dashboard/", HTTP_HOST="192.168.3.254:8095")
+        pedido = RequestFactory().get("/studio/painel/dashboard/", HTTP_HOST="192.168.3.254:8095")
         self.assertEqual(https.endereco_seguro(pedido),
-                         "https://192.168.3.254:8443/sistema/painel/dashboard/")
+                         "https://192.168.3.254:8443/studio/painel/dashboard/")
 
     def test_com_https_desligado_no_cabana_env_nao_promete_endereco_que_nao_existe(self):
-        pedido = RequestFactory().get("/sistema/", HTTP_HOST="192.168.3.254:8095")
-        with mock.patch.dict(os.environ, {"CABANA_HTTPS": "0"}):
+        pedido = RequestFactory().get("/studio/", HTTP_HOST="192.168.3.254:8095")
+        with mock.patch.dict(os.environ, {"STUDIO_HTTPS": "0"}):
             self.assertFalse(https.sem_seguranca(pedido))
             self.assertEqual(https.conferir().nivel, "ruim")
 
@@ -439,12 +439,12 @@ class TestAvisoDeEnderecoSemSeguranca(TestCase):
         with tempfile.TemporaryDirectory() as pasta:
             certificado.garantir(Path(pasta), ["localhost", "127.0.0.1"])
             with mock.patch.dict(os.environ, {
-                    "CABANA_CERTIFICADO_PASTA": pasta,
-                    "CABANA_PORTA_HTTPS": str(_porta_livre())}):
+                    "STUDIO_CERTIFICADO_PASTA": pasta,
+                    "STUDIO_PORTA_HTTPS": str(_porta_livre())}):
                 resultado = https.conferir(tempo_limite=0.5)
         self.assertEqual(resultado.nivel, "ruim")
         self.assertFalse(resultado.funcionando)
-        self.assertIn("CabanaSistema", resultado.detalhe)
+        self.assertIn("StudioSistema", resultado.detalhe)
 
     def test_porta_com_tls_de_pe_e_diagnostico_bom(self):
         with tempfile.TemporaryDirectory() as pasta:
@@ -456,7 +456,7 @@ class TestAvisoDeEnderecoSemSeguranca(TestCase):
                                        arquivo, chave)
             _esperar(porta)
             try:
-                with mock.patch.dict(os.environ, {"CABANA_PORTA_HTTPS": str(porta)}):
+                with mock.patch.dict(os.environ, {"STUDIO_PORTA_HTTPS": str(porta)}):
                     resultado = https.conferir(tempo_limite=2.0)
             finally:
                 interno.shutdown()
@@ -482,7 +482,7 @@ class TestPastaDoCertificado(SimpleTestCase):
 
     def test_usa_a_pasta_configurada_quando_da_para_gravar(self):
         with tempfile.TemporaryDirectory() as pasta:
-            with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+            with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                 self.assertEqual(certificado.pasta_padrao(), Path(pasta))
 
     def test_pasta_so_de_leitura_cai_para_outra_que_aceita_escrita(self):
@@ -493,7 +493,7 @@ class TestPastaDoCertificado(SimpleTestCase):
             trancada.mkdir(parents=True)
             recusar = lambda pasta: pasta != trancada  # noqa: E731
             with mock.patch.object(certificado, "_da_para_gravar", side_effect=recusar), \
-                    mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": str(trancada)}):
+                    mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": str(trancada)}):
                 escolhida = certificado.pasta_padrao()
             self.assertNotEqual(escolhida, trancada)
             # E a escolhida serve mesmo: o certificado nasce nela.
@@ -511,7 +511,7 @@ class TestPastaDoCertificado(SimpleTestCase):
             certificado.garantir(Path(pasta), ["localhost"])
             Path(pasta).chmod(0o500)
             try:
-                with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+                with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                     self.assertEqual(certificado.pasta_padrao(), Path(pasta))
             finally:
                 Path(pasta).chmod(0o700)
@@ -519,7 +519,7 @@ class TestPastaDoCertificado(SimpleTestCase):
     def test_o_tunel_e_a_tela_escolhem_sempre_a_mesma_pasta(self):
         """Se as duas discordassem, a tela entregaria uma autoridade que o túnel não usa."""
         with tempfile.TemporaryDirectory() as pasta:
-            with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+            with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                 self.assertEqual(certificado.pasta_padrao(), certificado.pasta_padrao())
 
 
@@ -530,7 +530,7 @@ class TestDownloadDaAutoridade(TestCase):
 
     def test_a_tela_cria_o_certificado_na_hora_se_ele_nao_existe(self):
         with tempfile.TemporaryDirectory() as pasta:
-            with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+            with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                 resposta = self.client.get(reverse("core:certificado"))
             self.assertEqual(resposta.status_code, 200)
             self.assertIsNone(resposta.context["erro_ao_gerar"])
@@ -538,7 +538,7 @@ class TestDownloadDaAutoridade(TestCase):
 
     def test_download_funciona_logo_depois_de_instalar_sem_ter_subido_o_https(self):
         with tempfile.TemporaryDirectory() as pasta:
-            with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+            with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                 resposta = self.client.get(reverse("core:certificado_autoridade"))
             self.assertEqual(resposta.status_code, 200)
             self.assertEqual(resposta["Content-Type"], "application/x-x509-ca-cert")
@@ -546,7 +546,7 @@ class TestDownloadDaAutoridade(TestCase):
     def test_quando_nao_da_para_criar_a_tela_explica_em_vez_de_dar_404(self):
         with mock.patch.object(certificado, "garantir", side_effect=PermissionError("negado")), \
                 tempfile.TemporaryDirectory() as pasta:
-            with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+            with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                 resposta = self.client.get(reverse("core:certificado_autoridade"))
         self.assertEqual(resposta.status_code, 503)
         self.assertContains(resposta, "PermissionError", status_code=503)
@@ -555,15 +555,15 @@ class TestDownloadDaAutoridade(TestCase):
     def test_o_motivo_da_falha_aparece_na_tela_do_certificado(self):
         with mock.patch.object(certificado, "garantir", side_effect=PermissionError("negado")), \
                 tempfile.TemporaryDirectory() as pasta:
-            with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+            with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                 resposta = self.client.get(reverse("core:certificado"))
         self.assertContains(resposta, "PermissionError")
         self.assertContains(resposta, "não foi criado neste servidor")
 
     def test_sem_certificado_o_diagnostico_diz_isso_e_nao_so_que_a_porta_esta_muda(self):
         with tempfile.TemporaryDirectory() as pasta:
-            with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta,
-                                              "CABANA_PORTA_HTTPS": str(_porta_livre())}):
+            with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta,
+                                              "STUDIO_PORTA_HTTPS": str(_porta_livre())}):
                 resultado = https.conferir(tempo_limite=0.5)
         self.assertEqual(resultado.nivel, "ruim")
         self.assertIn("certificado", resultado.titulo.lower())
@@ -579,7 +579,7 @@ class TestFalhaDoTunelAnotada(SimpleTestCase):
 
     def test_anota_o_motivo_e_devolve_com_a_data(self):
         with tempfile.TemporaryDirectory() as pasta:
-            with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+            with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                 https.registrar_falha("OSError: endereço já em uso")
                 quando, motivo = https.falha_registrada()
         self.assertIn("/", quando)
@@ -587,14 +587,14 @@ class TestFalhaDoTunelAnotada(SimpleTestCase):
 
     def test_quando_a_porta_sobe_a_anotacao_e_apagada(self):
         with tempfile.TemporaryDirectory() as pasta:
-            with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+            with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                 https.registrar_falha("PermissionError: sem permissão de gravar")
                 https.esquecer_falha()
                 self.assertIsNone(https.falha_registrada())
 
     def test_sem_anotacao_nenhuma_nao_inventa_motivo(self):
         with tempfile.TemporaryDirectory() as pasta:
-            with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+            with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                 self.assertIsNone(https.falha_registrada())
 
     def test_o_diagnostico_conta_o_motivo_anotado_em_vez_do_texto_generico(self):
@@ -602,8 +602,8 @@ class TestFalhaDoTunelAnotada(SimpleTestCase):
             caminho = Path(pasta)
             certificado.garantir(caminho, ["localhost", "127.0.0.1"])
             with mock.patch.dict(os.environ, {
-                    "CABANA_CERTIFICADO_PASTA": pasta,
-                    "CABANA_PORTA_HTTPS": str(_porta_livre())}):
+                    "STUDIO_CERTIFICADO_PASTA": pasta,
+                    "STUDIO_PORTA_HTTPS": str(_porta_livre())}):
                 https.registrar_falha("FileNotFoundError: chave do certificado")
                 resultado = https.conferir(tempo_limite=0.5)
         self.assertEqual(resultado.nivel, "ruim")
@@ -617,7 +617,7 @@ class TestFalhaDoTunelAnotada(SimpleTestCase):
             ocupada.listen(1)
             porta = ocupada.getsockname()[1]
             try:
-                with mock.patch.dict(os.environ, {"CABANA_CERTIFICADO_PASTA": pasta}):
+                with mock.patch.dict(os.environ, {"STUDIO_CERTIFICADO_PASTA": pasta}):
                     linha = tunel_tls.em_segundo_plano(porta, ("127.0.0.1", 1), arquivo, chave)
                     linha.join(timeout=5)
                     anotado = https.falha_registrada()
@@ -641,8 +641,8 @@ class TestPortaPelaRede(SimpleTestCase):
             _esperar(porta)
             try:
                 with mock.patch.dict(os.environ, {
-                        "CABANA_CERTIFICADO_PASTA": pasta,
-                        "CABANA_PORTA_HTTPS": str(porta)}), \
+                        "STUDIO_CERTIFICADO_PASTA": pasta,
+                        "STUDIO_PORTA_HTTPS": str(porta)}), \
                         mock.patch.object(https, "_atende",
                                           return_value=OSError("tempo esgotado")):
                     resultado = https.conferir(tempo_limite=0.5,
@@ -651,7 +651,7 @@ class TestPortaPelaRede(SimpleTestCase):
                 interno.shutdown()
         self.assertEqual(resultado.nivel, "atencao")
         self.assertIn("192.168.3.254", resultado.titulo)
-        self.assertIn("CABANA_HOST", resultado.detalhe)
+        self.assertIn("STUDIO_HOST", resultado.detalhe)
 
     def test_atendendo_nos_dois_a_tela_diz_o_que_falta_no_aparelho(self):
         with tempfile.TemporaryDirectory() as pasta:
@@ -664,8 +664,8 @@ class TestPortaPelaRede(SimpleTestCase):
             _esperar(porta)
             try:
                 with mock.patch.dict(os.environ, {
-                        "CABANA_CERTIFICADO_PASTA": pasta,
-                        "CABANA_PORTA_HTTPS": str(porta)}):
+                        "STUDIO_CERTIFICADO_PASTA": pasta,
+                        "STUDIO_PORTA_HTTPS": str(porta)}):
                     resultado = https.conferir(tempo_limite=2.0, endereco_rede="127.0.0.1")
             finally:
                 interno.shutdown()
@@ -675,7 +675,7 @@ class TestPortaPelaRede(SimpleTestCase):
 
     def test_localhost_nao_vira_teste_de_rede(self):
         with mock.patch.object(https, "_atende") as atende:
-            with mock.patch.dict(os.environ, {"CABANA_PORTA_HTTPS": str(_porta_livre())}):
+            with mock.patch.dict(os.environ, {"STUDIO_PORTA_HTTPS": str(_porta_livre())}):
                 https.conferir(tempo_limite=0.2, endereco_rede="localhost")
         atende.assert_not_called()
 
@@ -689,8 +689,8 @@ class TestTelaMostraAFalhaDoTunel(TestCase):
     def test_o_cartao_com_o_motivo_aparece_quando_a_porta_nao_esta_de_pe(self):
         with tempfile.TemporaryDirectory() as pasta:
             with mock.patch.dict(os.environ, {
-                    "CABANA_CERTIFICADO_PASTA": pasta,
-                    "CABANA_PORTA_HTTPS": str(_porta_livre())}):
+                    "STUDIO_CERTIFICADO_PASTA": pasta,
+                    "STUDIO_PORTA_HTTPS": str(_porta_livre())}):
                 https.registrar_falha("PermissionError: [Errno 13] config\\certificado")
                 resposta = self.client.get(reverse("core:certificado"),
                                            HTTP_HOST="192.168.3.254:8095")

@@ -30,13 +30,13 @@ ARQUIVO_FALHA = "https-ultima-falha.txt"
 
 
 def ligado():
-    """O HTTPS está habilitado no cabana.env? (CABANA_HTTPS=0 desliga.)"""
-    return os.environ.get("CABANA_HTTPS", "1") == "1"
+    """O HTTPS está habilitado no studio.env? (STUDIO_HTTPS=0 desliga.)"""
+    return os.environ.get("STUDIO_HTTPS", "1") == "1"
 
 
 def porta():
     try:
-        return int(os.environ.get("CABANA_PORTA_HTTPS", PORTA_PADRAO))
+        return int(os.environ.get("STUDIO_PORTA_HTTPS", PORTA_PADRAO))
     except (TypeError, ValueError):
         return PORTA_PADRAO
 
@@ -47,12 +47,12 @@ def endereco_seguro(request):
     return f"https://{host}:{porta()}{request.path}"
 
 
-def endereco_do_sistema(caminho="/sistema/"):
+def endereco_do_sistema(caminho="/studio/"):
     """O endereço do sistema para quem não tem um request na mão.
 
     Quem manda relatório é uma tarefa agendada, sem navegador e sem request, e um link
     relativo numa mensagem de celular não leva a lugar nenhum. O endereço sai do
-    primeiro nome que o certificado cobre (CABANA_CERTIFICADO_NOMES, que o instalador
+    primeiro nome que o certificado cobre (STUDIO_CERTIFICADO_NOMES, que o instalador
     grava), que é o endereço pelo qual a loja abre o sistema.
     """
     from apps.core import certificado
@@ -154,8 +154,8 @@ def conferir(tempo_limite=2.0, endereco_rede=""):
     if not ligado():
         return Diagnostico(
             "ruim", "A porta segura está desligada",
-            "No arquivo config\\cabana.env a linha CABANA_HTTPS está diferente de 1. "
-            "Mude para CABANA_HTTPS=1 e reinicie o sistema.", numero)
+            "No arquivo config\\studio.env a linha STUDIO_HTTPS está diferente de 1. "
+            "Mude para STUDIO_HTTPS=1 e reinicie o sistema.", numero)
 
     # Arquivo de certificado faltando explica a porta muda melhor do que "ninguém atende":
     # sem ele o túnel nem chega a subir.
@@ -187,7 +187,7 @@ def conferir(tempo_limite=2.0, endereco_rede=""):
         return Diagnostico(
             "ruim", f"Ninguém está atendendo na porta {numero}",
             "O sistema subiu sem a porta segura. Reinicie pela tarefa agendada "
-            "Cabana\\CabanaSistema (no Agendador de Tarefas do Windows) ou reinicie o "
+            "Studio\\StudioSistema (no Agendador de Tarefas do Windows) ou reinicie o "
             "servidor, e confira esta tela de novo. Se continuar assim, o motivo está "
             "nas últimas linhas do arquivo logs\\sistema.log.", numero)
     except (socket.timeout, TimeoutError):
@@ -215,13 +215,13 @@ def conferir(tempo_limite=2.0, endereco_rede=""):
                 f"Testando por {rede} o resultado foi: {erro}. A porta segura está de pé "
                 "dentro do servidor, então o que falta é ela atender neste endereço: "
                 "confira se o sistema está configurado para escutar em toda a rede "
-                "(CABANA_HOST=0.0.0.0, em config\\cabana.env) e reinicie o sistema.",
+                "(STUDIO_HOST=0.0.0.0, em config\\studio.env) e reinicie o sistema.",
                 numero, rede)
         return Diagnostico(
             "bom", f"A porta segura {numero} está funcionando",
             f"O servidor respondeu em {versao_tls}, inclusive pelo endereço {rede}. Se o "
-            f"celular ainda não abre https://{rede}:{numero}/sistema/, falta liberar a "
-            f"porta {numero} no firewall do Windows (a regra se chama Cabana Sistema "
+            f"celular ainda não abre https://{rede}:{numero}/studio/, falta liberar a "
+            f"porta {numero} no firewall do Windows (a regra se chama Studio Sistema "
             "HTTPS); se abre com aviso, falta instalar o certificado da loja no aparelho, "
             "logo abaixo.", numero, rede)
     return Diagnostico(

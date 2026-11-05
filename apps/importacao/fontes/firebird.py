@@ -220,7 +220,7 @@ def preparar_copia(origem, pasta_trabalho, cliente_gbak=None, progresso=_nada):
         if not cliente_gbak:
             raise ErroFonte(
                 "O backup está em .FBK e precisa ser restaurado pelo gbak. "
-                "Defina CABANA_FIREBIRD_GBAK com o caminho do gbak."
+                "Defina STUDIO_FIREBIRD_GBAK com o caminho do gbak."
             )
         comando = [str(cliente_gbak), "-replace_database", "-user", "SYSDBA", "-password", "masterkey",
                    str(origem), str(copia)]

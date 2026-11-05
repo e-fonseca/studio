@@ -35,7 +35,7 @@ class Command(BaseCommand):
         problemas = []
         caminho = str(getattr(settings, "IMPORTACAO_FIREBIRD_CLIENTE", "") or "")
         if not caminho:
-            problemas.append("O sistema não sabe onde está o motor: CABANA_FIREBIRD_DLL está vazio no cabana.env.")
+            problemas.append("O sistema não sabe onde está o motor: STUDIO_FIREBIRD_DLL está vazio no studio.env.")
             return self._terminar(problemas, opcoes)
 
         arquivo = Path(caminho)

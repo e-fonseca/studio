@@ -9,39 +9,39 @@ from apps.core.fabricas import SENHA_TESTE, usuario
 class PrefixoSistemaTest(TestCase):
     def test_rotas_ficam_sob_sistema(self):
         for nome in ["core:inicio", "core:saude", "contas:entrar", "processos:quadro", "auditoria:lista"]:
-            self.assertTrue(reverse(nome).startswith("/sistema/"), nome)
+            self.assertTrue(reverse(nome).startswith("/studio/"), nome)
 
     def test_raiz_redireciona_para_sistema(self):
         resposta = self.client.get("/")
-        self.assertRedirects(resposta, "/sistema/", fetch_redirect_response=False)
+        self.assertRedirects(resposta, "/studio/", fetch_redirect_response=False)
 
     def test_sem_login_vai_para_entrar_sob_sistema(self):
-        resposta = self.client.get("/sistema/processos/")
-        self.assertRedirects(resposta, "/sistema/entrar/?next=/sistema/processos/", fetch_redirect_response=False)
+        resposta = self.client.get("/studio/processos/")
+        self.assertRedirects(resposta, "/studio/entrar/?next=/studio/processos/", fetch_redirect_response=False)
 
     def test_estaticos_e_cookies_sob_sistema(self):
-        self.assertTrue(settings.STATIC_URL.startswith("/sistema/"))
-        self.assertEqual(settings.SESSION_COOKIE_PATH, "/sistema")
-        self.assertEqual(settings.CSRF_COOKIE_PATH, "/sistema")
+        self.assertTrue(settings.STATIC_URL.startswith("/studio/"))
+        self.assertEqual(settings.SESSION_COOKIE_PATH, "/studio")
+        self.assertEqual(settings.CSRF_COOKIE_PATH, "/studio")
 
     def test_login_completo_e_cookie_no_caminho(self):
         usuario("edson", ADMINISTRACAO)
-        resposta = self.client.post("/sistema/entrar/", {"username": "edson", "password": SENHA_TESTE})
-        self.assertRedirects(resposta, "/sistema/", fetch_redirect_response=False)
-        self.assertEqual(self.client.cookies[settings.SESSION_COOKIE_NAME]["path"], "/sistema")
+        resposta = self.client.post("/studio/entrar/", {"username": "edson", "password": SENHA_TESTE})
+        self.assertRedirects(resposta, "/studio/", fetch_redirect_response=False)
+        self.assertEqual(self.client.cookies[settings.SESSION_COOKIE_NAME]["path"], "/studio")
         # O início encaminha para o dashboard, então aqui se segue o desvio.
-        pagina = self.client.get("/sistema/", follow=True)
+        pagina = self.client.get("/studio/", follow=True)
         self.assertContains(pagina, "Use seu próprio usuário.")
         self.assertContains(pagina, "Sair")
-        self.assertContains(pagina, "/sistema/static/css/sistema.css")
+        self.assertContains(pagina, "/studio/static/css/sistema.css")
 
     def test_tela_de_entrada_mostra_aviso(self):
-        self.assertContains(self.client.get("/sistema/entrar/"), "Use seu próprio usuário.")
+        self.assertContains(self.client.get("/studio/entrar/"), "Use seu próprio usuário.")
 
 
 class SaudeTest(TestCase):
     def test_saude_responde_sem_login(self):
-        resposta = self.client.get("/sistema/saude/")
+        resposta = self.client.get("/studio/saude/")
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(resposta.json(), {"aplicacao": "ok", "banco": "ok"})
 

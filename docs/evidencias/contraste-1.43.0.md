@@ -67,7 +67,7 @@ saem no papel").
 
 Com o servidor de desenvolvimento no ar em `127.0.0.1:8099`:
 
-    CABANA_SENHA='senha do usuário de teste' \
+    STUDIO_SENHA='senha do usuário de teste' \
       node docs/ferramentas/conferir-contraste.js edson docs/ferramentas/telas-para-conferir.txt /tmp/prints
 
 Sai zero quando está tudo dentro do mínimo, e grava `relatorio-contraste.json` com cada

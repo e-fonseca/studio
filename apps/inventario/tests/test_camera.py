@@ -45,7 +45,7 @@ class TestTelaDaCamera(BaseCamera):
     def test_indica_o_endereco_seguro_com_a_porta_certa(self):
         """Trocar http por https não basta: a porta segura é outra."""
         resposta = self.client.get(reverse("inventario:camera", args=[self.contagem.pk]))
-        self.assertContains(resposta, "https://testserver:8443/sistema/inventario/")
+        self.assertContains(resposta, "https://testserver:8443/studio/inventario/")
 
     def test_o_aviso_de_https_nasce_escondido(self):
         """Quem abriu pelo endereço seguro não pode ver um aviso que não é dele."""

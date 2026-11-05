@@ -45,7 +45,7 @@ for rotina in (Rotina.CONTAS, Rotina.VENDAS, Rotina.ESTOQUE, Rotina.COMPRA):
             print(f"        (e mais {bloco.escondidas})")
     placar.conferir(bool(relatorio.manchete), f"{rotina.label}: tem manchete")
     placar.conferir(bool(relatorio.resumo), f"{rotina.label}: tem resumo para o registro")
-    placar.conferir(relatorio.caminho.startswith("/sistema/"),
+    placar.conferir(relatorio.caminho.startswith("/studio/"),
                     f"{rotina.label}: aponta para uma tela do sistema")
     if relatorio.tem_noticia:
         placar.conferir(bool(relatorio.blocos), f"{rotina.label}: com notícia, tem bloco")

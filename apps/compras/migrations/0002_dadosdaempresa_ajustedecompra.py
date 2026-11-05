@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 (
                     "nome_fantasia",
                     models.CharField(
-                        default="Cabana do Jacarandá",
+                        default="Studio Industrial",
                         help_text="Como o fornecedor conhece a loja. É o que aparece grande no pedido.",
                         max_length=120,
                         verbose_name="nome da loja",

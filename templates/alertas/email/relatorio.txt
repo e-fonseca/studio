@@ -1,4 +1,4 @@
-{{ r.assunto|upper }} — CABANA DO JACARANDÁ
+{{ r.assunto|upper }} — STUDIO INDUSTRIAL
 {% if r.data_corte %}Dados do SET de {{ r.data_corte|date:"d/m/Y" }}.{% endif %}
 
 {{ r.manchete }}
@@ -16,6 +16,6 @@ ATENÇÃO: {{ r.aviso }}
   ... e mais {{ bloco.escondidas }} linha(s) na tela do sistema.{% endif %}
 {% endfor %}
 ----------------------------------------------------------------
-Enviado pelo sistema auxiliar da Cabana do Jacarandá em {{ quando|date:"d/m/Y H:i" }}.
+Enviado pelo sistema auxiliar do Studio Industrial em {{ quando|date:"d/m/Y H:i" }}.
 Este e-mail é só leitura: para agir, abra o sistema na rede da loja.
 Para parar de receber, desligue o envio na tela Alertas do sistema.

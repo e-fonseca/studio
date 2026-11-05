@@ -88,7 +88,7 @@ class PainelTest(TestCase):
         resposta = self.client.post(reverse("alertas:painel"), {
             "servidor": "smtp.hostinger.com", "porta": "465", "usar_tls": "on",
             "usuario": "naoresponder@cabanadojacaranda.com.br", "senha": SENHA_DA_CAIXA,
-            "remetente": "Sistema da Cabana",
+            "remetente": "Sistema do Studio",
             "destinatarios": "cabanadojacaranda@gmail.com",
             "hora_diaria": "07:00", "dia_semanal": "0", "hora_semanal": "07:10",
             "ativo": "on",
@@ -104,7 +104,7 @@ class PainelTest(TestCase):
         self.client.post(reverse("alertas:painel"), {
             "servidor": "smtp.hostinger.com", "porta": "465", "usar_tls": "on",
             "usuario": "naoresponder@cabanadojacaranda.com.br", "senha": SENHA_DA_CAIXA,
-            "remetente": "Sistema da Cabana", "destinatarios": "cabanadojacaranda@gmail.com",
+            "remetente": "Sistema do Studio", "destinatarios": "cabanadojacaranda@gmail.com",
             "hora_diaria": "07:00", "dia_semanal": "0", "hora_semanal": "07:10", "ativo": "on",
         })
         evento = EventoAuditoria.objects.filter(acao="alertas.configurado").get()
@@ -146,7 +146,7 @@ class PainelTest(TestCase):
     def test_previa_mostra_o_e_mail_sem_mandar(self):
         resposta = self.client.get(reverse("alertas:previa", args=[Rotina.CONTAS.value]))
         self.assertEqual(resposta.status_code, 200)
-        self.assertContains(resposta, "Cabana do Jacarandá")
+        self.assertContains(resposta, "Studio Industrial")
         self.assertEqual(len(mail.outbox), 0)
         self.assertEqual(EnvioDeRelatorio.objects.count(), 0)
 
@@ -165,7 +165,7 @@ class FormularioTest(TestCase):
     def dados(self, **extra):
         base = {
             "servidor": "smtp.hostinger.com", "porta": "465", "usar_tls": "on",
-            "usuario": "naoresponder@cabanadojacaranda.com.br", "remetente": "Sistema da Cabana",
+            "usuario": "naoresponder@cabanadojacaranda.com.br", "remetente": "Sistema do Studio",
             "destinatarios": "cabanadojacaranda@gmail.com",
             "hora_diaria": "07:00", "dia_semanal": "0", "hora_semanal": "07:10",
         }

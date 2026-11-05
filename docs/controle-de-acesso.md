@@ -213,7 +213,7 @@ vez: o que a gerência tirar pela tela não volta na atualização seguinte. Rod
 não duplica nada. Nesta primeira vez ele só acrescenta, aos perfis de hoje, o "Editar
 perfis" do Administrador gerência; o resto eles já tinham.
 
-Para conferir antes e depois, no servidor, de dentro de `C:\cabana-sistema\app`:
+Para conferir antes e depois, no servidor, de dentro de `C:\studio-sistema\app`:
 
     ..\python\python.exe manage.py relatorio_de_acessos
 
@@ -221,7 +221,7 @@ Para conferir antes e depois, no servidor, de dentro de `C:\cabana-sistema\app`:
 
 Quando ninguém mais consegue administrar pela tela (a única pessoa esqueceu a senha e não
 tem e-mail cadastrado, foi bloqueada por engano, ou a conta técnica não é conhecida), no
-servidor, como administrador do Windows, de dentro de `C:\cabana-sistema\app`:
+servidor, como administrador do Windows, de dentro de `C:\studio-sistema\app`:
 
     ..\python\python.exe manage.py recuperar_administrador edson --motivo "esqueceu a senha" --senha
 

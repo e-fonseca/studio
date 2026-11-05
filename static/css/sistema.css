@@ -1,5 +1,9 @@
 /*
- * Visual do sistema da Cabana do Jacarandá.
+ * Visual do sistema do Studio Industrial.
+ *
+ * PERFIL STUDIO INDUSTRIAL (05/11/2026): a mesma tela escura da Cabana, trocada a madeira
+ * e a brasa pelo ferro, o concreto e o cobre da marca do Studio na intranet
+ * (--primaria #242729 e --acento #A15A1A em intranet/src/estilo.css).
  *
  * TELA ESCURA EM TODO O SISTEMA (1.43.0). Pedido do Edson em 31/10/2026, depois de ver o
  * Dashboard no jeito do Grafana: "gostei do visual escuro (...) melhor visualização e cansa
@@ -27,25 +31,25 @@
   /* Diz ao navegador que a página é escura: as barras de rolagem, o calendário do campo
      de data, a lista aberta do campo de escolha e a caixa de marcar vêm escuros também. */
   color-scheme: dark;
-  --cor-fundo: #13110f;          /* fundo da página, o do Dashboard */
-  --cor-superficie: #1c1916;     /* cartões e quadros */
-  --cor-superficie-2: #24201b;   /* faixas e cabeçalhos de tabela */
-  --cor-superficie-3: #2a2520;   /* o que fica por cima: balão, item sob o mouse */
-  --cor-campo: #13110f;          /* dentro do campo de digitar, um tom abaixo do cartão */
-  --cor-texto: #ece4da;          /* 13,9:1 no cartão */
-  --cor-texto-suave: #a99d8f;    /* 6,6:1 no cartão */
-  --cor-borda: #312a24;
-  --cor-borda-forte: #4a4038;
-  --cor-borda-campo: #776a5e;    /* borda de campo: 3:1, para o campo não sumir no cartão */
+  --cor-fundo: #121314;          /* fundo da página, o do Dashboard */
+  --cor-superficie: #1b1d1f;     /* cartões e quadros */
+  --cor-superficie-2: #222527;   /* faixas e cabeçalhos de tabela */
+  --cor-superficie-3: #2a2d30;   /* o que fica por cima: balão, item sob o mouse */
+  --cor-campo: #121314;          /* dentro do campo de digitar, um tom abaixo do cartão */
+  --cor-texto: #e7e5e1;          /* 13,9:1 no cartão */
+  --cor-texto-suave: #a6a39e;    /* 6,6:1 no cartão */
+  --cor-borda: #2d3033;
+  --cor-borda-forte: #44484c;
+  --cor-borda-campo: #73777b;    /* borda de campo: 3:1, para o campo não sumir no cartão */
   --cor-link: #8ab8ff;           /* o azul de link do Grafana, 8,6:1 no cartão */
-  --cor-primaria: #eda06b;       /* a brasa clareada, para número e realce sobre o escuro */
+  --cor-primaria: #e0a174;       /* a brasa clareada, para número e realce sobre o escuro */
   --cor-primaria-texto: #ffffff; /* letra em cima do botão da marca */
-  --cor-primaria-fraca: #2b2018; /* fundo puxado para a madeira: aviso, linha sob o mouse */
-  --cor-acao: #bf4e16;           /* o botão principal e o assunto aceso: a brasa da loja */
-  --cor-acao-forte: #a3410f;     /* o mesmo botão sob o mouse */
-  --cor-brasa: #e8763a;          /* brasa para letra e risco sobre o escuro (5,9:1) */
-  --cor-escuro: #241f1a;         /* topo */
-  --cor-escuro-texto: #f4ece2;
+  --cor-primaria-fraca: #2a221c; /* fundo puxado para a madeira: aviso, linha sob o mouse */
+  --cor-acao: #a15a1a;           /* o botão principal e o assunto aceso: a brasa da loja */
+  --cor-acao-forte: #874a14;     /* o mesmo botão sob o mouse */
+  --cor-brasa: #e08a4a;          /* brasa para letra e risco sobre o escuro (5,9:1) */
+  --cor-escuro: #242729;         /* topo */
+  --cor-escuro-texto: #eceae6;
   --cor-foco: #8ab8ff;
   --cor-sucesso: #73bf69;
   --cor-sucesso-fraca: #182a1a;
@@ -55,7 +59,7 @@
   --cor-alerta-fraca: #33240f;
   /* Letra em cima de selo pintado de verde, laranja ou vermelho: as cores de situação são
      claras no escuro, e letra branca nelas não se lê. */
-  --cor-sobre-status: #17130f;
+  --cor-sobre-status: #121314;
   --cor-zebra: rgba(255, 255, 255, .025);
   /* Fatias de gráfico (1.18.0), as do Dashboard desde a 1.43.0. Cor de gráfico é cor de
      gráfico: reaproveitar --cor-sucesso ou --cor-erro numa rosca faria o leitor achar que
@@ -81,8 +85,8 @@
   /* Acabamento (1.15.0): o latão é o detalhe fino que dá o ar cuidado ao sistema.
      Nunca carrega informação sozinho, só acabamento: fio de título, borda de cartão
      em destaque, marca da tela aberta na fileira de apoio. */
-  --cor-latao: #c9a36a;
-  --cor-latao-fraca: #2e261b;
+  --cor-latao: #b9a48c;
+  --cor-latao-fraca: #29261f;
   /* Título em serifa. São fontes que já existem no Windows e no celular: nada vem da
      internet, então a tela abre igual mesmo se a loja ficar sem link. */
   --fonte-titulo: Georgia, "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;

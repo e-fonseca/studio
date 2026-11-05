@@ -119,6 +119,6 @@ def primeiro(nome, pais=PAIS_PADRAO, abrir=None):
 
 
 def _abrir(endereco):
-    pedido = Request(endereco, headers={"User-Agent": "cabana-sistema"})
+    pedido = Request(endereco, headers={"User-Agent": "studio-sistema"})
     with urlopen(pedido, timeout=TEMPO_LIMITE) as resposta:  # noqa: S310 - endereço fixo, https
         return resposta.read().decode("utf-8")

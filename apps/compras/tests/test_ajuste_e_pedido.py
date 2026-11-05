@@ -2,7 +2,7 @@
 
 Os dois pedidos do Edson de 14/10/2026: "permitir edição da quantidade, manter a
 sugestão" e "disponibilizar um botão para gerar o pedido para o fornecedor(es) com
-layout da Cabana do Jacarandá e razão social da Essenza".
+layout do Studio Industrial e razão social da Essenza".
 """
 
 from datetime import date, timedelta
@@ -411,9 +411,9 @@ class PedidoEmPdf(BaseAjuste):
         self.assertTrue(resposta.content.rstrip().endswith(b"%%EOF"))
 
     def test_o_papel_traz_a_razao_social_o_endereco_e_o_fornecedor(self):
-        """Layout da Cabana do Jacarandá, razão social da Essenza e o fornecedor."""
+        """Layout do Studio Industrial, razão social da Essenza e o fornecedor."""
         corpo = self._baixar(fornecedor="VIME LENZI").content
-        self.assertIn(b"Cabana do Jacarand", corpo)
+        self.assertIn(b"Studio Industrial", corpo)
         self.assertIn(b"ESSENZA DECOR DESIGN E DECORACAO LTDA", corpo)
         self.assertIn(b"48.634.542/0001-42", corpo)
         self.assertIn(b"VIME LENZI", corpo)
@@ -477,7 +477,7 @@ class TelaDosDadosDaEmpresa(TestCase):
     """O formulário que ele pediu em 19/10/2026, com os dados que mandou na mesma mensagem."""
 
     TUDO = {
-        "nome_fantasia": "Cabana do Jacarandá",
+        "nome_fantasia": "Studio Industrial",
         "razao_social": "ESSENZA DECOR DESIGN E DECORACAO LTDA",
         "documento": "48.634.542/0001-42", "inscricao_estadual": "298.589.161.112",
         "endereco": "R. Claudionor Assis Dias, 171", "bairro": "Centro",
@@ -509,7 +509,7 @@ class TelaDosDadosDaEmpresa(TestCase):
         corpo = self.client.get(reverse("compras:dados_da_empresa")).content.decode()
         timbre = corpo[corpo.index("empresa-timbre"):corpo.index("empresa-secao")]
         self.assertIn("img/logo", timbre)
-        self.assertIn('class="empresa-nome">Cabana do Jacarandá', timbre)
+        self.assertIn('class="empresa-nome">Studio Industrial', timbre)
         # A razão social aparece, mas abaixo e em segundo plano: o papel dela é a nota.
         self.assertLess(timbre.index("empresa-nome"), timbre.index("empresa-razao"))
 

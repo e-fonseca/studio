@@ -18,7 +18,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--arquivo",
             help="Backup a importar (.FDB ou .FBK), ou a pasta onde ele é salvo. "
-                 "Sem isto, usa CABANA_SET_BACKUP.",
+                 "Sem isto, usa STUDIO_SET_BACKUP.",
         )
         parser.add_argument("--automatica", action="store_true",
                             help="Marca a importação como executada pela tarefa agendada.")

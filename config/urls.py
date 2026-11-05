@@ -1,11 +1,11 @@
-"""Rotas. Tudo vive sob /sistema (briefing, seção 4)."""
+"""Rotas. Tudo vive sob /studio (briefing, seção 4)."""
 
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
 
 admin.site.site_header = "Administração do sistema auxiliar"
-admin.site.site_title = "Cabana do Jacarandá"
+admin.site.site_title = "Studio Industrial"
 
 rotas_sistema = [
     path("", include("apps.core.urls")),
@@ -33,6 +33,6 @@ rotas_sistema = [
 handler403 = "apps.core.views.negado"
 
 urlpatterns = [
-    path("sistema/", include(rotas_sistema)),
-    path("", RedirectView.as_view(url="/sistema/", permanent=False)),
+    path("studio/", include(rotas_sistema)),
+    path("", RedirectView.as_view(url="/studio/", permanent=False)),
 ]

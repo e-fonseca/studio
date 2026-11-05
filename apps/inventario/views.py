@@ -37,7 +37,7 @@ def lista(request):
     contexto.update({
         "contagens": servicos.contagens()[:30],
         "aberta": servicos.em_andamento(),
-        "endereco_seguro_base": _endereco_seguro(request).replace(request.path, "/sistema/"),
+        "endereco_seguro_base": _endereco_seguro(request).replace(request.path, "/studio/"),
         # O plano de contagem é a decisão desta tela: o que está vencido e o que contar
         # agora. Vem antes do texto que explica para que serve contar.
         "plano": plano_de_contagem.montar(estado.importacao),

@@ -26,7 +26,7 @@
      tentou abrir e não conseguiu. O motivo foi:</p>
   <p><code>{{ falha_do_tunel.1 }}</code></p>
   <p>Depois de resolver, reinicie o sistema pela tarefa agendada
-     <code>Cabana\CabanaSistema</code> e atualize esta tela: a mensagem desaparece
+     <code>Studio\StudioSistema</code> e atualize esta tela: a mensagem desaparece
      sozinha quando a porta sobe.</p>
 </section>
 {% endif %}
@@ -103,7 +103,7 @@
 
 <section class="cartao">
   <h2>3. Confira</h2>
-  <p>Abra <code>https://{{ enderecos.0 }}:{{ diagnostico.porta }}/sistema/</code> no aparelho.
+  <p>Abra <code>https://{{ enderecos.0 }}:{{ diagnostico.porta }}/studio/</code> no aparelho.
      Se o cadeado aparecer sem aviso, está pronto. Se ainda avisar, confirme três coisas:
      que o endereço começa com <strong>https</strong>, que a porta é
      <strong>{{ diagnostico.porta }}</strong> e não a do balcão, e que é o endereço exato

@@ -215,7 +215,7 @@ def pedir_codigo(texto):
         vale_ate=agora + VALIDADE, ip=ip)
     texto_do_email, html_do_email = _mensagem_do_codigo(conta, codigo, novo.vale_ate)
     erro = envio.enviar_avulso(
-        assunto="[Cabana] Código para criar a senha nova", texto=texto_do_email,
+        assunto="[Studio] Código para criar a senha nova", texto=texto_do_email,
         html=html_do_email, para=conta.email.strip(), configuracao=configuracao)
     if erro:
         novo.anulado_em = timezone.now()
@@ -304,7 +304,7 @@ def _avisar_da_troca(conta, quando):
     contexto = {"nome": conta.first_name or conta.get_username(),
                 "usuario": conta.get_username(), "quando": timezone.localtime(quando)}
     erro = envio.enviar_avulso(
-        assunto="[Cabana] A sua senha foi trocada",
+        assunto="[Studio] A sua senha foi trocada",
         texto=render_to_string("contas/email/senha_trocada.txt", contexto),
         html=render_to_string("contas/email/senha_trocada.html", contexto),
         para=conta.email.strip())

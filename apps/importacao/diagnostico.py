@@ -70,12 +70,12 @@ CAUSAS = [
         r"Não sei onde está o backup",
         Explicacao(
             titulo="O sistema não sabe onde fica o backup do SET",
-            o_que_aconteceu="A configuração CABANA_SET_BACKUP está vazia, então não há pasta para procurar.",
+            o_que_aconteceu="A configuração STUDIO_SET_BACKUP está vazia, então não há pasta para procurar.",
             como_resolver=[
                 "No servidor, rode como administrador: powershell -ExecutionPolicy Bypass -File "
-                "C:\\instalacao\\pacote\\atualizar.ps1 -PastaBackupSet \"C:\\backup-Set\\Cabana\\Set-Cabana\"",
-                "Ou abra C:\\cabana-sistema\\config\\cabana.env e escreva o caminho na linha "
-                "CABANA_SET_BACKUP, depois reinicie a tarefa \\Cabana\\CabanaSistema.",
+                "C:\\instalacao\\pacote\\atualizar.ps1 -PastaBackupSet \"C:\\backup-Set\\Studio\\Set-Studio\"",
+                "Ou abra C:\\studio-sistema\\config\\studio.env e escreva o caminho na linha "
+                "STUDIO_SET_BACKUP, depois reinicie a tarefa \\Studio\\StudioSistema.",
                 "Em seguida clique em Importar agora.",
             ],
         ),
@@ -148,7 +148,7 @@ CAUSAS = [
                             "motor não foi instalado, ou o arquivo não é um banco do SET, ou a cópia "
                             "veio incompleta.",
             como_resolver=[
-                "Confira se existe a pasta C:\\cabana-sistema\\firebird com o arquivo fbclient.dll.",
+                "Confira se existe a pasta C:\\studio-sistema\\firebird com o arquivo fbclient.dll.",
                 "Confira se o arquivo do backup abre normalmente (tamanho compatível com os anteriores).",
                 "Rode a atualização de novo: ela monta o motor Firebird quando ele está faltando.",
             ],
@@ -170,7 +170,7 @@ CAUSAS = [
         r"No space left|espaço em disco|WinError 112",
         Explicacao(
             titulo="Faltou espaço em disco",
-            o_que_aconteceu="A importação copia o backup para C:\\cabana-sistema\\dados\\copia-set e não "
+            o_que_aconteceu="A importação copia o backup para C:\\studio-sistema\\dados\\copia-set e não "
                             "coube.",
             como_resolver=[
                 "Libere espaço no disco C: do servidor.",
@@ -185,7 +185,7 @@ CAUSAS = [
             o_que_aconteceu="A cópia abriu, mas não tem vendas da empresa 1. Provavelmente é o backup de "
                             "outro sistema ou de outra empresa.",
             como_resolver=[
-                "Confirme com quem cuida do backup qual arquivo é o do SET da Cabana.",
+                "Confirme com quem cuida do backup qual arquivo é o do SET do Studio.",
                 "Aponte a pasta desse arquivo com -PastaBackupSet.",
             ],
         ),
@@ -209,7 +209,7 @@ GERAL = Explicacao(
     como_resolver=[
         "Clique em Importar agora para tentar de novo: falhas de momento costumam passar.",
         "Se repetir, envie a mensagem do erro junto com o arquivo "
-        "C:\\cabana-sistema\\logs\\importacao.log.",
+        "C:\\studio-sistema\\logs\\importacao.log.",
         "Enquanto isso, os números da última importação que deu certo continuam valendo.",
     ],
     conhecido=False,

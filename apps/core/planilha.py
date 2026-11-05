@@ -152,7 +152,7 @@ class Planilha:
 
     def _cabecalho(self):
         emitido = self.emitido_em.strftime("%d/%m/%Y às %H:%M")
-        rodape = f"Cabana do Jacarandá · sistema auxiliar ao SET · emitido em {emitido}"
+        rodape = f"Studio Industrial · sistema auxiliar ao SET · emitido em {emitido}"
         if self.emitido_por:
             rodape += f" por {self.emitido_por}"
         self._escrever([_Celula(rodape, self._estilos.de(FONTE_SUAVE))])

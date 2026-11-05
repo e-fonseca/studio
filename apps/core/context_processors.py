@@ -9,7 +9,7 @@ def sistema(request):
         # assunto aberto. Quem monta as duas é apps/core/menu.py.
         "menu_assuntos": assuntos,
         "menu_telas_do_assunto": telas_do_assunto,
-        "nome_sistema": "Sistema auxiliar da Cabana do Jacarandá",
+        "nome_sistema": "Sistema auxiliar do Studio Industrial",
         "aviso_usuario": "Use seu próprio usuário. As ações ficam registradas para controle e organização do trabalho.",
         "versao_sistema": versao.atual(),
         "tela_anterior": anterior,

@@ -94,7 +94,7 @@ class GitHub:
             "Authorization": f"Bearer {self.token}",
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": "cabana-sistema",
+            "User-Agent": "studio-sistema",
             "Content-Type": "application/json",
         })
         return self._abrir(pedido)
@@ -258,7 +258,7 @@ def validade_do_token(dono, repositorio, token, abrir=None):
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "cabana-sistema",
+        "User-Agent": "studio-sistema",
     })
     try:
         cabecalhos = (abrir or _cabecalhos)(pedido)

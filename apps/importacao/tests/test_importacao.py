@@ -141,7 +141,7 @@ class ExecutarImportacaoTest(TestCase):
         with override_settings(IMPORTACAO_BACKUP_ORIGEM=""):
             importacao = servicos.executar()
         self.assertEqual(importacao.situacao, Importacao.Situacao.FALHOU)
-        self.assertIn("CABANA_SET_BACKUP", importacao.mensagem)
+        self.assertIn("STUDIO_SET_BACKUP", importacao.mensagem)
 
     def test_comando_falha_com_mensagem_clara(self):
         with self.assertRaisesMessage(CommandError, "Importação falhou"):
@@ -170,7 +170,7 @@ class ExecutarImportacaoTest(TestCase):
         with tempfile.TemporaryDirectory() as pasta:
             origem = Path(pasta) / "SET.FBK"
             origem.write_bytes(b"backup")
-            with self.assertRaisesMessage(ErroFonte, "CABANA_FIREBIRD_GBAK"):
+            with self.assertRaisesMessage(ErroFonte, "STUDIO_FIREBIRD_GBAK"):
                 preparar_copia(origem, Path(pasta) / "trabalho")
 
 
@@ -503,12 +503,12 @@ class SincronizacaoDiariaTest(TestCase):
         self.client.login(username="fiscal", password=SENHA_TESTE)
         with override_settings(
             IMPORTACAO_HORARIOS=["08:30", "12:30", "19:30"],
-            IMPORTACAO_BACKUP_ORIGEM="C:\\backup-Set\\Cabana\\Set-Cabana",
+            IMPORTACAO_BACKUP_ORIGEM="C:\\backup-Set\\Studio\\Set-Studio",
         ):
             pagina = self.client.get(reverse("importacao:historico"))
         for hora in ("08:30", "12:30", "19:30"):
             self.assertContains(pagina, hora)
-        self.assertContains(pagina, "Set-Cabana")
+        self.assertContains(pagina, "Set-Studio")
         self.assertContains(pagina, "Sincronização automática")
         # Três sincronizações só adiantam se o SET gerar backup mais de uma vez por dia.
         self.assertContains(pagina, "o backup do SET precisa rodar mais de uma vez")

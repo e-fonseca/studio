@@ -238,7 +238,7 @@ def conferir(origem=None, anterior=None, agora=None):
         resultado.motivos.append(Motivo(
             "quebrado",
             "não sei onde está o backup do SET: a pasta não está configurada "
-            "(CABANA_SET_BACKUP).",
+            "(STUDIO_SET_BACKUP).",
         ))
         return resultado
 

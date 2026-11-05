@@ -2,7 +2,7 @@
 
 Pedido do Edson em 14/10/2026: "após análise da sugestão de compra automático e/ou
 editável disponibilizar um botão para gerar o pedido para o fornecedor(es) com layout
-da Cabana do Jacarandá e razão social da Essenza, endereço Largo do Jesuítas 64".
+do Studio Industrial e razão social da Essenza, endereço Largo do Jesuítas 64".
 
 O papel sai da MESMA lista de compra da tela, já com as quantidades que a gerência
 ajustou: é o fim do caminho que começa em "o que está faltando" e passa por "quanto
@@ -18,7 +18,7 @@ anexar numa mensagem, como o arquivo CSV já era. Pedido de verdade, com número
 acompanhamento, é outro assunto e ninguém pediu.
 
 O cabeçalho vem de `DadosDaEmpresa`, que é tela: o fornecedor conhece a loja por
-"Cabana do Jacarandá" e fatura para a razão social, e nenhum dos dois é valor escrito
+"Studio Industrial" e fatura para a razão social, e nenhum dos dois é valor escrito
 no código, porque CNPJ e telefone mudam sem avisar.
 """
 

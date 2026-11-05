@@ -90,7 +90,7 @@ class ConfiguracaoDeEmail(models.Model):
     # Guardada cifrada; o formulário nunca a mostra de volta. Ver apps/alertas/cifra.py.
     senha_guardada = models.TextField(blank=True, default="")
     remetente = models.CharField(
-        "nome de quem envia", max_length=120, default="Sistema da Cabana",
+        "nome de quem envia", max_length=120, default="Sistema do Studio",
         help_text="O nome que aparece na caixa de entrada antes do endereço.",
     )
     destinatarios = models.TextField(

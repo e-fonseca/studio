@@ -49,7 +49,7 @@ trava a causa, que acontecia em toda página, e não só o sintoma, que é raro.
 
 A loja não tem domínio nem certificado pago, e o endereço é um IP interno. O
 certificado é feito pelo próprio servidor (`apps/core/certificado.py`), na primeira vez
-que o sistema sobe, e guardado em `C:\cabana-sistema\config\certificado`. Vale três
+que o sistema sobe, e guardado em `C:\studio-sistema\config\certificado`. Vale três
 anos e é refeito sozinho quando falta menos de um mês para vencer.
 
 Ele cobre o IP do servidor, o nome da máquina, `localhost` e `127.0.0.1`. Como não foi
@@ -59,21 +59,21 @@ certificado não seja refeito — por isso ele não é regerado a cada inicializ
 
 ## O que precisa estar configurado
 
-No `cabana.env` (o instalador cuida disso, inclusive numa atualização):
+No `studio.env` (o instalador cuida disso, inclusive numa atualização):
 
 ```
-CABANA_HTTPS=1
-CABANA_PORTA_HTTPS=8443
-CABANA_CERTIFICADO_PASTA=C:\cabana-sistema\config\certificado
-CABANA_CERTIFICADO_NOMES=192.168.3.254,<nome-da-maquina>,localhost,127.0.0.1
-CABANA_CSRF_TRUSTED_ORIGINS=...,https://192.168.3.254:8443
+STUDIO_HTTPS=1
+STUDIO_PORTA_HTTPS=8443
+STUDIO_CERTIFICADO_PASTA=C:\studio-sistema\config\certificado
+STUDIO_CERTIFICADO_NOMES=192.168.3.254,<nome-da-maquina>,localhost,127.0.0.1
+STUDIO_CSRF_TRUSTED_ORIGINS=...,https://192.168.3.254:8443
 ```
 
 A origem `https://...:8443` precisa estar nas origens confiáveis, senão o Django recusa
 todo formulário enviado pelo celular. O firewall libera a 8443 só para a rede da loja,
 na mesma regra de grupo da 8095.
 
-`CABANA_HTTPS=0` desliga a porta segura; o sistema segue em HTTP e a tela da câmera
+`STUDIO_HTTPS=0` desliga a porta segura; o sistema segue em HTTP e a tela da câmera
 passa a mostrar o recado explicando por que ela não liga.
 
 ## Quando o celular ainda assim não lê

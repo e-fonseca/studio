@@ -28,10 +28,10 @@ no navegador (cookie com validade curta, JavaScript no `beforeunload`, `sessionS
 As duas estão em `apps/contas/sessao.py`, no middleware `LimiteDeSessaoMiddleware`, e
 valem com o navegador aberto ou fechado, porque quem recusa a sessão é o servidor.
 
-| Trava | Padrão | Conta a partir de | Variável no `cabana.env` |
+| Trava | Padrão | Conta a partir de | Variável no `studio.env` |
 | --- | --- | --- | --- |
-| Tempo logado | 4 horas | da entrada | `CABANA_SESSAO_MAXIMA_HORAS` |
-| Tempo parado | 30 minutos | do último acesso a uma tela | `CABANA_SESSAO_PARADA_MINUTOS` |
+| Tempo logado | 4 horas | da entrada | `STUDIO_SESSAO_MAXIMA_HORAS` |
+| Tempo parado | 30 minutos | do último acesso a uma tela | `STUDIO_SESSAO_PARADA_MINUTOS` |
 
 Estourado qualquer um dos dois, a próxima tela leva para a entrada com a explicação do
 motivo. A sessão guarda duas marcas: `entrou_em` (gravada no login) e `visto_em`

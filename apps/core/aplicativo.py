@@ -15,8 +15,8 @@ São dois:
 
 O operário é servido por este arquivo, e não como arquivo estático, por dois
 motivos. O navegador só deixa um operário cuidar das páginas que ficam na pasta
-dele ou abaixo, então ele tem que responder em /sistema/, não em
-/sistema/static/. E o nome do depósito leva o número da versão: a cada
+dele ou abaixo, então ele tem que responder em /studio/, não em
+/studio/static/. E o nome do depósito leva o número da versão: a cada
 atualização o nome muda, o depósito antigo é apagado e ninguém fica vendo a
 tela da versão passada.
 
@@ -31,12 +31,12 @@ from django.views.decorators.cache import cache_control
 
 from apps.core import versao
 
-NOME = "Cabana do Jacarandá"
-NOME_CURTO = "Cabana"
+NOME = "Studio Industrial"
+NOME_CURTO = "Studio"
 # As cores do aplicativo no celular: a barra de cima do aparelho e a tela de abertura.
 # Desde a 1.43.0 o sistema é escuro, e as duas acompanham (o topo e o fundo das telas);
 # a barra marrom e a abertura creme de antes piscavam claro antes da tela escura.
-COR_DA_MARCA = "#241f1a"
+COR_DA_MARCA = "#242729"
 COR_DO_FUNDO = "#13110f"
 
 
@@ -45,7 +45,7 @@ def manifesto(request):
     return JsonResponse({
         "name": f"{NOME} · Sistema auxiliar",
         "short_name": NOME_CURTO,
-        "description": "Sistema auxiliar da Cabana do Jacarandá: compras, estoque, "
+        "description": "Sistema auxiliar do Studio Industrial: compras, estoque, "
                        "financeiro e inventário.",
         "lang": "pt-BR",
         "dir": "ltr",
@@ -80,7 +80,7 @@ def manifesto(request):
 
 def _codigo_do_operario(deposito, arquivos):
     guardados = ",\n      ".join(f'"{arquivo}"' for arquivo in arquivos)
-    return f"""/* Operário do sistema da Cabana do Jacarandá. Gerado por apps/core/aplicativo.py;
+    return f"""/* Operário do sistema do Studio Industrial. Gerado por apps/core/aplicativo.py;
    não editar à mão. O nome do depósito tem a versão, então atualizar o sistema
    troca o depósito e apaga o antigo. */
 var DEPOSITO = "{deposito}";

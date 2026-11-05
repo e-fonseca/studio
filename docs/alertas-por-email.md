@@ -112,7 +112,7 @@ continua dizendo isso.)
 
 Ela é guardada cifrada (`apps/alertas/cifra.py`, Fernet com chave derivada da
 `SECRET_KEY`). Honestidade sobre o que isso é: **não** protege contra quem já tem o
-servidor, porque a `SECRET_KEY` mora no `cabana.env` ao lado do banco. Protege contra quem
+servidor, porque a `SECRET_KEY` mora no `studio.env` ao lado do banco. Protege contra quem
 abre a tabela num cliente de banco, recebe um backup do PostgreSQL ou lê um dump num pen
 drive — e senha de e-mail é a chave para redefinir senha de todo o resto. O formulário
 nunca mostra a senha de volta, e ela não entra na auditoria: o que fica registrado é se
@@ -157,7 +157,7 @@ O botão **Ver prévia** abre o e-mail como ele vai chegar, sem mandar nada.
 
 - Tarefa `\Cabana\CabanaRelatorios`, 24 gatilhos diários (um por hora cheia), rodando
   `scripts\relatorios.ps1`.
-- Log em `C:\cabana-sistema\logs\relatorios.log`, só com o que houve (hora sem nada devido
+- Log em `C:\studio-sistema\logs\relatorios.log`, só com o que houve (hora sem nada devido
   não escreve linha).
 - À mão, para conferir: `python manage.py enviar_relatorios --rotina diaria --forcar`.
 

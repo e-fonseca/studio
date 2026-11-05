@@ -21,14 +21,14 @@ from config.wsgi import application  # noqa: E402
 
 def _subir_https(porta_http):
     """Liga a porta HTTPS, se estiver habilitada. Falha aqui nunca derruba o HTTP."""
-    if os.environ.get("CABANA_HTTPS", "1") != "1":
+    if os.environ.get("STUDIO_HTTPS", "1") != "1":
         return
-    porta = int(os.environ.get("CABANA_PORTA_HTTPS", "8443"))
+    porta = int(os.environ.get("STUDIO_PORTA_HTTPS", "8443"))
     try:
         from apps.core import certificado, tunel_tls
 
         # A pasta e os endereços vêm do próprio módulo, porque a tela
-        # /sistema/certificado/ precisa achar os mesmos arquivos.
+        # /studio/certificado/ precisa achar os mesmos arquivos.
         pasta = certificado.pasta_padrao()
         arquivo, chave = certificado.garantir(pasta, certificado.enderecos_configurados())
         tunel_tls.em_segundo_plano(porta, ("127.0.0.1", porta_http), arquivo, chave)
@@ -45,7 +45,7 @@ def _subir_https(porta_http):
 
 if __name__ == "__main__":
     formato = "%(asctime)s %(levelname)s %(name)s %(message)s"
-    arquivo_log = os.environ.get("CABANA_LOG_ARQUIVO")
+    arquivo_log = os.environ.get("STUDIO_LOG_ARQUIVO")
     if arquivo_log:
         from logging.handlers import RotatingFileHandler
 
@@ -53,8 +53,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO, format=formato, handlers=[saida])
     else:
         logging.basicConfig(level=logging.INFO, format=formato)
-    host = os.environ.get("CABANA_HOST", "0.0.0.0")
-    porta = int(os.environ.get("CABANA_PORTA", "8095"))
+    host = os.environ.get("STUDIO_HOST", "0.0.0.0")
+    porta = int(os.environ.get("STUDIO_PORTA", "8095"))
     _subir_https(porta)
     serve(application, host=host, port=porta,
-          threads=int(os.environ.get("CABANA_THREADS", "4")), ident="cabana")
+          threads=int(os.environ.get("STUDIO_THREADS", "4")), ident="cabana")

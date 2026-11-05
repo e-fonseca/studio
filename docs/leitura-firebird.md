@@ -25,7 +25,7 @@ diária, os dados são de ontem). Para compras e diagnóstico, isso basta.
 ## Como funciona a leitura da cópia
 
 1. **Fonte:** o arquivo mais recente da pasta `C:\Set Sistemas\BKPS`, só lido, nunca movido nem apagado.
-   Copiado fora do horário da loja para `C:\cabana-sistema\espelho\` com prioridade baixa de disco.
+   Copiado fora do horário da loja para `C:\studio-sistema\espelho\` com prioridade baixa de disco.
 2. **Restauração:** `gbak` do Firebird **embutido do sistema novo** (mesma versão 4.0.x, instalado na
    pasta do sistema novo, sem serviço e sem porta) cria um banco espelho separado.
 3. **Conferência:** o espelho é validado (`gfix -v`); se a cópia estiver incompleta, a carga é
@@ -71,12 +71,12 @@ do SET fica como plano B (contingência).
 
 O que roda no servidor:
 
-1. Tarefa `\Cabana\CabanaImportacao`, **três vezes por dia** (padrão 08:30, 12:30 e
+1. Tarefa `\Studio\StudioImportacao`, **três vezes por dia** (padrão 08:30, 12:30 e
    19:30, pedido do Edson em 13/10/2026), executa `scripts\importar.ps1`, que chama
    `python manage.py importar_set --automatica`. São três gatilhos num mesmo agendamento,
-   e os horários ficam em `CABANA_IMPORTACAO_HORAS`, separados por vírgula.
-2. O sistema olha a pasta indicada em `CABANA_SET_BACKUP` (padrão
-   `C:\backup-Set\Cabana\Set-Cabana`, informado pelo Edson em 05/10/2026), **inclusive as
+   e os horários ficam em `STUDIO_IMPORTACAO_HORAS`, separados por vírgula.
+2. O sistema olha a pasta indicada em `STUDIO_SET_BACKUP` (padrão
+   `C:\backup-Set\Studio\Set-Studio`, informado pelo Edson em 05/10/2026), **inclusive as
    subpastas**, e escolhe o arquivo `.FDB` ou `.FBK` com a data mais nova; arquivo vazio é
    ignorado, porque é backup ainda sendo gravado ou que falhou. Copia esse arquivo para
    `dados\copia-set\set.fdb` e, sendo `.FBK`, restaura com o `gbak` próprio. **A origem é só
@@ -87,7 +87,7 @@ O que roda no servidor:
    Se o arquivo escolhido for o mesmo da importação anterior (mesmo caminho, mesma data, mesmo
    tamanho), a execução é registrada como "Sem backup novo" e os dados anteriores continuam
    valendo, em vez de reprocessar o mesmo conteúdo.
-3. A leitura usa um **motor Firebird próprio** em `C:\cabana-sistema\firebird`, com
+3. A leitura usa um **motor Firebird próprio** em `C:\studio-sistema\firebird`, com
    `Providers = Engine13` no `firebird.conf`. Sem `Remote` e sem `Loopback`, esse motor não
    consegue falar com nenhum servidor Firebird: nem o do SET, nem a porta 3050.
    O instalador monta essa pasta a partir do `Firebird-4.0.6.3221-0-x64.zip` que vem dentro do
@@ -108,7 +108,7 @@ O que roda no servidor:
 Ainda pendente para a importação automática funcionar:
 
 - **Horário em que o backup do SET termina**, e quantas vezes por dia ele roda. A pasta já
-  foi informada (`C:\backup-Set\Cabana\Set-Cabana`). Desde a 1.25.0 a importação roda às
+  foi informada (`C:\backup-Set\Studio\Set-Studio`). Desde a 1.25.0 a importação roda às
   08:30, 12:30 e 19:30, mas ela só enxerga o que estiver no arquivo de backup: se o SET
   gerar um backup por noite, as três sincronizações acham o mesmo arquivo e terminam como
   **Sem backup novo**. É o item 10 de [perguntas-pendentes.md](perguntas-pendentes.md).

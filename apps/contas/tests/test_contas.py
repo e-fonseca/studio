@@ -58,6 +58,6 @@ class ForcaBrutaTest(TestCase):
     def test_bloqueia_apos_cinco_falhas(self):
         usuario("alvo")
         for _ in range(5):
-            self.client.post("/sistema/entrar/", {"username": "alvo", "password": "errada"})
-        resposta = self.client.post("/sistema/entrar/", {"username": "alvo", "password": SENHA_TESTE})
+            self.client.post("/studio/entrar/", {"username": "alvo", "password": "errada"})
+        resposta = self.client.post("/studio/entrar/", {"username": "alvo", "password": SENHA_TESTE})
         self.assertContains(resposta, "Acesso bloqueado", status_code=429)

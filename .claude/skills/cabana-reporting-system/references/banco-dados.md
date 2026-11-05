@@ -50,7 +50,7 @@ fora do servidor.
 
 ## Firebird
 
-Leitura por `firebird-driver` com a biblioteca cliente **4.0 x64** (`CABANA_FIREBIRD_DLL`);
+Leitura por `firebird-driver` com a biblioteca cliente **4.0 x64** (`STUDIO_FIREBIRD_DLL`);
 32 bits não abre. A cópia do backup é feita antes, e a conferência do arquivo (tamanho e
 data) roda antes da leitura: `docs/conferencia-do-backup.md`.
 

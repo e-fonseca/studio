@@ -41,9 +41,9 @@ agendada, que já está rodando e não tem pressa, ou a pessoa, que acabou de di
 ## O que mudou
 
 1. **O cache saiu da memória e foi para arquivo**, em `dados\cache`
-   (`CABANA_CACHE` no `cabana.env`, gravado pelo instalador). Isto é o que torna o resto
-   possível: quem importa é a tarefa `CabanaImportacao` e quem mostra a tela é o serviço
-   `CabanaSistema`. São **dois processos**, e com o cache na memória de cada um a conta
+   (`STUDIO_CACHE` no `studio.env`, gravado pelo instalador). Isto é o que torna o resto
+   possível: quem importa é a tarefa `StudioImportacao` e quem mostra a tela é o serviço
+   `StudioSistema`. São **dois processos**, e com o cache na memória de cada um a conta
    feita pela tarefa nunca chegaria ao serviço. A pasta fica fora do que a atualização
    troca, então a cópia sobrevive a um `atualizar.ps1` — e é por isso que a chave carrega
    também a **versão do sistema**: o que está guardado é o objeto Python pronto, e a forma

@@ -4,7 +4,7 @@ Documento de partida (briefing, seção 25). Data: 05/10/2026. Atualizar a cada 
 
 ## 1. Resumo do entendimento
 
-A Cabana do Jacarandá opera com o SET Sistemas como ERP, sem acesso ao banco e sem
+A Studio Industrial opera com o SET Sistemas como ERP, sem acesso ao banco e sem
 disponibilidade do desenvolvedor. A loja virtual está na Nuvemshop, integrada ao Bling e não
 ao SET. O novo sistema é **auxiliar**: roda na rede interna (servidor Windows 192.168.3.254,
 só pela VPN, em `/sistema`), é alimentado por relatórios exportados do SET e não emite nota

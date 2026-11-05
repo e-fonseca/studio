@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                 (
                     "remetente",
                     models.CharField(
-                        default="Sistema da Cabana",
+                        default="Sistema do Studio",
                         help_text="O nome que aparece na caixa de entrada antes do endereço.",
                         max_length=120,
                         verbose_name="nome de quem envia",

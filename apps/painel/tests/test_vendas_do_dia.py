@@ -262,7 +262,7 @@ class TestTela(BaseVendas):
     def test_quem_nao_entrou_e_mandado_para_a_entrada(self):
         resposta = self.client.get(reverse("painel:vendas_dia"))
         self.assertEqual(resposta.status_code, 302)
-        self.assertIn("/sistema/entrar/", resposta["Location"])
+        self.assertIn("/studio/entrar/", resposta["Location"])
 
     def test_o_arquivo_abre_no_excel_com_o_nome_do_dia(self):
         usuario("gerente", ADMINISTRACAO)

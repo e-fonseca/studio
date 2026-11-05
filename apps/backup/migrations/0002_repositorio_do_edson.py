@@ -10,7 +10,7 @@ vale mais que o nosso padrão.
 
 from django.db import migrations, models
 
-PADRAO = "e-fonseca/sistema"
+PADRAO = "e-fonseca/studio"
 
 
 def preencher(apps, schema_editor):

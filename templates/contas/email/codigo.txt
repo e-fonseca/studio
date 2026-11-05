@@ -1,6 +1,6 @@
 {% autoescape off %}Olá, {{ nome }}.
 
-Alguém pediu para criar uma senha nova para o usuário {{ usuario }} no sistema da Cabana do Jacarandá.
+Alguém pediu para criar uma senha nova para o usuário {{ usuario }} no sistema do Studio Industrial.
 
 O código é: {{ codigo }}
 
@@ -10,5 +10,5 @@ Não foi você? Ignore este e-mail: a sua senha continua a mesma, e sem o códig
 
 Ninguém da loja pede este código por telefone ou mensagem. Não passe o código para ninguém.
 
-— Sistema da Cabana do Jacarandá (e-mail automático, não precisa responder)
+— Sistema do Studio Industrial (e-mail automático, não precisa responder)
 {% endautoescape %}

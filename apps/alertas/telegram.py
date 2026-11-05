@@ -152,7 +152,7 @@ def texto_do_relatorio(relatorio, configuracao_de_email=None):
     A manchete primeiro, porque é ela que decide se a pessoa abre o resto. Depois os
     blocos, só com título e as primeiras linhas — a tabela inteira é assunto do e-mail.
     """
-    partes = [f"Cabana · {relatorio.assunto}"]
+    partes = [f"Studio · {relatorio.assunto}"]
     if relatorio.data_corte:
         partes.append(f"Dados de {relatorio.data_corte:%d/%m/%Y}")
     partes.append("")
@@ -173,7 +173,7 @@ def texto_do_relatorio(relatorio, configuracao_de_email=None):
             partes.append(f"· e mais {bloco.escondidas} no sistema")
     partes.append("")
     partes.append(f"Aberto em {timezone.localtime():%d/%m/%Y %H:%M}. No sistema: "
-                  + https.endereco_do_sistema(relatorio.caminho or "/sistema/"))
+                  + https.endereco_do_sistema(relatorio.caminho or "/studio/"))
     return _cortar("\n".join(partes))
 
 

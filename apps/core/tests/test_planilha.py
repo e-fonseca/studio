@@ -158,7 +158,7 @@ class AFolhaSeLeComoATabelaDoPapel(TestCase):
     def test_o_cabecalho_traz_quem_emitiu_e_quando(self):
         """No papel isso está no rodapé de toda folha; aqui não há folha."""
         self.assertIn("Edson", self.celulas["A1"]["texto"])
-        self.assertIn("Cabana do Jacarandá", self.celulas["A1"]["texto"])
+        self.assertIn("Studio Industrial", self.celulas["A1"]["texto"])
 
     def test_o_titulo_e_o_subtitulo_abrem_a_folha(self):
         self.assertEqual(self.celulas["A2"]["texto"], "Contas a pagar")

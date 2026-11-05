@@ -179,7 +179,7 @@ class Relatorio:
             self._y -= 16
 
     def _cabecalho(self):
-        self._texto("Cabana do Jacarandá", MARGEM_ESQUERDA, self._y, 9, NEGRITO, MARROM)
+        self._texto("Studio Industrial", MARGEM_ESQUERDA, self._y, 9, NEGRITO, MARROM)
         self._y -= 20
         self._texto(self.titulo, MARGEM_ESQUERDA, self._y, 17, NEGRITO, PRETO)
         self._y -= 16
@@ -324,7 +324,7 @@ class Relatorio:
         for numero, pagina in enumerate(self.paginas, start=1):
             self._pagina = pagina
             self._linha(MARGEM_RODAPE + 14)
-            esquerda = f"Cabana do Jacarandá · sistema auxiliar ao SET · emitido em {emitido}"
+            esquerda = f"Studio Industrial · sistema auxiliar ao SET · emitido em {emitido}"
             if self.emitido_por:
                 esquerda += f" por {self.emitido_por}"
             self._texto(esquerda, MARGEM_ESQUERDA, MARGEM_RODAPE, 7.5, NORMAL, CINZA)

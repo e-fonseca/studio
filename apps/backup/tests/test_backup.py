@@ -122,7 +122,7 @@ class OQueVaiNoBackupTest(TestCase):
             self.assertNotIn(proibido, caminhos)
 
     def test_pasta_de_anexos_fora_do_padrao_tambem_fica_de_fora(self):
-        """CABANA_MEDIA_ROOT pode apontar para dentro do programa; o nome não salva."""
+        """STUDIO_MEDIA_ROOT pode apontar para dentro do programa; o nome não salva."""
         import tempfile
 
         with tempfile.TemporaryDirectory() as pasta:
@@ -358,12 +358,12 @@ class ORepositorioVazioTest(TestCase):
 
 class ConfiguracaoTest(TestCase):
     def test_entende_as_tres_formas_de_escrever_o_repositorio(self):
-        for bruto in ("loja/cabana-sistema",
-                      "https://github.com/loja/cabana-sistema",
-                      "https://github.com/loja/cabana-sistema.git",
-                      "git@github.com:loja/cabana-sistema.git"):
+        for bruto in ("loja/studio-sistema",
+                      "https://github.com/loja/studio-sistema",
+                      "https://github.com/loja/studio-sistema.git",
+                      "git@github.com:loja/studio-sistema.git"):
             configuracao = ConfiguracaoDeBackup(repositorio=bruto)
-            self.assertEqual(configuracao.dono_e_repositorio, ("loja", "cabana-sistema"), bruto)
+            self.assertEqual(configuracao.dono_e_repositorio, ("loja", "studio-sistema"), bruto)
 
     def test_texto_que_nao_e_repositorio_nao_passa(self):
         for bruto in ("", "cabana", "https://github.com/", "a/b/c"):
@@ -388,7 +388,7 @@ class ConfiguracaoTest(TestCase):
     def test_a_tela_nasce_com_o_repositorio_que_ele_indicou(self):
         """Pedido dele em 14/10/2026: "fazer conexão com o diretório sistema"."""
         self.assertEqual(ConfiguracaoDeBackup.atual().dono_e_repositorio,
-                         ("e-fonseca", "sistema"))
+                         ("e-fonseca", "studio"))
 
     def test_repositorio_apagado_na_mao_volta_a_ser_cobrado(self):
         """Vir preenchido não é o mesmo que não poder ficar vazio."""
@@ -414,7 +414,7 @@ class TelaTest(TestCase):
         """Como Alertas abre com o SMTP da Hostinger: o que sobra para ele é só o segredo."""
         self.entrar()
         pagina = self.client.get(reverse("backup:painel"))
-        self.assertContains(pagina, 'value="e-fonseca/sistema"')
+        self.assertContains(pagina, 'value="e-fonseca/studio"')
         self.assertContains(pagina, "Falta preencher: o token de acesso do GitHub")
         # E o passo a passo da tela não manda mais criar o repositório.
         self.assertContains(pagina, "ele já vem preenchido")
@@ -422,11 +422,11 @@ class TelaTest(TestCase):
     def test_gravar_guarda_o_token_sem_mostrar_de_volta(self):
         self.entrar()
         self.client.post(reverse("backup:painel"), {
-            "repositorio": "https://github.com/loja/cabana-sistema",
+            "repositorio": "https://github.com/loja/studio-sistema",
             "ramo": "main", "token": "ghp_segredo",
         })
         configuracao = ConfiguracaoDeBackup.atual()
-        self.assertEqual(configuracao.repositorio, "https://github.com/loja/cabana-sistema")
+        self.assertEqual(configuracao.repositorio, "https://github.com/loja/studio-sistema")
         self.assertEqual(configuracao.token, "ghp_segredo")
         pagina = self.client.get(reverse("backup:painel"))
         self.assertNotContains(pagina, "ghp_segredo")

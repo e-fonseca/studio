@@ -13,10 +13,10 @@ outro lugar além do servidor da loja e dos pacotes de instalação.
 extrato bancário importado e os anexos de nota fiscal dos fornecedores. GitHub é um
 serviço fora da loja: mandar isso para lá, mesmo em repositório privado, é tirar dado
 pessoal do servidor sem necessidade nenhuma. O backup do banco continua sendo o
-`backup.ps1`, que roda às 23:30 e guarda 14 dias em `C:\\cabana-sistema\\backups`.
+`backup.ps1`, que roda às 23:30 e guarda 14 dias em `C:\\studio-sistema\\backups`.
 
-**Não vai segredo nenhum.** O `cabana.env` (com a SECRET_KEY e a senha do e-mail) e o
-`pgpass.conf` ficam em `C:\\cabana-sistema\\config`, fora da pasta do programa, então
+**Não vai segredo nenhum.** O `studio.env` (com a SECRET_KEY e a senha do e-mail) e o
+`pgpass.conf` ficam em `C:\\studio-sistema\\config`, fora da pasta do programa, então
 não entram nem por descuido. Ainda assim o envio monta a lista pelo que PODE ir, nunca
 pelo que não pode: regra de exclusão esquecida manda o arquivo; regra de inclusão
 esquecida só deixa de mandar.
@@ -34,7 +34,7 @@ RAMO_PADRAO = "main"
 # O repositório que o Edson indicou em 14/10/2026 ("fazer conexão com o diretório
 # sistema, destinado para este projeto no github"). Vem preenchido na tela, como o SMTP
 # da Hostinger vem em Alertas: assim só falta colar o token. Trocar na tela sobrescreve.
-REPOSITORIO_PADRAO = "e-fonseca/sistema"
+REPOSITORIO_PADRAO = "e-fonseca/studio"
 
 
 class ConfiguracaoDeBackup(models.Model):

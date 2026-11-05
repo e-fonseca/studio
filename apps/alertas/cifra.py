@@ -1,7 +1,7 @@
 """Guarda a senha do e-mail sem deixá-la em texto puro no banco.
 
 Honestidade sobre o que isto é e o que não é: a chave sai da `SECRET_KEY` do
-próprio sistema, que mora no `cabana.env` ao lado do banco. Então isto **não**
+próprio sistema, que mora no `studio.env` ao lado do banco. Então isto **não**
 protege contra alguém que já tem o servidor — essa pessoa tem as duas coisas.
 
 O que protege: quem abre a tabela num cliente de banco, quem recebe um backup do

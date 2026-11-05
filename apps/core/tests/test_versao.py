@@ -123,11 +123,11 @@ class HistoricoDeAtualizacoesTest(TestCase):
 
     def test_mais_recente_primeiro(self):
         lidas = self.historico_com(
-            "05/10/2026 22:10\t1.3.0\tf0206f1\tcabana-sistema-pacote-1.3.0.zip\tok\n"
-            "06/10/2026 23:40\t1.7.0\tff59648\tcabana-sistema-pacote-1.7.0.zip\tok\n"
+            "05/10/2026 22:10\t1.3.0\tf0206f1\tstudio-sistema-pacote-1.3.0.zip\tok\n"
+            "06/10/2026 23:40\t1.7.0\tff59648\tstudio-sistema-pacote-1.7.0.zip\tok\n"
         )
         self.assertEqual([a.numero for a in lidas], ["1.7.0", "1.3.0"])
-        self.assertEqual(lidas[0].pacote, "cabana-sistema-pacote-1.7.0.zip")
+        self.assertEqual(lidas[0].pacote, "studio-sistema-pacote-1.7.0.zip")
         self.assertTrue(lidas[0].deu_certo)
 
     def test_linha_estranha_nao_derruba_a_tela(self):
@@ -175,10 +175,10 @@ class HistoricoDeAtualizacoesTest(TestCase):
         pasta = TemporaryDirectory()
         self.addCleanup(pasta.cleanup)
         arquivo = Path(pasta.name) / "atualizacoes.tsv"
-        arquivo.write_text("06/10/2026 23:40\t1.7.0\tff59648\tcabana-sistema-pacote-1.7.0.zip\tok\n", encoding="utf-8")
+        arquivo.write_text("06/10/2026 23:40\t1.7.0\tff59648\tstudio-sistema-pacote-1.7.0.zip\tok\n", encoding="utf-8")
         with override_settings(ATUALIZACOES_HISTORICO=arquivo):
             pagina = self.client.get(reverse("core:versoes"))
-        self.assertContains(pagina, "cabana-sistema-pacote-1.7.0.zip")
+        self.assertContains(pagina, "studio-sistema-pacote-1.7.0.zip")
         self.assertContains(pagina, "O que mudou em cada versão")
         self.assertContains(pagina, atualizacoes.mudancas()[0].numero)
 
@@ -226,7 +226,7 @@ class ConferirFirebirdTest(TestCase):
 
     def test_sem_caminho_configurado_avisa(self):
         saida = self.chamar(IMPORTACAO_FIREBIRD_CLIENTE="")
-        self.assertIn("CABANA_FIREBIRD_DLL", saida)
+        self.assertIn("STUDIO_FIREBIRD_DLL", saida)
 
     def test_arquivo_inexistente_manda_rodar_a_atualizacao(self):
         saida = self.chamar(IMPORTACAO_FIREBIRD_CLIENTE="/nao/existe/fbclient.dll")

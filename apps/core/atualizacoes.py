@@ -1,9 +1,9 @@
 """Histórico das atualizações aplicadas no servidor, para ver na tela.
 
 Cada vez que o `instalar.ps1` termina, ele acrescenta uma linha num arquivo de
-texto (uma coluna separada por tabulação), em `C:\\cabana-sistema\\logs`:
+texto (uma coluna separada por tabulação), em `C:\\studio-sistema\\logs`:
 
-    2026-10-06T23:40:11   1.7.0   ff59648   cabana-sistema-pacote-1.7.0-...zip   ok
+    2026-10-06T23:40:11   1.7.0   ff59648   studio-sistema-pacote-1.7.0-...zip   ok
 
 Assim a gerência vê na tela qual pacote entrou, quando e se deu certo, sem
 precisar abrir log nenhum no servidor. O que mudou em cada versão vem do

@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ titulo|default:"Sistema" }} · Cabana do Jacarandá</title>
+  <title>{{ titulo|default:"Sistema" }} · Studio Industrial</title>
   {% comment %}Ícone da aba, feito do logotipo oficial da loja: .ico com 16, 32, 48 e 64px
   para a aba e os favoritos, e PNG de 180px para atalho em celular e tablet. Servido pelo
   próprio sistema, para não depender da internet.{% endcomment %}
   <link rel="icon" href="{% static 'img/icone.ico' %}" sizes="any">
   <link rel="apple-touch-icon" href="{% static 'img/icone-180.png' %}">
-  <meta name="theme-color" content="#241f1a">
+  <meta name="theme-color" content="#242729">
   {% comment %}Atalho na tela inicial do celular: com o manifesto e o operário abaixo, o
   sistema abre em tela cheia, sem barra de endereço, como um aplicativo. Só funciona em
   https, igual à câmera (apps/core/aplicativo.py e docs/https-e-camera.md).{% endcomment %}
@@ -17,8 +17,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Cabana">
-  <meta name="application-name" content="Cabana">
+  <meta name="apple-mobile-web-app-title" content="Studio">
+  <meta name="application-name" content="Studio">
   <link rel="stylesheet" href="{% static 'css/sistema.css' %}">
   {% block cabeca %}{% endblock %}
 </head>
@@ -30,7 +30,7 @@
       <div class="marca">
         <img class="marca-simbolo" src="{% static 'img/logo.png' %}" alt="" width="112" height="112">
         <div>
-          <a href="{% url 'core:inicio' %}">Cabana do Jacarandá</a>
+          <a href="{% url 'core:inicio' %}">Studio Industrial</a>
           <span class="subtitulo">Sistema auxiliar</span>
         </div>
       </div>

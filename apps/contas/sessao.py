@@ -13,8 +13,8 @@ São duas travas, as duas do lado do servidor, que o navegador não consegue con
    janela. Nada do lado do site impede isso — é decisão do navegador. O que resolve é o
    servidor não aceitar mais aquela sessão, e é isto aqui.
 
-Os dois tempos vêm do cabana.env (CABANA_SESSAO_MAXIMA_HORAS e
-CABANA_SESSAO_PARADA_MINUTOS), para mudar sem mexer no código.
+Os dois tempos vêm do studio.env (STUDIO_SESSAO_MAXIMA_HORAS e
+STUDIO_SESSAO_PARADA_MINUTOS), para mudar sem mexer no código.
 """
 
 from django.conf import settings

@@ -180,7 +180,7 @@ def texto_de_teste(regra=None):
     """O teste do grupo já explica a regra, para quem lê no grupo saber o que vai chegar."""
     regra = regra or RegraDeDesconto.atual()
     return "\n".join([
-        "Cabana · Teste do aviso de metas",
+        "Studio · Teste do aviso de metas",
         "",
         "Quando o sábado, o domingo ou um feriado bater a meta, o aviso chega aqui, com o "
         "vendido e o prêmio por pessoa.",

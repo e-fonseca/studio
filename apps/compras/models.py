@@ -169,7 +169,7 @@ class AjusteDeCompra(models.Model):
 class DadosDaEmpresa(models.Model):
     """O cabeçalho que vai no pedido ao fornecedor. Uma linha só, sempre a de pk=1.
 
-    A loja se chama Cabana do Jacarandá e a nota sai pela razão social, que é outra
+    A loja se chama Studio Industrial e a nota sai pela razão social, que é outra
     (Edson, 14/10/2026). O fornecedor precisa das duas: conhece a loja pelo nome da
     porta e fatura para o CNPJ.
 
@@ -180,7 +180,7 @@ class DadosDaEmpresa(models.Model):
     """
 
     nome_fantasia = models.CharField(
-        "nome da loja", max_length=120, default="Cabana do Jacarandá",
+        "nome da loja", max_length=120, default="Studio Industrial",
         help_text="Como o fornecedor conhece a loja. É o que aparece grande no pedido.",
     )
     razao_social = models.CharField(

@@ -25,7 +25,7 @@ AGORA = timezone.make_aware(timezone.datetime(2026, 10, 14, 10, 0))
 
 def configurada(**campos):
     configuracao = ConfiguracaoDeBackup.atual()
-    configuracao.repositorio = "e-fonseca/sistema"
+    configuracao.repositorio = "e-fonseca/studio"
     configuracao.ativo = True
     configuracao.token = "token-de-teste"
     for nome, valor in campos.items():
@@ -261,7 +261,7 @@ class ORelatorioDoVigia(TestCase):
         relatorio = relatorios.montar("backup", agora=AGORA)
         self.assertTrue(relatorio.tem_noticia)
         self.assertIn("40 dias", relatorio.manchete)
-        self.assertEqual(relatorio.caminho, "/sistema/backup/")
+        self.assertEqual(relatorio.caminho, "/studio/backup/")
 
     def test_quando_precisa_de_gente_o_relatorio_explica_por_que(self):
         relatorio = relatorios.montar("backup", agora=AGORA)

@@ -141,8 +141,8 @@ class AImportacaoAdiantaAContaTest(TestCase):
 class CacheCompartilhadoTest(TestCase):
     """O cache do servidor TEM que ser visível de outro processo.
 
-    Quem calcula é a tarefa agendada CabanaImportacao; quem mostra a tela é o serviço
-    CabanaSistema. Com cache na memória de cada processo, a conta feita pela tarefa
+    Quem calcula é a tarefa agendada StudioImportacao; quem mostra a tela é o serviço
+    StudioSistema. Com cache na memória de cada processo, a conta feita pela tarefa
     nunca chega ao serviço e a pessoa espera do mesmo jeito — que era exatamente o
     defeito. Este teste existe para ninguém "simplificar" isso de volta.
     """

@@ -104,7 +104,7 @@ class TestMenuPorAssunto(TestCase):
     def test_toda_rota_do_menu_existe_de_verdade(self):
         """Rota escrita errada no menu só apareceria quando alguém abrisse a tela."""
         for item in menu.telas() + menu.FORA_DO_MENU:
-            self.assertTrue(item.endereco.startswith("/sistema/"), item.rota)
+            self.assertTrue(item.endereco.startswith("/studio/"), item.rota)
 
     def test_toda_rota_irma_existe_de_verdade(self):
         """Rota irmã escrita errada só apareceria quando alguém abrisse aquela tela.

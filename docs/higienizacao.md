@@ -27,12 +27,12 @@ pacote de atualização sempre no diretório /pacote"*): o zip novo chega em
 pasta (e ainda em `C:\instalacao`, o lugar de antes), guarda o zip em `historico` antes de
 trocar a versão e esvazia a pasta em vez de apagá-la, porque o Windows não apaga pasta
 aberta num PowerShell. O `higienizar.ps1` acha o sistema sozinho: da cópia instalada em
-`C:\cabana-sistema\scripts`, que é a que a tarefa da madrugada roda, ele sobe uma pasta;
-da pasta do pacote, ele vai para `C:\cabana-sistema`. Antes da 1.47.1, o mesmo script
+`C:\studio-sistema\scripts`, que é a que a tarefa da madrugada roda, ele sobe uma pasta;
+da pasta do pacote, ele vai para `C:\studio-sistema`. Antes da 1.47.1, o mesmo script
 rodado fora de `scripts` procurava o Python na pasta errada e saía calado.
 
 Os comandos de antes continuam valendo (`C:\instalacao\atualizar.ps1` é uma cópia que o
-próprio atualizador mantém em dia, e `C:\cabana-sistema\scripts\higienizar.ps1` é a cópia
+próprio atualizador mantém em dia, e `C:\studio-sistema\scripts\higienizar.ps1` é a cópia
 instalada). É pelo de antes que um servidor numa versão anterior à 1.47.1 sai dela, porque
 o atualizador antigo ainda não procura o zip em `pacote`.
 
@@ -41,11 +41,11 @@ costuma fazer as duas coisas na mesma visita, e procurar o outro comando em outr
 lugar da página custa tempo de quem está no servidor. Vale para a tela Ficha técnica,
 para o `LEIA-ME.txt` do pacote e para qualquer lugar novo que mostre um dos dois.
 
-Roda sozinha todo dia às 03:40, pela tarefa `\Cabana\CabanaHigienizacao`: depois da
+Roda sozinha todo dia às 03:40, pela tarefa `\Studio\StudioHigienizacao`: depois da
 sincronização da madrugada, depois do backup das 23:30 e antes de a loja abrir.
 O registro de cada limpeza fica em `logs\higienizacao.log`.
 
-Direto no Django, se for preciso (dentro de `C:\cabana-sistema\app`):
+Direto no Django, se for preciso (dentro de `C:\studio-sistema\app`):
 
 ```
 ..\python\python.exe manage.py higienizar           # só confere
@@ -71,7 +71,7 @@ inteira e o sistema tem que ficar no ar enquanto a limpeza roda.
 
 Auditoria, ficha de fornecedor, pagamento previsto, inventário e contagem, extrato
 bancário conferido, usuários, processos e os backups do próprio sistema
-(`C:\cabana-sistema\backups`, que já guardam 14 dias e se limpam no `backup.ps1`).
+(`C:\studio-sistema\backups`, que já guardam 14 dias e se limpam no `backup.ps1`).
 
 A regra: **sai só o que o sistema sabe refazer sozinho na próxima sincronização.**
 O que uma pessoa digitou fica.
@@ -104,7 +104,7 @@ isso é `apps/core/tests/test_higiene.py::FotosDoCaixaTest`.
 ## A pasta que NÃO entra na higienização: `dados\cache`
 
 Desde a 1.34.0 as contas da tela de abertura ficam guardadas em `dados\cache`
-(`CABANA_CACHE`), e não na memória do processo — ver
+(`STUDIO_CACHE`), e não na memória do processo — ver
 [login-rapido.md](login-rapido.md). Essa pasta **se limita sozinha** e por isso não tem
 tarefa aqui:
 

@@ -93,7 +93,7 @@ class FichaTecnica(TestCase):
         self.assertIn(r"C:\instalacao\pacote\higienizar.ps1", bloco)
         self.assertIn("-Conferir", bloco)
         self.assertNotIn(r"C:\instalacao\atualizar.ps1", bloco)
-        self.assertNotIn(r"C:\cabana-sistema\scripts\higienizar.ps1", bloco)
+        self.assertNotIn(r"C:\studio-sistema\scripts\higienizar.ps1", bloco)
 
     def test_quem_atualiza_salva_o_zip_na_pasta_do_pacote(self):
         self.client.force_login(self.gerente)

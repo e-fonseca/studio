@@ -16,7 +16,7 @@ qualquer pessoa autorizada consiga fazer quando quem fazia não estiver.
 
 ## Passos
 
-1. Entre em `https://192.168.3.254/sistema` com **seu** usuário (conectado à VPN).
+1. Entre em `https://192.168.3.254/studio` com **seu** usuário (conectado à VPN).
 2. Clique em **Base de processos**. Os cartões estão em quatro colunas: *A levantar*, *Em documentação*, *Em teste por outra pessoa* e *Validado pela gestão*.
 3. Clique no cartão do processo.
 4. Clique em **Escrever procedimento**. Preencha objetivo, gatilho, passos (um por linha) e como saber que terminou. Clique em **Salvar nova versão**.

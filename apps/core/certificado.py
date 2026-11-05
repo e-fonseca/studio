@@ -12,7 +12,7 @@ aparelho possa confiar: o aviso do navegador voltava a cada aparelho novo e a ca
 renovação, para sempre. Agora são dois certificados:
 
 - a **autoridade da loja** (`cabana-autoridade.crt`), que vale dez anos e é
-  instalada uma vez em cada aparelho, pela tela /sistema/certificado/;
+  instalada uma vez em cada aparelho, pela tela /studio/certificado/;
 - o **certificado do servidor** (`cabana.crt`), assinado por essa autoridade e
   refeito sozinho quando está perto de vencer. Aparelho que já confia na
   autoridade aceita o certificado novo sem perguntar nada.
@@ -49,8 +49,8 @@ NOME_CHAVE = "cabana.key"
 NOME_AUTORIDADE = "cabana-autoridade.crt"
 NOME_CHAVE_AUTORIDADE = "cabana-autoridade.key"
 
-ORGANIZACAO = "Cabana do Jacaranda"
-NOME_DA_AUTORIDADE = "Cabana do Jacaranda - autoridade da loja"
+ORGANIZACAO = "Studio Industrial"
+NOME_DA_AUTORIDADE = "Studio Industrial - autoridade da loja"
 
 
 def _da_para_gravar(pasta):
@@ -69,14 +69,14 @@ def _candidatas():
     """A pasta configurada e, se ela não aceitar escrita, para onde cair.
 
     Por que existe alternativa: no servidor da loja a pasta configurada era
-    C:\cabana-sistema\config\certificado, e a conta que roda o sistema só tem leitura
+    C:\studio-sistema\config\certificado, e a conta que roda o sistema só tem leitura
     em config. O certificado nunca chegou a ser criado, a porta segura nunca subiu e o
     download da autoridade dava "Página não encontrada" — tudo calado, porque quem tenta
     criar é o servir.py e ele engole a falha para não derrubar o HTTP (visto em
     08/10/2026). A pasta dados é onde a conta do serviço escreve, então é para lá que o
     sistema cai sozinho enquanto o instalador não corrige a configuração.
     """
-    configurada = os.environ.get("CABANA_CERTIFICADO_PASTA")
+    configurada = os.environ.get("STUDIO_CERTIFICADO_PASTA")
     programa = Path(__file__).resolve().parents[2]
     primeira = Path(configurada) if configurada else programa / "var" / "certificado"
     return [primeira, programa.parent / "dados" / "certificado", programa / "var" / "certificado"]
@@ -99,8 +99,8 @@ def pasta_padrao():
 
 
 def enderecos_configurados():
-    """Os endereços que o certificado cobre, como o cabana.env diz."""
-    bruto = os.environ.get("CABANA_CERTIFICADO_NOMES", "192.168.3.254,localhost")
+    """Os endereços que o certificado cobre, como o studio.env diz."""
+    bruto = os.environ.get("STUDIO_CERTIFICADO_NOMES", "192.168.3.254,localhost")
     return [valor.strip() for valor in bruto.split(",") if valor.strip()]
 
 
@@ -239,7 +239,7 @@ def _assinada_pela_autoridade(certificado, autoridade):
 def _nomes_conferem(certificado, enderecos):
     """Verdadeiro quando o certificado já cobre todos os endereços pedidos.
 
-    Sem isso, acrescentar um endereço no `cabana.env` não teria efeito nenhum: o
+    Sem isso, acrescentar um endereço no `studio.env` não teria efeito nenhum: o
     certificado antigo continuaria valendo e o navegador recusaria o endereço novo.
     """
     from cryptography import x509

@@ -22,7 +22,7 @@ O que ele garante
 
 O que ele NÃO cobre, de propósito
 ---------------------------------
-- O `/sistema/admin/` é o admin do próprio Django e exige `is_staff`, que
+- O `/studio/admin/` é o admin do próprio Django e exige `is_staff`, que
   nenhuma tela do sistema concede: só um superusuário criado na mão no
   servidor entra lá. Fica fora da varredura para o teste não virar um teste do
   Django.
@@ -42,43 +42,43 @@ from apps.core.fabricas import SENHA_TESTE, confirmar_senha, usuario
 # A única tela do vendedor, decidida pelo Edson em 07/10/2026: consulta de balcão,
 # sem custo, sem margem e sem valor. As irmãs dela são o autocompletar da mesma tela.
 DO_VENDEDOR = {
-    "/sistema/importacao/consulta/",
-    "/sistema/importacao/consulta/sugestoes/",
+    "/studio/importacao/consulta/",
+    "/studio/importacao/consulta/sugestoes/",
 }
 
 # Rotas que qualquer pessoa logada abre, em qualquer perfil, porque não mostram
 # número nenhum da loja: a tela de entrada, a saída, o manifesto do aplicativo e o
 # certificado (todo mundo precisa instalar para a câmera funcionar no celular).
 #
-# `/sistema/versoes/` NÃO está nesta lista, e isso foi descoberto aqui: até a
+# `/studio/versoes/` NÃO está nesta lista, e isso foi descoberto aqui: até a
 # 1.24.0 ela pedia só login, e o histórico de mudanças cita os números que cada
 # versão consertou — faturamento, lucro bruto, margem, o que está parado na
 # prateleira. O vendedor abria tudo isso digitando o endereço. Agora ela pede
 # `importacao.ver_painel`, como toda tela de dinheiro.
 DE_TODOS = {
     "/",
-    "/sistema/",
-    "/sistema/entrar/",
-    "/sistema/sair/",
-    "/sistema/saude/",
-    "/sistema/manifesto.webmanifest",
-    "/sistema/operario.js",
-    "/sistema/certificado/",
-    "/sistema/certificado/autoridade.crt",
+    "/studio/",
+    "/studio/entrar/",
+    "/studio/sair/",
+    "/studio/saude/",
+    "/studio/manifesto.webmanifest",
+    "/studio/operario.js",
+    "/studio/certificado/",
+    "/studio/certificado/autoridade.crt",
     # Trocar a própria senha (1.42.0): só o formulário, sem número da loja.
-    "/sistema/senha/",
+    "/studio/senha/",
     # Esqueci a minha senha (1.43.0): é para quem ainda NÃO entrou, então abre sem login.
     # Não mostra número da loja e não diz se a conta existe (apps/contas/recuperacao.py).
-    "/sistema/senha/esqueci/",
-    "/sistema/senha/esqueci/codigo/",
+    "/studio/senha/esqueci/",
+    "/studio/senha/esqueci/codigo/",
 }
 
-FORA_DA_VARREDURA = "/sistema/admin/"
+FORA_DA_VARREDURA = "/studio/admin/"
 
 # A área de acessos (1.44.0): o que o Administrador de acessos abre. Nenhuma dessas telas
 # mostra número da loja; é o "acesso financeiro concedido separadamente" do prompt de
 # controle de acesso (02/11/2026).
-DA_AREA_DE_ACESSOS = "/sistema/usuarios/"
+DA_AREA_DE_ACESSOS = "/studio/usuarios/"
 
 
 def _rotas():
@@ -136,8 +136,8 @@ class RotasPorPerfil(TestCase):
     def test_a_varredura_enxerga_as_telas_do_sistema(self):
         """Se este número cair muito, a varredura parou de achar as rotas."""
         self.assertGreater(len(self.rotas), 50, "a varredura deixou de enxergar as rotas")
-        self.assertIn("/sistema/painel/vendas-do-dia/", self.rotas)
-        self.assertIn("/sistema/alertas/", self.rotas)
+        self.assertIn("/studio/painel/vendas-do-dia/", self.rotas)
+        self.assertIn("/studio/alertas/", self.rotas)
 
     def test_o_vendedor_so_abre_a_tela_de_consulta(self):
         """Nenhuma outra rota pode responder 200 para o Operador vendedor."""
@@ -208,13 +208,13 @@ class RotasPorPerfil(TestCase):
         """
         self.client.login(username="vendedor_varredura", password=SENHA_TESTE)
         self.assertEqual(
-            self.client.get("/sistema/versoes/").status_code, 403,
+            self.client.get("/studio/versoes/").status_code, 403,
             "a tela de versões voltou a abrir para o Operador vendedor",
         )
 
         self.client.logout()
         self.client.login(username="gerencia_varredura", password=SENHA_TESTE)
-        pagina = self.client.get("/sistema/versoes/")
+        pagina = self.client.get("/studio/versoes/")
         self.assertEqual(pagina.status_code, 200, "a gerência precisa ver o histórico")
         self.assertIn(
             "R$", pagina.content.decode(),

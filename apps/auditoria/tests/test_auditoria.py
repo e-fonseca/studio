@@ -38,8 +38,8 @@ class TrilhaSomenteInclusaoTest(TestCase):
 class AcessoAuditadoTest(TestCase):
     def test_entrada_e_falha_registradas_sem_senha(self):
         usuario("ana", VENDEDOR)
-        self.client.post("/sistema/entrar/", {"username": "ana", "password": "errada-123"})
-        self.client.post("/sistema/entrar/", {"username": "ana", "password": SENHA_TESTE})
+        self.client.post("/studio/entrar/", {"username": "ana", "password": "errada-123"})
+        self.client.post("/studio/entrar/", {"username": "ana", "password": SENHA_TESTE})
         falha = EventoAuditoria.objects.get(acao="acesso.falha")
         self.assertEqual(falha.depois, {"usuario_tentado": "ana"})
         self.assertNotIn("errada", str(falha.depois))
@@ -47,7 +47,7 @@ class AcessoAuditadoTest(TestCase):
 
     def test_correlacao_volta_no_cabecalho_e_fica_no_evento(self):
         usuario("ana", VENDEDOR)
-        resposta = self.client.post("/sistema/entrar/", {"username": "ana", "password": SENHA_TESTE})
+        resposta = self.client.post("/studio/entrar/", {"username": "ana", "password": SENHA_TESTE})
         evento = EventoAuditoria.objects.get(acao="acesso.entrada")
         self.assertEqual(resposta["X-Correlacao"], str(evento.correlacao))
         self.assertEqual(evento.ip, "127.0.0.1")
@@ -57,15 +57,15 @@ class ConsultaAuditoriaTest(TestCase):
     def test_operador_nao_ve_auditoria(self):
         usuario("op", VENDEDOR)
         self.client.login(username="op", password=SENHA_TESTE)
-        self.assertEqual(self.client.get("/sistema/auditoria/").status_code, 403)
+        self.assertEqual(self.client.get("/studio/auditoria/").status_code, 403)
 
     def test_administrativo_nao_ve_auditoria(self):
         """Auditoria é da gerência: quem lança conta não audita o próprio lançamento."""
         usuario("adm", ADMINISTRATIVO)
         self.client.login(username="adm", password=SENHA_TESTE)
-        self.assertEqual(self.client.get("/sistema/auditoria/").status_code, 403)
+        self.assertEqual(self.client.get("/studio/auditoria/").status_code, 403)
 
     def test_gerencia_ve_auditoria(self):
         usuario("aud", ADMINISTRACAO)
         self.client.login(username="aud", password=SENHA_TESTE)
-        self.assertEqual(self.client.get("/sistema/auditoria/").status_code, 200)
+        self.assertEqual(self.client.get("/studio/auditoria/").status_code, 200)

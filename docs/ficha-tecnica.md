@@ -25,7 +25,7 @@ nenhuma, porque a pessoa age por ela.
 | Django | `django.get_version()` |
 | PostgreSQL | `connection.pg_version`, a conexão que o sistema já usa |
 | psycopg, Waitress, firebird-driver, django-axes, openpyxl, cryptography | `importlib.metadata.version`, o que o instalador de fato instalou |
-| Firebird: versão | `CABANA_FIREBIRD_VERSAO` no `cabana.env`, gravada pelo instalador |
+| Firebird: versão | `STUDIO_FIREBIRD_VERSAO` no `studio.env`, gravada pelo instalador |
 | Firebird: arquitetura | primeiros bytes do próprio `fbclient.dll` (`_arquitetura_do_pe`) |
 | Sistema operacional | `platform.system()` e `platform.release()` |
 | Versão do sistema | arquivo `VERSAO` da raiz (`apps/core/versao.py`) |
@@ -42,7 +42,7 @@ Duas escolhas dentro dessa regra custaram pensamento:
 - **O Firebird não é carregado aqui.** Perguntar a versão ao motor significa carregar o
   `fbclient.dll`, que é caro e é justamente o que falha quando algo está errado — é o
   trabalho do `manage.py conferir_firebird`. Então a versão vem de quem instalou o motor:
-  desde a 1.21.0 o instalador grava `CABANA_FIREBIRD_VERSAO` no `cabana.env`. A
+  desde a 1.21.0 o instalador grava `STUDIO_FIREBIRD_VERSAO` no `studio.env`. A
   arquitetura, essa sim, é lida do arquivo, porque motor de 32 bits debaixo de um Python
   de 64 já travou a importação uma vez e vale ficar à vista.
 

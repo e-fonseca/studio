@@ -103,7 +103,7 @@ ou for bloqueada por engano. Quem cuida do servidor abre o PowerShell como admin
 roda:
 
 ```
-cd C:\cabana-sistema\app
+cd C:\studio-sistema\app
 ..\python\python.exe manage.py recuperar_administrador edson --motivo "esqueceu a senha" --senha
 ```
 

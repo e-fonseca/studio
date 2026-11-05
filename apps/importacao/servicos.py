@@ -199,8 +199,8 @@ def executar(*, origem=Importacao.Origem.BANCO, arquivo=None, usuario=None, auto
         alvo = arquivo or _conf("IMPORTACAO_BACKUP_ORIGEM")
         if not alvo:
             raise ErroFonte(
-                "Não sei onde está o backup do SET. Informe a pasta em CABANA_SET_BACKUP "
-                "(config\\cabana.env) ou passe --arquivo."
+                "Não sei onde está o backup do SET. Informe a pasta em STUDIO_SET_BACKUP "
+                "(config\\studio.env) ou passe --arquivo."
             )
         # Conferir tamanho e data ANTES de ler: é o que diz se o arquivo é mesmo o
         # backup mais recente e se ele está inteiro. A conferência inteira vai para o

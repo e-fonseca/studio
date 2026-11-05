@@ -24,16 +24,16 @@ class TestManifesto(TestCase):
 
     def test_abre_em_tela_cheia_dentro_do_sistema(self):
         self.assertEqual(self.manifesto["display"], "standalone")
-        self.assertEqual(self.manifesto["start_url"], "/sistema/")
-        self.assertEqual(self.manifesto["scope"], "/sistema/")
+        self.assertEqual(self.manifesto["start_url"], "/studio/")
+        self.assertEqual(self.manifesto["scope"], "/studio/")
 
     def test_tem_o_nome_e_as_cores_da_loja(self):
-        self.assertIn("Cabana do Jacarandá", self.manifesto["name"])
-        self.assertEqual(self.manifesto["short_name"], "Cabana")
+        self.assertIn("Studio Industrial", self.manifesto["name"])
+        self.assertEqual(self.manifesto["short_name"], "Studio")
         self.assertEqual(self.manifesto["lang"], "pt-BR")
         # Escuras desde a 1.43.0, as do topo e do fundo das telas: a barra do celular
         # e a tela de abertura não piscam claro antes do sistema escuro.
-        self.assertEqual(self.manifesto["theme_color"], "#241f1a")
+        self.assertEqual(self.manifesto["theme_color"], "#242729")
         self.assertEqual(self.manifesto["background_color"], "#13110f")
 
     def test_tem_icone_de_192_de_512_e_o_recortavel_do_android(self):
@@ -46,7 +46,7 @@ class TestManifesto(TestCase):
 
     def test_os_icones_sao_servidos_pelo_proprio_sistema(self):
         for icone in self.manifesto["icons"]:
-            self.assertTrue(icone["src"].startswith("/sistema/static/"), icone["src"])
+            self.assertTrue(icone["src"].startswith("/studio/static/"), icone["src"])
 
     def test_os_atalhos_do_toque_longo_apontam_para_telas_que_existem(self):
         enderecos = [atalho["url"] for atalho in self.manifesto["shortcuts"]]
@@ -63,7 +63,7 @@ class TestOperario(TestCase):
 
     def test_responde_dentro_de_sistema_para_poder_cuidar_das_telas(self):
         """O navegador só deixa o operário cuidar da pasta dele e do que está abaixo."""
-        self.assertEqual(reverse("core:operario"), "/sistema/operario.js")
+        self.assertEqual(reverse("core:operario"), "/studio/operario.js")
 
     def test_e_servido_como_javascript(self):
         self.assertEqual(self.resposta.status_code, 200)
