@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>{{ lead.nome }}</h1>
+  <p><a href="{% url 'leads:funil' %}">Voltar aos leads</a>
+     {% if pode_trabalhar %} · <a href="{% url 'leads:editar' lead.pk %}">Mudar os dados</a>{% endif %}</p>
+</div>
+
+<div class="resumo-painel">
+  <div><span class="numero">{{ lead.get_etapa_display }}</span><span class="rotulo">{{ lead.get_origem_display }}</span></div>
+  <div><span class="numero">{% if lead.proximo_contato %}{{ lead.proximo_contato|date:"d/m/Y" }}{% else %}—{% endif %}</span>
+       <span class="rotulo">{% if atrasado %}<strong>Próximo contato atrasado</strong>{% elif lead.aberto %}Próximo contato{% else %}Fechado em {{ lead.fechado_em|date:"d/m/Y" }}{% endif %}</span></div>
+  <div><span class="numero">{{ lead.valor_estimado|reais }}</span><span class="rotulo">Valor estimado</span></div>
+</div>
+
+<div class="grade-visao grade-topo">
+  <section class="cartao">
+    <h2>Quem é</h2>
+    <dl class="ficha">
+      <div><dt>Telefone</dt><dd>{{ lead.telefone|default:"—" }}</dd></div>
+      <div><dt>E-mail</dt><dd>{{ lead.email|default:"—" }}</dd></div>
+      <div><dt>Quem cuida</dt><dd>{{ lead.responsavel|nome_pessoa }}</dd></div>
+      <div><dt>Entrou em</dt><dd>{{ lead.criado_em|date:"d/m/Y" }}</dd></div>
+      {% if lead.kommo_id %}<div><dt>No Kommo</dt><dd>{{ lead.kommo_id }}</dd></div>{% endif %}
+      {% if lead.projeto %}<div><dt>Virou o projeto</dt><dd><a href="{% url 'projetos:ficha' lead.projeto.pk %}">{{ lead.projeto }}</a></dd></div>{% endif %}
+      {% if lead.motivo_perda %}<div><dt>Por que perdemos</dt><dd>{{ lead.motivo_perda }}</dd></div>{% endif %}
+    </dl>
+    {% if lead.interesse %}<p class="destaque">{{ lead.interesse|linebreaksbr }}</p>{% endif %}
+    {% if pode_converter %}
+    <form method="post" action="{% url 'leads:converter' lead.pk %}">{% csrf_token %}
+      <button type="submit" class="botao">Fechou: virar projeto</button>
+      <p class="ajuda">Cria o projeto com o nome, o contato e o interesse deste lead, e marca o lead como ganho.</p>
+    </form>
+    {% endif %}
+  </section>
+
+  {% if pode_trabalhar %}
+  <section class="cartao" id="registrar">
+    <h2>Registrar uma conversa</h2>
+    <form method="post" action="{% url 'leads:contato' lead.pk %}#registrar" class="formulario" novalidate>{% csrf_token %}
+      {% if form.non_field_errors %}<div class="mensagem error" role="alert">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+      {% include "_campos.html" with campos=form.visible_fields %}
+      <div class="acoes"><button type="submit" class="botao">Registrar</button></div>
+    </form>
+  </section>
+  {% endif %}
+</div>
+
+<section class="cartao">
+  <h2>Conversas</h2>
+  {% if contatos %}
+  <ul class="linha-do-tempo">
+    {% for c in contatos %}
+    <li><strong>{{ c.quando|date:"d/m/Y H:i" }} · {{ c.get_canal_display }}</strong>
+        · {% if c.automatico %}trazido do Kommo{% else %}{{ c.autor|nome_pessoa }}{% endif %}
+        <p>{{ c.resumo|linebreaksbr }}</p></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="vazio">Nenhuma conversa registrada ainda.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

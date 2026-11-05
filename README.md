@@ -1,10 +1,28 @@
 # Sistema auxiliar do Studio Industrial
 
-Sistema web local de apoio à gestão (orçamento de compras, fornecedores, estoque e
-análise financeira), auxiliar ao SET Sistemas. Não substitui o ERP nem a emissão fiscal.
-Endereço previsto: `https://192.168.3.254/studio`, acessível só pela VPN.
+Sistema web local de apoio à gestão do **Studio Industrial** (móveis industriais sob medida),
+auxiliar ao SET Sistemas. Não substitui o ERP nem a emissão fiscal. Copiado por inteiro do
+sistema auxiliar da Cabana do Jacarandá (`e-fonseca/sistema`, 1.48.0) em 05/11/2026; o que
+é só do Studio está em [docs/studio.md](docs/studio.md).
 
-## O que já funciona (entrega 1, fase 1 parcial)
+Endereço: `https://192.168.3.254:8444/studio/` (e `http://192.168.3.254:8096/studio/` no
+balcão), acessível pela rede da loja e pela VPN. Na intranet, menu **Gestão > Sistema aux SET**
+do Studio.
+
+## O que é só do Studio (2.0.0)
+
+- **Leads** (SDR): o que falar hoje, o funil por etapa, cada conversa registrada e o botão que
+  transforma o lead fechado em projeto.
+- **Projetos** sob medida e **oficinas parceiras**: etapa, prazo, venda, custo, margem, e as
+  entradas do cliente e os pagamentos à oficina, cada um com data.
+- **Fluxo de caixa**: o que entrou, o que saiu e a projeção dos próximos seis meses, juntando
+  o financeiro do SET e as parcelas dos projetos.
+- **Sem compras e sem estoque no menu** (`STUDIO_ASSUNTOS_DESLIGADOS=compras,estoque`).
+- **Integração com o Trello e o Kommo** pelo agente da casa do Edson, por uma API com chave
+  própria, pela VPN ([como funciona](docs/integracao-agente.md)).
+
+## O que veio da Cabana
+
 
 - **Base de processos** para transferir o conhecimento da Bárbara: quadro Kanban com os
   estados *A levantar*, *Em documentação*, *Em teste por outra pessoa* e *Validado pela gestão*;

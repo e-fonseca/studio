@@ -48,6 +48,7 @@ Como isto é lido no resto do sistema
 
 from dataclasses import dataclass, field, replace
 
+from django.conf import settings
 from django.urls import reverse
 
 
@@ -113,6 +114,24 @@ GRUPOS = [
         Item("painel:geral", "Visão geral", "importacao.ver_painel",
              ajuda="Como a loja está, em quatro números grandes."),
     )),
+    # Os dois assuntos do Studio (05/11/2026): "tem muitos projetos de moveis estilo
+    # industrial sob medida (...) sistema de SDR para controlar os leads". Leads vem antes
+    # de Projetos porque é a ordem do caminho do cliente: o lead fecha e vira projeto.
+    Grupo("leads", "Leads", ajuda="Quem quer um móvel e ainda não fechou: falar com cada um no dia certo.",
+          telas=(
+        Item("leads:funil", "Funil", "leads.ver_leads",
+             irmas=("leads:ficha", "leads:novo", "leads:editar", "leads:fechados"),
+             ajuda="O que falar hoje, o funil por etapa e quanto vira projeto."),
+    )),
+    Grupo("projetos", "Projetos", ajuda="Os móveis sob medida, da aprovação à entrega, e as oficinas.",
+          telas=(
+        Item("projetos:lista", "Projetos", "projetos.ver_projetos",
+             irmas=("projetos:ficha", "projetos:novo", "projetos:editar"),
+             ajuda="Cada projeto com a etapa, o prazo, a oficina e o dinheiro."),
+        Item("projetos:oficinas", "Oficinas parceiras", "projetos.ver_projetos",
+             irmas=("projetos:oficina", "projetos:oficina_nova", "projetos:oficina_editar"),
+             ajuda="As serralherias que fazem os projetos e quanto falta pagar a cada uma."),
+    )),
     Grupo("compras", "Compras", ajuda="Decidir o que comprar e fechar com o fornecedor.",
           telas=(
         # Primeira de propósito: é a tela em que a quantidade é escolhida e o pedido
@@ -167,6 +186,10 @@ GRUPOS = [
     )),
     Grupo("dinheiro", "Dinheiro", ajuda="O que a loja deve, o que entrou e o que o banco diz.",
           telas=(
+        # Primeira de propósito no Studio (05/11/2026): "controlar o financeiro, o que
+        # entrou, o que saiu e a projeção futura". Clicar em Dinheiro cai aqui.
+        Item("financeiro:fluxo", "Fluxo de caixa", "financeiro.ver_financeiro",
+             ajuda="O que entrou, o que saiu e o que vem nos próximos meses, do SET e dos projetos."),
         Item("financeiro:contas_a_pagar", "Financeiro", "financeiro.ver_financeiro",
              irmas=("financeiro:despesas", "financeiro:contas_a_receber",
                     "financeiro:pagamentos"),
@@ -262,9 +285,22 @@ def recursos_de(rota, usuario):
     return [item for item in permitidos(FORA_DO_MENU, usuario) if item.dentro_de == rota]
 
 
+def ativos():
+    """Os assuntos que esta instalação usa.
+
+    Perfil Studio Industrial (05/11/2026): *"neste momento nao tem gestao de estoque /
+    neste momento nao tem gestao de compras"*. As telas continuam no código e com os
+    testes delas, e a permissão continua conferida em cada uma; o que sai é o assunto
+    do topo, as setas de anterior e próxima e a tela de entrada. Quem decide é
+    STUDIO_ASSUNTOS_DESLIGADOS no studio.env: apagar a linha liga tudo de volta.
+    """
+    desligados = set(getattr(settings, "ASSUNTOS_DESLIGADOS", ()))
+    return [grupo for grupo in GRUPOS if grupo.chave not in desligados]
+
+
 def telas():
     """Todas as telas do menu, na ordem em que o menu as apresenta."""
-    return [tela for grupo in GRUPOS for tela in grupo.telas]
+    return [tela for grupo in ativos() for tela in grupo.telas]
 
 
 def de_rota(rota):
@@ -277,7 +313,7 @@ def de_rota(rota):
 
 def grupo_de(rota):
     """O assunto a que uma rota pertence, para a tela saber em que fileira acender."""
-    for grupo in GRUPOS:
+    for grupo in ativos():
         if any(tela.rota == rota for tela in grupo.telas):
             return grupo
     return None
@@ -295,7 +331,7 @@ def grupos_de(usuario):
     quem não pode abrir nada de dinheiro é oferecer uma porta trancada.
     """
     visiveis = []
-    for grupo in GRUPOS:
+    for grupo in ativos():
         abertas = permitidos(grupo.telas, usuario)
         if abertas:
             visiveis.append(replace(grupo, telas=tuple(abertas)))

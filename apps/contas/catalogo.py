@@ -43,6 +43,8 @@ class Permissao:
 # A ordem dos módulos é a do menu de cima, e Acessos por último.
 MODULOS = (
     "Indicadores",
+    "Leads",
+    "Projetos",
     "Compras",
     "Pedidos",
     "Fornecedores",
@@ -60,6 +62,18 @@ CATALOGO = (
     Permissao("importacao.ver_painel", "Indicadores", "Ver os indicadores",
               "Dashboard, Visão geral, indicadores de compra, painel completo e o "
               "histórico de versões, que cita os números de cada conserto.", dinheiro=True),
+    # Leads (Studio, 05/11/2026) -----------------------------------------------------
+    Permissao("leads.ver_leads", "Leads", "Ver o funil de leads",
+              "O funil, quem falar hoje, os ganhos e perdidos e a conversa de cada lead."),
+    Permissao("leads.trabalhar_leads", "Leads", "Trabalhar os leads",
+              "Anotar lead novo, registrar conversa, marcar o próximo contato e mudar a etapa."),
+    # Projetos (Studio, 05/11/2026) --------------------------------------------------
+    Permissao("projetos.ver_projetos", "Projetos", "Ver os projetos",
+              "Os projetos sob medida e as oficinas parceiras, com venda, custo, margem e o "
+              "que entrou e saiu de cada um.", dinheiro=True),
+    Permissao("projetos.editar_projetos", "Projetos", "Cadastrar e mudar projetos",
+              "Projeto novo, etapa, oficina, valores e as parcelas do cliente e da oficina.",
+              dinheiro=True),
     # Compras ------------------------------------------------------------------------
     Permissao("compras.ver_compras", "Compras", "Ver a lista de compra",
               "Antes de comprar, lista de compra com a folha para o fornecedor, sugestões "

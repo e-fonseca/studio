@@ -7,6 +7,38 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 2.0.0 — 05/11/2026 · Studio Industrial
+
+Primeira versão do sistema auxiliar do **Studio Industrial**, copiada por inteiro do sistema
+da Cabana (1.48.0) a pedido do Edson (05/11/2026): *"pode reusar o código, porem com o perfil
+da empresa studio industrial / usar github e-fonseca/studio, fazer copia completa"*. As
+versões abaixo desta são a história da Cabana, que veio junto com o código.
+
+- **Perfil Studio Industrial**: nome, ícone e cores do Studio (ferro, concreto e cobre, os
+  mesmos da intranet), endereço `/studio`, portas 8096 e 8444 (a Cabana segue em 8095 e
+  8443 no mesmo servidor), pasta `C:\studio-sistema`, configuração em `studio.env` e
+  variáveis `STUDIO_*`. O backup lido é o do Studio, `C:\backup-Set\Studio\Set-Studio`.
+- **Sem compras e sem estoque no menu**: *"neste momento nao tem gestao de estoque / neste
+  momento nao tem gestao de compras"*. As telas continuam no código e protegidas por
+  permissão; voltam ao menu apagando `STUDIO_ASSUNTOS_DESLIGADOS` do `studio.env`.
+- **Leads**: o funil do SDR (*"sistema de SDR para controlar os leads"*). Abre pelo que é
+  para falar hoje, mostra quem está sem próximo contato, o funil por etapa e quanto vira
+  projeto em 90 dias. Cada conversa fica registrada; lead em aberto não fica sem data do
+  próximo contato, e lead perdido não fica sem motivo. Fechou: um botão cria o projeto.
+- **Projetos**: os móveis sob medida (*"tem muitos projetos de moveis estilo industrial sob
+  medida"*), do orçamento à entrega, com a oficina, o prazo, a venda, o custo e a margem, e
+  as entradas do cliente e os pagamentos à oficina, cada um com data.
+- **Oficinas parceiras**: as serralherias (*"temos parcerias com oficinas de serralherias
+  onde são desenvolvidos os projetos"*), com os projetos de cada uma e quanto falta pagar.
+- **Fluxo de caixa**: *"controlar o financeiro, o que entrou, o que saiu e a projeção
+  futura"*. Três meses para trás e seis para frente, juntando o financeiro do SET e as
+  parcelas dos projetos, sem contar duas vezes a parcela que também está no SET. É a
+  primeira tela de Dinheiro.
+- **Perfil Comercial (SDR)**: trabalha o funil e não vê valor de projeto nem conta.
+- **Ponte com o agente da casa** para o Trello e o Kommo: os projetos viram cartões e os
+  leads do WhatsApp entram no funil com as conversas, por uma chave própria pela VPN. O
+  servidor não guarda senha do Trello nem do Kommo (docs/integracao-agente.md).
+
 ## 1.48.0 — 04/11/2026
 
 Pedido dele (04/11/2026, com o print do gráfico de Contas a pagar): *"gráfico ficou bom /

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Leads</h1>
+  <p>{% if pode_trabalhar %}<a class="botao" href="{% url 'leads:novo' %}">Lead novo</a>{% endif %}
+     {% if meus %}<a href="?">Ver todos</a>{% else %}<a href="?meus=1">Só os meus</a>{% endif %}
+     · <a href="{% url 'leads:fechados' %}">Ganhos e perdidos</a></p>
+</div>
+
+<div class="resumo-painel">
+  <div><span class="numero">{{ funil.para_hoje|length }}</span><span class="rotulo">Para falar hoje (inclui atrasados)</span></div>
+  <div><span class="numero">{{ funil.sem_data|length }}</span><span class="rotulo">Em aberto sem próximo contato</span></div>
+  <div><span class="numero">{{ funil.abertos }}</span><span class="rotulo">Em aberto no funil · {{ funil.novos_7_dias }} novo{{ funil.novos_7_dias|pluralize }} em 7 dias</span></div>
+  <div><span class="numero">{% if funil.conversao is not None %}{{ funil.conversao }}%{% else %}—{% endif %}</span>
+       <span class="rotulo">Viraram projeto em {{ dias_da_conversao }} dias ({{ funil.ganhos }} ganho{{ funil.ganhos|pluralize }}, {{ funil.perdidos }} perdido{{ funil.perdidos|pluralize }})</span></div>
+</div>
+
+<section class="cartao{% if funil.para_hoje %} cartao-destaque{% endif %}" id="hoje">
+  <h2>Falar hoje</h2>
+  {% if funil.para_hoje %}
+  <div class="tabela-rolavel">
+    <table class="tabela-leads">
+      <thead><tr><th scope="col">Quem</th><th scope="col">Etapa</th><th scope="col">Combinado para</th><th scope="col">Quem cuida</th><th scope="col">Telefone</th></tr></thead>
+      <tbody>
+        {% for l in funil.para_hoje %}
+        <tr{% if l.proximo_contato < hoje %} class="linha-erro"{% endif %}>
+          <td><a href="{% url 'leads:ficha' l.pk %}">{{ l.nome }}</a></td>
+          <td>{{ l.get_etapa_display }}</td>
+          <td>{{ l.proximo_contato|date:"d/m/Y" }}{% if l.proximo_contato < hoje %}<br><span class="etiqueta etiqueta-erro">atrasado</span>{% endif %}</td>
+          <td>{{ l.responsavel|nome_pessoa }}</td>
+          <td>{{ l.telefone|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="vazio">Nada para hoje. Os próximos contatos estão em dia.</p>
+  {% endif %}
+  {% if funil.sem_data %}
+  <p class="aviso-parado">{{ funil.sem_data|length }} lead{{ funil.sem_data|pluralize }} em aberto sem data de próximo contato:
+    {% for l in funil.sem_data %}<a href="{% url 'leads:ficha' l.pk %}">{{ l.nome }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+  {% endif %}
+</section>
+
+<div class="kanban">
+  {% for coluna in funil.colunas %}
+  <section class="coluna" id="coluna-{{ coluna.etapa }}" aria-labelledby="titulo-{{ coluna.etapa }}">
+    <h2 id="titulo-{{ coluna.etapa }}">{{ coluna.rotulo }} <span class="contador">{{ coluna.cartoes|length }}</span></h2>
+    {% for l in coluna.cartoes %}
+      <article class="cartao-kanban{% if l.proximo_contato and l.proximo_contato < hoje %} criticidade-alta{% elif not l.proximo_contato %} criticidade-media{% else %} criticidade-baixa{% endif %}">
+        <h3><a href="{% url 'leads:ficha' l.pk %}">{{ l.nome }}</a></h3>
+        <p>{{ l.get_origem_display }}{% if l.valor_estimado %} · {{ l.valor_estimado|reais }}{% endif %}</p>
+        <p>Próximo contato: {% if l.proximo_contato %}{{ l.proximo_contato|date:"d/m" }}{% if l.proximo_contato < hoje %} (atrasado){% endif %}{% else %}<strong>sem data</strong>{% endif %}</p>
+        <p>{{ l.responsavel|nome_pessoa }}</p>
+      </article>
+    {% empty %}
+      <p class="vazio">Ninguém aqui.</p>
+    {% endfor %}
+  </section>
+  {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {"titulo": "Leads", "texto": "Quem mostrou interesse e ainda não virou projeto. O trabalho aqui é não deixar ninguém esperando resposta."},
+  {"seletor": "#hoje", "titulo": "Falar hoje", "texto": "Quem tem contato marcado para hoje ou já passou da data. Comece por aqui todo dia."},
+  {"seletor": ".kanban", "titulo": "O funil", "texto": "Cada coluna é uma etapa. Vermelho é contato atrasado, laranja é lead sem data marcada."}
+]
+</script>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Ganhos e perdidos</h1>
+  <a href="{% url 'leads:funil' %}">Voltar aos leads</a>
+</div>
+<p class="ajuda">Os leads fechados nos últimos {{ dias }} dias. O motivo de cada perda é o que
+   mostra onde a venda está escapando.</p>
+
+{% if leads %}
+<div class="tabela-rolavel">
+  <table>
+    <thead><tr><th scope="col">Quem</th><th scope="col">Resultado</th><th scope="col">Fechado em</th><th scope="col">Origem</th><th scope="col">Motivo ou projeto</th></tr></thead>
+    <tbody>
+      {% for l in leads %}
+      <tr>
+        <td><a href="{% url 'leads:ficha' l.pk %}">{{ l.nome }}</a></td>
+        <td>{{ l.get_etapa_display }}</td>
+        <td>{{ l.fechado_em|date:"d/m/Y" }}</td>
+        <td>{{ l.get_origem_display }}</td>
+        <td>{% if l.projeto %}<a href="{% url 'projetos:ficha' l.projeto.pk %}">{{ l.projeto }}</a>{% else %}{{ l.motivo_perda|default:"—" }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="vazio">Nenhum lead fechado nos últimos {{ dias }} dias.</p>
+{% endif %}
+
+{% endblock %}

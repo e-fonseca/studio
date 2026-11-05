@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Fluxo de caixa</h1>
+  <p><a href="{% url 'financeiro:contas_a_pagar' %}">Contas a pagar</a> ·
+     <a href="{% url 'financeiro:contas_a_receber' %}">Contas a receber</a> ·
+     <a href="{% url 'projetos:lista' %}">Projetos</a></p>
+</div>
+
+<p class="ajuda">O que entrou e saiu nos últimos {{ meses_antes }} meses e o que está
+   marcado para entrar e sair nos próximos {{ meses_depois }}. Junta o financeiro do SET (pela
+   última importação) com as parcelas dos projetos; parcela marcada como "já está lançada no
+   SET" conta uma vez só.</p>
+
+{% if not fluxo.tem_set and not fluxo.tem_projetos %}
+<section class="cartao cartao-destaque">
+  <h2>Ainda não há dinheiro para mostrar</h2>
+  <p>O fluxo aparece quando a importação do SET trouxer contas a pagar e a receber, ou quando
+     os projetos tiverem as parcelas do cliente e da oficina lançadas.</p>
+</section>
+{% endif %}
+
+<div class="resumo-painel">
+  <div><span class="numero">{{ fluxo.total_vai_entrar|reais }}</span>
+       <span class="rotulo">Vai entrar até o fim do período{% if fluxo.atrasado_entrar %} · {{ fluxo.atrasado_entrar|reais }} já venceu{% endif %}</span></div>
+  <div><span class="numero">{{ fluxo.total_vai_sair|reais }}</span>
+       <span class="rotulo">Vai sair até o fim do período{% if fluxo.atrasado_sair %} · {{ fluxo.atrasado_sair|reais }} já venceu{% endif %}</span></div>
+  <div><span class="numero">{{ fluxo.ultimo.saldo_projetado|reais_com_sinal }}</span>
+       <span class="rotulo">Sobra (ou falta) projetada até {{ fluxo.ultimo.rotulo }}, sem contar o que já está no banco</span></div>
+</div>
+
+{% if fluxo.atrasado_entrar or fluxo.atrasado_sair %}
+<section class="cartao cartao-erro">
+  <h2>Contas vencidas e não pagas</h2>
+  <p>{% if fluxo.atrasado_entrar %}<strong>{{ fluxo.atrasado_entrar|reais }}</strong> que deviam ter entrado{% endif %}{% if fluxo.atrasado_entrar and fluxo.atrasado_sair %} e {% endif %}{% if fluxo.atrasado_sair %}<strong>{{ fluxo.atrasado_sair|reais }}</strong> que deviam ter saído{% endif %}.
+     Estão somadas no mês corrente, porque é agora que esse dinheiro é esperado. Pode ser
+     pagamento feito e não baixado: confira antes de cobrar.</p>
+</section>
+{% endif %}
+
+<div class="tabela-rolavel">
+  <table class="tabela-fluxo">
+    <caption>Mês a mês. Nos meses que passaram, o que aconteceu; nos que vêm, o que está marcado. O mês corrente tem os dois.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Mês</th>
+        <th scope="col" class="numerico">Entrou</th>
+        <th scope="col" class="numerico">Saiu</th>
+        <th scope="col" class="numerico">Vai entrar</th>
+        <th scope="col" class="numerico">Vai sair</th>
+        <th scope="col" class="numerico">Resultado do mês</th>
+        <th scope="col" class="numerico">Projetado acumulado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in fluxo.meses %}
+      <tr class="fluxo-{{ m.momento }}">
+        <th scope="row">{{ m.rotulo }}{% if m.momento == "atual" %} <span class="etiqueta etiqueta-aberto">este mês</span>{% endif %}</th>
+        <td class="numerico">{% if m.momento != "futuro" %}{{ m.entrou|reais }}{% else %}—{% endif %}</td>
+        <td class="numerico">{% if m.momento != "futuro" %}{{ m.saiu|reais }}{% else %}—{% endif %}</td>
+        <td class="numerico">{% if m.momento != "passado" %}{{ m.vai_entrar|reais }}{% else %}—{% endif %}</td>
+        <td class="numerico">{% if m.momento != "passado" %}{{ m.vai_sair|reais }}{% else %}—{% endif %}</td>
+        <td class="numerico">{{ m.resultado|reais_com_sinal }}</td>
+        <td class="numerico">{% if m.momento != "passado" %}{{ m.saldo_projetado|reais_com_sinal }}{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if fluxo.sem_data_sair %}
+<p class="aviso-parado">Há {{ fluxo.sem_data_sair|reais }} a pagar no SET sem data de vencimento. Ficam fora do
+   mês a mês, porque não há como saber quando saem: confira no SET.</p>
+{% endif %}
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {"titulo": "Fluxo de caixa", "texto": "O que entrou, o que saiu e o que vem nos próximos meses, juntando o SET e os projetos."},
+  {"seletor": ".tabela-fluxo", "titulo": "Mês a mês", "texto": "O projetado acumulado diz se o que vai entrar cobre o que vai sair, mês depois de mês. Número negativo é o mês em que vai faltar."}
+]
+</script>
+{% endblock %}

@@ -36,6 +36,7 @@ ADMIN_ACESSOS = "Administrador de acessos"
 COMPRAS = "Compras"
 ESTOQUE = "Estoque"
 CONSULTA = "Consulta e auditoria"
+COMERCIAL = "Comercial (SDR)"
 
 _ADMINISTRATIVO = [
     # O que até a 1.43.0 era um `importacao.ver_painel` só. Dividido na 1.44.0 para outros
@@ -78,6 +79,12 @@ _ADMINISTRATIVO = [
     # pedido continua sendo da gerência, junto de mudar a quantidade.
     "pedidos.view_pedido",
     "pedidos.anexar_documento",
+    # Studio (05/11/2026): o dia a dia do Studio é o projeto sob medida e o lead. Quem
+    # cuida das contas é quem lança a entrada do cliente e o pagamento da oficina.
+    "projetos.ver_projetos",
+    "projetos.editar_projetos",
+    "leads.ver_leads",
+    "leads.trabalhar_leads",
 ]
 
 PADRAO = {
@@ -123,6 +130,10 @@ PADRAO = {
         "pedidos.anexar_documento",
         "compras.sugerir_compra",
     ],
+    # Studio (05/11/2026): "sistema de SDR para controlar os leads". Quem atende o
+    # WhatsApp e faz o primeiro contato trabalha o funil e não vê valor de projeto nem
+    # conta: fechou, quem cria o projeto é quem tem Projetos.
+    COMERCIAL: ["leads.ver_leads", "leads.trabalhar_leads"],
     # "Leitura dos dados expressamente liberados." Olha, não mexe em nada.
     CONSULTA: [
         "importacao.ver_painel",

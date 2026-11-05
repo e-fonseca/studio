@@ -169,6 +169,21 @@ def despesas(request):
 
 @login_required
 @permission_required("financeiro.ver_financeiro", raise_exception=True)
+def fluxo_de_caixa(request):
+    """O que entrou, o que saiu e o que vem, mês a mês: SET e projetos juntos (Studio)."""
+    from . import fluxo
+
+    estado, contexto = _base("Fluxo de caixa")
+    contexto.update({
+        "fluxo": fluxo.montar(estado.importacao),
+        "meses_antes": fluxo.MESES_ANTES,
+        "meses_depois": fluxo.MESES_DEPOIS,
+    })
+    return render(request, "financeiro/fluxo.html", contexto)
+
+
+@login_required
+@permission_required("financeiro.ver_financeiro", raise_exception=True)
 def contas_a_receber(request):
     estado, contexto = _base("Contas a receber")
     contexto.update({

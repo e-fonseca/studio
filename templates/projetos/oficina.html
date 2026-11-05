@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>{{ oficina.nome }}</h1>
+  <p><a href="{% url 'projetos:oficinas' %}">Voltar às oficinas</a>
+     {% if pode_editar %} · <a href="{% url 'projetos:oficina_editar' oficina.pk %}">Mudar os dados</a>{% endif %}</p>
+</div>
+
+<div class="resumo-painel">
+  <div><span class="numero">{{ pago|reais }}</span><span class="rotulo">Já pago a esta oficina</span></div>
+  <div><span class="numero">{{ a_pagar|reais }}</span><span class="rotulo">Ainda a pagar</span></div>
+</div>
+
+<section class="cartao">
+  <h2>Contato</h2>
+  <dl class="ficha">
+    <div><dt>Pessoa</dt><dd>{{ oficina.contato|default:"—" }}</dd></div>
+    <div><dt>Telefone</dt><dd>{{ oficina.telefone|default:"—" }}</dd></div>
+    <div><dt>Cidade</dt><dd>{{ oficina.cidade|default:"—" }}</dd></div>
+    <div><dt>Especialidade</dt><dd>{{ oficina.especialidade|default:"—" }}</dd></div>
+    <div><dt>Situação</dt><dd>{% if oficina.ativa %}Trabalha com o Studio{% else %}Não trabalha mais{% endif %}</dd></div>
+  </dl>
+  {% if oficina.observacao %}<p class="destaque">{{ oficina.observacao|linebreaksbr }}</p>{% endif %}
+</section>
+
+<section class="cartao">
+  <h2>Projetos desta oficina</h2>
+  {% if projetos %}
+  <div class="tabela-rolavel">
+    <table>
+      <thead><tr><th scope="col">Projeto</th><th scope="col">Cliente</th><th scope="col">Etapa</th><th scope="col">Prazo</th><th scope="col" class="numerico">Custo da oficina</th></tr></thead>
+      <tbody>
+        {% for p in projetos %}
+        <tr{% if p.atraso %} class="linha-erro"{% endif %}>
+          <td><a href="{% url 'projetos:ficha' p.pk %}">{{ p.codigo }}</a> {{ p.titulo }}</td>
+          <td>{{ p.cliente_nome }}</td>
+          <td>{{ p.get_etapa_display }}</td>
+          <td>{{ p.prazo_entrega|date:"d/m/Y"|default:"—" }}{% if p.atraso %}<br><span class="etiqueta etiqueta-erro">{{ p.atraso }} dia{{ p.atraso|pluralize }} de atraso</span>{% endif %}</td>
+          <td class="numerico">{{ p.custo_oficina|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="vazio">Nenhum projeto com esta oficina ainda.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

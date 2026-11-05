@@ -42,3 +42,7 @@ def _nada_de_internet(*_args, **_criterios):
 
 
 _urllib_request.urlopen = _nada_de_internet
+
+# A suíte herdada do sistema da Cabana confere as telas de compras e estoque pelo menu;
+# o Studio as esconde por configuração, e o teste dele liga isso com override_settings.
+ASSUNTOS_DESLIGADOS = ()

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Projetos</h1>
+  <p>{% if pode_editar %}<a class="botao" href="{% url 'projetos:novo' %}">Projeto novo</a>{% endif %}
+     <a href="{% url 'projetos:oficinas' %}">Oficinas parceiras</a></p>
+</div>
+
+<div class="resumo-painel">
+  <div>
+    <span class="numero">{{ resumo.em_producao_valor|reais }}</span>
+    <span class="rotulo">Vendido e ainda não entregue</span>
+  </div>
+  <div>
+    <span class="numero">{{ resumo.a_receber|reais }}</span>
+    <span class="rotulo">A receber dos clientes{% if resumo.a_receber_vencido %} · <strong>{{ resumo.a_receber_vencido|reais }} vencido</strong>{% endif %}</span>
+  </div>
+  <div>
+    <span class="numero">{{ resumo.a_pagar|reais }}</span>
+    <span class="rotulo">A pagar às oficinas e custos{% if resumo.a_pagar_vencido %} · <strong>{{ resumo.a_pagar_vencido|reais }} vencido</strong>{% endif %}</span>
+  </div>
+</div>
+
+<section class="cartao">
+  <h2>Procurar um projeto</h2>
+  <form method="get" class="busca-produto" role="search">
+    <input type="hidden" name="filtro" value="{{ filtro }}">
+    <label for="busca">Cliente, móvel, oficina ou o que está na descrição</label>
+    <input type="search" id="busca" name="busca" value="{{ busca }}" placeholder="Ex.: mesa, Mariana, Serralheria Silva" autocomplete="off">
+    <button type="submit" class="botao">Procurar</button>
+  </form>
+</section>
+
+<nav class="filtros-ficha" aria-label="Filtrar os projetos">
+  {% for f in resumo.filtros %}
+  <a href="?filtro={{ f.chave }}{% if busca %}&amp;busca={{ busca|urlencode }}{% endif %}" class="filtro{% if f.chave == filtro %} filtro-ativo{% endif %}"
+     {% if f.chave == filtro %}aria-current="true"{% endif %} title="{{ f.ajuda }}">
+    <span class="filtro-rotulo">{{ f.rotulo }}</span>
+    <span class="filtro-numero">{{ f.numero }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+{% if projetos %}
+<div class="tabela-rolavel">
+  <table class="tabela-projetos">
+    <caption>{{ projetos|length }} projeto{{ projetos|length|pluralize }}{% if filtro == "andamento" or filtro == "atrasados" %}, do prazo mais perto para o mais longe{% endif %}.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Projeto</th>
+        <th scope="col">Cliente</th>
+        <th scope="col">Oficina</th>
+        <th scope="col">Etapa</th>
+        <th scope="col">Prazo</th>
+        <th scope="col" class="numerico">Venda</th>
+        <th scope="col" class="numerico">Margem</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in projetos %}
+      <tr{% if p.atraso %} class="linha-erro"{% endif %}>
+        <td><a href="{% url 'projetos:ficha' p.pk %}">{{ p.codigo }}</a> {{ p.titulo }}</td>
+        <td>{{ p.cliente_nome }}</td>
+        <td>{{ p.oficina|default:"—" }}</td>
+        <td>{{ p.get_etapa_display }}</td>
+        <td>{{ p.prazo_entrega|date:"d/m/Y"|default:"—" }}
+          {% if p.atraso %}<br><span class="etiqueta etiqueta-erro">{{ p.atraso }} dia{{ p.atraso|pluralize }} de atraso</span>{% endif %}</td>
+        <td class="numerico">{{ p.valor_venda|reais }}</td>
+        <td class="numerico">{{ p.margem|reais }}{% if p.margem_percentual is not None %}<br><small>{{ p.margem_percentual }}%</small>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="vazio">Nenhum projeto aqui{% if busca %} com "{{ busca }}"{% endif %}.</p>
+{% endif %}
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {"titulo": "Projetos", "texto": "Cada móvel sob medida, do orçamento à entrega, com a oficina que está fazendo e o dinheiro que entra e sai."},
+  {"seletor": ".resumo-painel", "titulo": "O dinheiro dos projetos", "texto": "O que ainda vai entrar dos clientes e o que ainda vai sair para as oficinas, somando as parcelas lançadas em cada projeto."},
+  {"seletor": ".filtros-ficha", "titulo": "Filtros", "texto": "A tela abre pelo que está em andamento, do prazo mais perto para o mais longe. Os atrasados ficam em vermelho."}
+]
+</script>
+{% endblock %}

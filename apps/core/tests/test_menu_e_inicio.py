@@ -50,8 +50,8 @@ class TestMenuPorAssunto(TestCase):
 
     def test_o_topo_tem_sete_entradas_com_o_dashboard_na_frente(self):
         self.assertEqual([grupo.rotulo for grupo in menu.GRUPOS],
-                         ["Dashboard", "Visão geral", "Compras", "Vendas", "Estoque", "Dinheiro",
-                          "Sistema"])
+                         ["Dashboard", "Visão geral", "Leads", "Projetos", "Compras", "Vendas",
+                          "Estoque", "Dinheiro", "Sistema"])
 
     def test_nenhuma_tela_aparece_em_dois_assuntos(self):
         vistas = [tela.rota for tela in menu.telas()]

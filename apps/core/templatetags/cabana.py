@@ -108,3 +108,18 @@ def codigo_de_barras(valor):
     """
     desenho = barras.svg(valor)
     return mark_safe(desenho) if desenho else ""
+
+
+@register.filter
+def reais_com_sinal(valor):
+    """Dinheiro que pode faltar: "+ R$ 1.200,00" ou "− R$ 300,00" (Fluxo de caixa, Studio).
+
+    O sinal escrito, e não só a cor: o mês em que vai faltar tem de ser lido também por
+    quem não distingue o vermelho, e no papel impresso em preto e branco.
+    """
+    if valor is None or valor == "":
+        return "—"
+    numero = Decimal(str(valor))
+    if numero == 0:
+        return reais(numero)
+    return ("+ " if numero > 0 else "− ") + reais(abs(numero))

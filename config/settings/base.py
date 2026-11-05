@@ -53,6 +53,9 @@ INSTALLED_APPS = [
     "apps.alertas",
     "apps.backup",
     "apps.tempo",
+    "apps.projetos",
+    "apps.leads",
+    "apps.integracao",
 ]
 
 MIDDLEWARE = [
@@ -260,3 +263,12 @@ LOGGING = {
     },
     "root": {"handlers": ["console"], "level": "INFO"},
 }
+
+
+# Assuntos do menu que o Studio não usa (apps/core/menu.py, ativos()). Pedido do Edson em
+# 05/11/2026: "neste momento nao tem gestao de estoque / neste momento nao tem gestao de
+# compras". Vazio liga todos.
+ASSUNTOS_DESLIGADOS = tuple(
+    chave.strip() for chave in env("STUDIO_ASSUNTOS_DESLIGADOS", "compras,estoque").split(",")
+    if chave.strip()
+)

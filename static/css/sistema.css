@@ -3166,3 +3166,7 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
   .descontos-tabela-aprovadas form { margin-top: .4rem; }
   .descontos-feriados li span { min-width: 0; margin-right: .4rem; }
 }
+.lancar-parcela > summary { display: list-item; cursor: pointer; font-weight: 600; margin-top: var(--espaco); color: var(--cor-link); }
+.linha-do-tempo { list-style: none; padding: 0; margin: 0; }
+.linha-do-tempo li { border-left: 3px solid var(--cor-borda-forte); padding: .2rem 0 .6rem .8rem; margin-bottom: .4rem; }
+.linha-do-tempo li p { margin: .2rem 0 0; }
