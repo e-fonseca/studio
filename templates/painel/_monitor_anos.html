@@ -1,13 +1,12 @@
 {% load cabana %}{% comment %}
-O gráfico de anos (1.48.0): de janeiro a dezembro, uma linha para cada um dos últimos três
-anos. Pedido do Edson em 04/11/2026, em Contas a pagar: "nesse mesmo gráfico do contas a
-pagar manter sempre os últimos 3 anos". É a linha do tempo do Dashboard
-(_monitor_linha.html), com as mesmas classes e uma linha a mais, na cor de cada ano. Recebe
-`pagas` (o PagasPorAno de apps/financeiro/quadros.py, com o desenho em `pagas.grafico`) e
-`o_que` (o nome do valor, para quem não enxerga o desenho). A cor da porcentagem vem pronta
-em `m.sentido`. Uma linha do tempo por página: o degradê da área tem o nome fixo que o
-sistema.css usa.
-{% endcomment %}{% with g=pagas.grafico corre=pagas.mes_que_corre %}<div class="monitor-tempo">
+O gráfico de anos: de janeiro a dezembro, uma linha para cada um dos últimos três anos.
+Nasceu em Contas a pagar na 1.48.0 ("nesse mesmo gráfico do contas a pagar manter sempre
+os últimos 3 anos", Edson em 04/11/2026) e foi para o Faturamento mês a mês do Dashboard
+na 1.49.0. Recebe `tres` (o TresAnos de apps/painel/dashboard.py, com o desenho em
+`tres.grafico`) e `o_que` (o nome do valor, para quem não enxerga o desenho). A cor da
+porcentagem vem pronta em `m.sentido`. Uma linha do tempo por página: o degradê da área
+tem o nome fixo que o sistema.css usa.
+{% endcomment %}{% with g=tres.grafico corre=tres.mes_que_corre %}<div class="monitor-tempo">
   <div class="monitor-tempo-eixo" aria-hidden="true">
     {% for m in g.marcas %}{% if m.escrita %}<span{% if m.escrita == "alto" %} class="monitor-eixo-so-no-alto"{% endif %} style="bottom: {{ m.altura }}%">{{ m.rotulo }}</span>{% endif %}{% endfor %}
   </div>
@@ -25,11 +24,11 @@ sistema.css usa.
       {% for linha in g.linhas %}{% if linha.caminho %}<path class="monitor-tempo-{{ linha.papel }}" d="{{ linha.caminho }}"></path>{% endif %}{% if linha.parcial %}<path class="monitor-tempo-parcial" d="{{ linha.parcial }}"></path>{% endif %}{% if linha.pontos %}<path class="monitor-tempo-{{ linha.papel }} monitor-tempo-ponto" d="{{ linha.pontos }}"></path>{% endif %}{% endfor %}
     </svg>
     <ol class="monitor-tempo-dicas" style="grid-template-columns: repeat({{ g.colunas }}, minmax(0, 1fr))">
-      {% for m in pagas.meses %}<li title="{{ m.rotulo }}{% for c in m.celulas %}{% if c.valor != None %} · {{ c.ano }}: {{ c.valor|reais }}{% if c.parcial %} até o dia {{ m.dia_parcial }}{% endif %}{% endif %}{% endfor %}"></li>{% endfor %}
+      {% for m in tres.meses %}<li title="{{ m.rotulo }}{% for c in m.celulas %}{% if c.valor != None %} · {{ c.ano }}: {{ c.valor|reais }}{% if c.parcial %} até o dia {{ m.dia_parcial }}{% endif %}{% endif %}{% endfor %}"></li>{% endfor %}
     </ol>
   </div>
   <ol class="monitor-tempo-meses" style="grid-template-columns: repeat({{ g.colunas }}, minmax(0, 1fr))">
-    {% for m in pagas.meses %}
+    {% for m in tres.meses %}
     <li><span class="monitor-mes-longo">{{ m.rotulo }}</span><span class="monitor-mes-curto">{{ m.rotulo }}</span>
       <small class="monitor-variacao-{{ m.sentido }}">{% if m.variacao != None %}{% if m.variacao > 0 %}+{% endif %}{{ m.variacao|floatformat:"0" }}%{% else %}—{% endif %}</small></li>
     {% endfor %}
@@ -43,9 +42,9 @@ sistema.css usa.
   <summary>Ver o valor de cada mês</summary>
   <div class="monitor-tabela-area">
     <table class="monitor-tabela">
-      <thead><tr><th scope="col">Mês</th>{% for ano in pagas.anos %}<th scope="col" class="numerico">{{ ano }}</th>{% endfor %}<th scope="col" class="numerico">Variação</th></tr></thead>
+      <thead><tr><th scope="col">Mês</th>{% for ano in tres.anos %}<th scope="col" class="numerico">{{ ano }}</th>{% endfor %}<th scope="col" class="numerico">Variação</th></tr></thead>
       <tbody>
-        {% for m in pagas.meses %}
+        {% for m in tres.meses %}
         <tr>
           <th scope="row">{{ m.rotulo }}{% if m.parcial %}<small>{{ m.ate_o_dia }}</small>{% endif %}</th>
           {% for c in m.celulas %}<td class="numerico">{% if c.valor != None %}<span class="monitor-valor-longo">{{ c.valor|reais }}</span><span class="monitor-valor-curto">{{ c.valor|reais_redondo }}</span>{% else %}—{% endif %}</td>{% endfor %}
@@ -53,7 +52,7 @@ sistema.css usa.
         </tr>
         {% endfor %}
       </tbody>
-      {% with t=pagas.ate_o_corte %}{% if t %}<tfoot>
+      {% with t=tres.ate_o_corte %}{% if t %}<tfoot>
         <tr>
           <th scope="row">{{ t.rotulo }}</th>
           {% for c in t.celulas %}<td class="numerico">{% if c.valor != None %}<span class="monitor-valor-longo">{{ c.valor|reais }}</span><span class="monitor-valor-curto">{{ c.valor|reais_redondo }}</span>{% else %}—{% endif %}</td>{% endfor %}
@@ -62,8 +61,8 @@ sistema.css usa.
       </tfoot>{% endif %}{% endwith %}
     </table>
   </div>
-  <p class="monitor-tabela-nota">A variação é {{ pagas.anos.0 }} contra {{ pagas.anos.1 }}, e a última linha soma cada ano de 1º de janeiro até {{ pagas.dia_do_corte }}.<span class="monitor-valor-curto"> No celular, os valores estão em reais, sem os centavos.</span></p>
-  {% if corre %}<p class="monitor-tabela-nota">{{ corre.rotulo|capfirst }} ainda corre: {{ pagas.anos.0 }} vai até o dia {{ corre.dia_parcial }} e se compara com o mesmo pedaço de {{ pagas.anos.1 }}{% if corre.antes_no_pedaco != None %} ({{ corre.antes_no_pedaco|reais }}){% endif %}. Nos anos anteriores, o mês aparece inteiro.</p>{% endif %}
-  {% if pagas.lancado_desde %}<p class="monitor-tabela-nota">O SET só tem conta paga lançada desde {{ pagas.lancado_desde|date:"d/m/Y" }}: antes de {{ pagas.comeca_em }} o gráfico fica em branco, e não em zero, porque o SET não tem esses meses.</p>{% endif %}
-  {% if pagas.tem_buraco %}<p class="monitor-tabela-nota">— é mês que ainda não chegou, ou que a importação não traz inteiro.</p>{% endif %}
+  <p class="monitor-tabela-nota">A variação é {{ tres.anos.0 }} contra {{ tres.anos.1 }}, e a última linha soma cada ano de 1º de janeiro até {{ tres.dia_do_corte }}.<span class="monitor-valor-curto"> No celular, os valores estão em reais, sem os centavos.</span></p>
+  {% if corre %}<p class="monitor-tabela-nota">{{ corre.rotulo|capfirst }} ainda corre: {{ tres.anos.0 }} vai até o dia {{ corre.dia_parcial }} e se compara com o mesmo pedaço de {{ tres.anos.1 }}{% if corre.antes_no_pedaco != None %} ({{ corre.antes_no_pedaco|reais }}){% endif %}. Nos anos anteriores, o mês aparece inteiro.</p>{% endif %}
+  {% if tres.lancado_desde %}<p class="monitor-tabela-nota">O SET só tem {{ tres.lancamento }} lançada desde {{ tres.lancado_desde|date:"d/m/Y" }}: antes de {{ tres.comeca_em }} o gráfico fica em branco, e não em zero, porque o SET não tem esses meses.</p>{% endif %}
+  {% if tres.tem_buraco %}<p class="monitor-tabela-nota">— é mês que ainda não chegou, ou que a importação não traz inteiro.</p>{% endif %}
 </details>{% endwith %}

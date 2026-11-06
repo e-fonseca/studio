@@ -50,7 +50,7 @@ class TestMenuPorAssunto(TestCase):
 
     def test_o_topo_tem_sete_entradas_com_o_dashboard_na_frente(self):
         self.assertEqual([grupo.rotulo for grupo in menu.GRUPOS],
-                         ["Dashboard", "Visão geral", "Compras", "Vendas", "Estoque", "Dinheiro",
+                         ["Dashboard", "Visão geral", "Compras", "Vendas", "Estoque", "Contas a pagar",
                           "Sistema"])
 
     def test_nenhuma_tela_aparece_em_dois_assuntos(self):
@@ -71,7 +71,7 @@ class TestMenuPorAssunto(TestCase):
         corpo = self.client.get(reverse("financeiro:despesas")).content.decode()
         primeira = corpo[corpo.index("menu-principal"):corpo.index("menu-apoio")]
         aceso = primeira[:primeira.index('aria-current="page"')].rsplit("<a ", 1)[-1]
-        self.assertIn(">Dinheiro<", primeira)
+        self.assertIn(">Contas a pagar<", primeira)
         self.assertIn(reverse("financeiro:contas_a_pagar"), aceso)
 
     def test_a_tela_aberta_fica_marcada_mesmo_vindo_de_uma_tela_irma(self):
@@ -96,7 +96,7 @@ class TestMenuPorAssunto(TestCase):
         self.assertNotContains(pagina, reverse("auditoria:lista"))
 
     def test_assunto_sem_nenhuma_tela_aberta_some_do_topo(self):
-        """Mostrar "Dinheiro" a quem não abre nada de dinheiro é oferecer porta trancada."""
+        """Mostrar "Contas a pagar" a quem não abre nada de dinheiro é oferecer porta trancada."""
         pessoa = usuario("balcao2", VENDEDOR)
         chaves = [grupo.chave for grupo in menu.grupos_de(pessoa)]
         self.assertEqual(chaves, ["estoque"])

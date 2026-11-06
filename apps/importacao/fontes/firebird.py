@@ -312,6 +312,13 @@ def inicio_das_pagas(corte):
     return _primeiro_dia_de_meses_atras(corte, JANELA_PAGAS_MESES)
 
 
+def inicio_das_vendas_por_mes(corte):
+    """O primeiro dia da venda somada por mês: o mesmo dia 1º de 36 meses antes do pago
+    (1.49.0), para o Faturamento mês a mês do Dashboard ter os três anos inteiros, de
+    janeiro a dezembro. Até a 1.48.0 eram os 730 dias da compra por mês."""
+    return _primeiro_dia_de_meses_atras(corte, JANELA_PAGAS_MESES)
+
+
 def _ler_financeiro(linhas, corte):
     """Contas a pagar e a receber do SET, uma linha por parcela.
 
@@ -955,14 +962,18 @@ def extrair(copia, biblioteca_cliente=None, progresso=_nada) -> Extracao:
 
         progresso("Somando compra e venda por mês", 84)
         desde = corte - timedelta(days=730)
+        # A venda por mês vem dos mesmos 36 meses do pago (1.49.0): o Faturamento mês a
+        # mês do Dashboard mostra os três últimos anos, de janeiro a dezembro. A compra
+        # por mês continua nos 730 dias.
+        vendas_desde = inicio_das_vendas_por_mes(corte)
         vendas_mes = [
             (int(ano), int(mes), float(valor or 0), int(n))
             for ano, mes, valor, n in linhas("""
                 select extract(year from datavenda), extract(month from datavenda),
                        sum(totalvenda), count(*)
-                from vendas where empresa = ? and status <> 'Estornado' and datavenda > ?
+                from vendas where empresa = ? and status <> 'Estornado' and datavenda >= ?
                 group by 1, 2 order by 1, 2
-            """, (EMPRESA, desde))
+            """, (EMPRESA, vendas_desde))
         ]
         compras_mes = [
             (int(ano), int(mes), float(valor or 0), int(n))
@@ -976,14 +987,17 @@ def extrair(copia, biblioteca_cliente=None, progresso=_nada) -> Extracao:
         # O mês do corte quase nunca está fechado: no dia 7, o gráfico comparava sete
         # dias deste mês com o mês inteiro do ano passado e acusava uma queda de 84% que
         # não existe. Então vem também o mesmo PEDAÇO do ano passado, do dia 1 ao mesmo
-        # dia, que é a comparação que se pode fazer.
-        ate_o_dia = linhas("""
-            select sum(totalvenda) from vendas
-            where empresa = ? and status <> 'Estornado'
-              and extract(year from datavenda) = ? and extract(month from datavenda) = ?
-              and extract(day from datavenda) <= ?
-        """, (EMPRESA, corte.year - 1, corte.month, corte.day))[0][0]
-        mes_parcial = [corte.year, corte.month, corte.day, float(ate_o_dia or 0)]
+        # dia, que é a comparação que se pode fazer; desde a 1.49.0, também o do ano
+        # retrasado, que fecha o "Até 3/nov" dele na tabela do Dashboard.
+        def ate_o_dia(ano):
+            return linhas("""
+                select sum(totalvenda) from vendas
+                where empresa = ? and status <> 'Estornado'
+                  and extract(year from datavenda) = ? and extract(month from datavenda) = ?
+                  and extract(day from datavenda) <= ?
+            """, (EMPRESA, ano, corte.month, corte.day))[0][0]
+        mes_parcial = [corte.year, corte.month, corte.day,
+                       float(ate_o_dia(corte.year - 1) or 0), float(ate_o_dia(corte.year - 2) or 0)]
 
         return Extracao(
             data_corte=corte,
@@ -1039,6 +1053,7 @@ def extrair(copia, biblioteca_cliente=None, progresso=_nada) -> Extracao:
                 "clientes_cadastrados": sum(1 for c in clientes if not c["generico"]),
                 "clientes_com_compra_12m": sum(1 for c in clientes if not c["generico"] and c["valor_comprado_12m"]),
                 "vendas_por_mes_do_produto": len(vendas_por_mes),
+                "vendas_mes_desde": vendas_desde.isoformat(),
                 "vendas_mes": vendas_mes,
                 "compras_mes": compras_mes,
                 "mes_parcial": mes_parcial,

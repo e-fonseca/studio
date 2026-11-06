@@ -34,7 +34,7 @@ abaixo), cada uma um assunto:
 | **Compras** | Lista de compra, **Compra guiada** (1.45.0), Pedidos, Fornecedores, Indicadores de compra (desde a 1.40.1; Antes de comprar, Sugestões, Sugestões da equipe e Últimas compras abrem pela fileira "Também em Compras", logo abaixo do título da Lista) |
 | **Vendas** | Vendas do dia, Margem, Ticket médio, Clientes (o Dashboard morava aqui até a 1.42.0) |
 | **Estoque** | Consulta, Inventário |
-| **Dinheiro** | Financeiro, Caixa, **Descontos e metas** (1.46.0), Conciliação |
+| **Contas a pagar** (até a 1.48.0, "Dinheiro") | Financeiro, Caixa, **Descontos e metas** (1.46.0), Conciliação |
 | **Sistema** | Importações, Dados da empresa, Base de processos, Usuários, Alertas, Backup, Certificado, Auditoria |
 
 A segunda fileira do topo mostra **só as telas do assunto aberto**. Então a pessoa vê
@@ -45,8 +45,13 @@ e o mesmo conteúdo; o que mudou é como se chega a elas.
 
 ## As três decisões que valem a pena saber
 
+**"Contas a pagar" no lugar de "Dinheiro" (1.49.0)**: pedido dele em 04/11/2026, *"no menu
+Dinheiro = alterar para Contas a pagar, eu acho que faz mais sentido e fica intuitivo"*. Só o
+nome do assunto mudou: as telas de dentro, os endereços, a chave `dinheiro` em `menu.py` e o
+módulo "Dinheiro" das permissões (em Usuários) ficaram como estavam.
+
 **Clicar no assunto cai na tela que decide, não num índice.** "Compras" abre a Lista de
-compra; "Dinheiro" abre o Financeiro. Uma página intermediária que só oferece links
+compra; "Contas a pagar" abre o Financeiro. Uma página intermediária que só oferece links
 custaria um clique a mais justamente a quem está com pressa, que é o pedido inteiro.
 
 **Compras vem logo depois da Visão geral**, e a primeira tela dela é a Lista de compra.
@@ -55,7 +60,7 @@ rápido, e a Lista de compra é onde a quantidade é escolhida e o pedido sai.
 
 **Assunto sem nenhuma tela aberta some do topo.** O operador vendedor enxerga um assunto
 só — Estoque, com a Consulta —, e por isso não recebe segunda fileira nenhuma. Mostrar
-"Dinheiro" para quem não pode abrir nada de dinheiro é oferecer uma porta trancada.
+"Contas a pagar" para quem não pode abrir nada de dinheiro é oferecer uma porta trancada.
 
 ## O Dashboard na frente (1.43.0)
 

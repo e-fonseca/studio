@@ -44,7 +44,6 @@ from . import servicos
 from .models import Lancamento
 
 ZERO = Decimal("0")
-CENTAVO = Decimal("0.01")
 # O ano do corte e os dois anteriores, um por linha, nas cores do dashboard.PAPEIS_DOS_ANOS.
 ANOS_NO_GRAFICO = len(dashboard.PAPEIS_DOS_ANOS)
 QUANTOS_GRUPOS = dashboard.QUANTOS_GRUPOS
@@ -57,74 +56,8 @@ CODIGO_DO_PLANO = re.compile(r"^\s*[\d.]+\s*-\s*")
 
 
 @dataclass
-class Celula:
-    """O que um ano pagou num mês. None é mês que não chegou ou que a foto não tem inteiro."""
-
-    ano: int
-    valor: Decimal | None
-    parcial: bool = False
-
-
-@dataclass
-class Coluna:
-    """Um mês do gráfico de anos, ou a linha "Até 3/nov" da tabela: o valor de cada ano,
-    do de agora para o mais antigo, e a variação do de agora contra o ano passado."""
-
-    rotulo: str
-    celulas: list
-    parcial: bool = False
-    dia_parcial: int | None = None
-    # O ano passado do dia 1º ao dia do corte: é com ele que o mês que corre se compara.
-    antes_no_pedaco: Decimal | None = None
-
-    @property
-    def variacao(self):
-        agora = self.celulas[0].valor
-        antes = self.antes_no_pedaco if self.parcial else self.celulas[1].valor
-        if agora is None or antes is None:
-            return None
-        return dashboard.variacao(agora, antes)
-
-    @property
-    def sentido(self):
-        """A cor do caixa: pagar mais que no ano passado é vermelho, pagar menos é verde."""
-        variacao = self.variacao
-        if variacao is None or variacao == 0:
-            return "neutro"
-        return "ruim" if variacao > 0 else "bom"
-
-    @property
-    def ate_o_dia(self):
-        return f"até dia {self.dia_parcial}" if self.parcial and self.dia_parcial else ""
-
-
-@dataclass
-class PagasPorAno:
-    """O gráfico "Contas pagas mês a mês": os três anos, os doze meses e a linha do total."""
-
-    anos: list = field(default_factory=list)      # do de agora para o mais antigo: [2026, 2025, 2024]
-    meses: list = field(default_factory=list)     # doze Coluna, de janeiro a dezembro
-    ate_o_corte: Coluna | None = None             # de 1º de janeiro ao dia do corte, em cada ano
-    dia_do_corte: str = ""                        # "3/nov"
-    # A primeira conta paga lançada no SET, quando ela deixa em branco algum mês do gráfico,
-    # e o primeiro mês desenhado depois dela ("mar/2024").
-    lancado_desde: date | None = None
-    comeca_em: str = ""
-    grafico: dashboard.GraficoDeAnos = field(default_factory=dashboard.GraficoDeAnos)
-
-    @property
-    def mes_que_corre(self):
-        return next((mes for mes in self.meses if mes.parcial), None)
-
-    @property
-    def tem_buraco(self):
-        """Algum mês em branco: o que ainda não chegou, ou o que a foto não tem inteiro."""
-        return any(celula.valor is None for mes in self.meses for celula in mes.celulas)
-
-
-@dataclass
 class QuadrosDasContas:
-    pagas: PagasPorAno = field(default_factory=PagasPorAno)
+    pagas: dashboard.TresAnos = field(default_factory=dashboard.TresAnos)
     em_aberto: dashboard.Rosca = field(default_factory=dashboard.Rosca)
     total_em_aberto: Decimal = ZERO
     destino: dashboard.Rosca = field(default_factory=dashboard.Rosca)
@@ -178,7 +111,7 @@ def _ate_o_dia_do_corte(ano, mes, corte):
 def pagas_por_ano(importacao):
     """O que a loja pagou em cada mês do ano do corte e dos dois anteriores."""
     if importacao is None or importacao.data_corte is None:
-        return PagasPorAno()
+        return dashboard.TresAnos()
     corte = importacao.data_corte
     anos = [corte.year - atras for atras in range(ANOS_NO_GRAFICO)]
     pagas = Lancamento.objects.filter(importacao=importacao, tipo=Lancamento.Tipo.PAGAR,
@@ -189,67 +122,26 @@ def pagas_por_ano(importacao):
         .values("pagamento__year", "pagamento__month")
         .annotate(valor=Sum("valor_pago"))
     }
-    # Os pedaços que se comparam: o mês do corte do dia 1º ao dia do corte, no ano passado,
-    # e cada ano de 1º de janeiro ao dia do corte. Uma consulta só para todos.
-    passado = anos[1]
+    # O mês do corte do dia 1º ao dia do corte, em cada ano passado: é com ele que o mês
+    # que corre se compara, e é ele que fecha o "Até 3/nov". Uma consulta só para todos.
     pedacos = pagas.aggregate(
         primeira=Min("pagamento"),
-        mes_passado=Sum("valor_pago", filter=Q(
-            pagamento__gte=date(passado, corte.month, 1),
-            pagamento__lte=_ate_o_dia_do_corte(passado, corte.month, corte))),
         **{f"ano_{ano}": Sum("valor_pago", filter=Q(
-            pagamento__gte=date(ano, 1, 1),
-            pagamento__lte=_ate_o_dia_do_corte(ano, corte.month, corte))) for ano in anos},
+            pagamento__gte=date(ano, corte.month, 1),
+            pagamento__lte=_ate_o_dia_do_corte(ano, corte.month, corte))) for ano in anos[1:]},
     )
     comeco_da_leitura = _inteiro_desde(importacao)
     inteiro_desde = _comeco_do_lancado(pedacos["primeira"], comeco_da_leitura)
-    corre = corte.day < calendar.monthrange(corte.year, corte.month)[1]
-
-    def inteiro(ano, mes):
-        return date(ano, mes, 1) >= inteiro_desde
-
-    def valor(ano, mes):
-        if (ano, mes) > (corte.year, corte.month) or not inteiro(ano, mes):
-            return None
-        return por_mes.get((ano, mes), ZERO).quantize(CENTAVO)
-
-    def somado(chave, ano, mes):
-        return (pedacos[chave] or ZERO).quantize(CENTAVO) if inteiro(ano, mes) else None
-
-    meses = []
-    for mes in range(1, 13):
-        parcial = corre and mes == corte.month
-        meses.append(Coluna(
-            rotulo=dashboard.MESES_CURTOS[mes],
-            celulas=[Celula(ano, valor(ano, mes), parcial=parcial and ano == corte.year) for ano in anos],
-            parcial=parcial,
-            dia_parcial=corte.day if parcial else None,
-            antes_no_pedaco=somado("mes_passado", passado, mes) if parcial else None,
-        ))
-    dia_do_corte = f"{corte.day}/{dashboard.MESES_CURTOS[corte.month]}"
-    ate_o_corte = Coluna(
-        rotulo=f"Até {dia_do_corte}",
-        celulas=[Celula(ano, somado(f"ano_{ano}", ano, 1)) for ano in anos],
-    )
-    # Do mais antigo para o de agora: a linha de agora fica por cima das outras.
-    linhas = [
-        dashboard.LinhaDoAno(
-            ano=ano,
-            valores=[coluna.celulas[posicao].valor for coluna in meses],
-            papel=dashboard.PAPEIS_DOS_ANOS[posicao],
-            mes_parcial=corte.month if posicao == 0 and corre else None,
-        )
-        for posicao, ano in reversed(list(enumerate(anos)))
-    ]
+    tres = dashboard.tres_anos(
+        corte, por_mes, {ano: pedacos[f"ano_{ano}"] or ZERO for ano in anos[1:]},
+        inteiro_desde, mais_e_bom=False)
     # A tela diz de quando o SET tem conta lançada só quando foi isso, e não a leitura, que
     # deixou mês do gráfico em branco.
-    lancou_depois = inteiro_desde > comeco_da_leitura and inteiro_desde > date(anos[-1], 1, 1)
-    return PagasPorAno(
-        anos=anos, meses=meses, ate_o_corte=ate_o_corte, dia_do_corte=dia_do_corte,
-        lancado_desde=pedacos["primeira"] if lancou_depois else None,
-        comeca_em=f"{dashboard.MESES_CURTOS[inteiro_desde.month]}/{inteiro_desde.year}" if lancou_depois else "",
-        grafico=dashboard.grafico_de_anos(linhas),
-    )
+    if inteiro_desde > comeco_da_leitura and inteiro_desde > date(anos[-1], 1, 1):
+        tres.lancamento = "conta paga"
+        tres.lancado_desde = pedacos["primeira"]
+        tres.comeca_em = f"{dashboard.MESES_CURTOS[inteiro_desde.month]}/{inteiro_desde.year}"
+    return tres
 
 
 def rosca_do_que_esta_em_aberto(importacao, hoje=None):

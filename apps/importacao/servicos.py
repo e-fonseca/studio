@@ -43,6 +43,7 @@ ROTULOS_DETALHE = {
     "itens_de_compra_sem_cabecalho": "itens de compra sem cabeçalho (ignorados)",
     "itens_de_venda_sem_cabecalho": "itens de venda sem cabeçalho (ignorados)",
     "vendas_mes": "meses com venda apurados",
+    "vendas_mes_desde": "venda por mês lida do SET desde",
     "bytes_fora_da_tabela_de_caracteres": "caracteres do SET fora da tabela (descartados)",
     "lancamentos_financeiros": "lançamentos do financeiro lidos",
     "financeiro_desde": "pago e recebido lidos do SET desde",

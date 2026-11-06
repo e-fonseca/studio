@@ -165,7 +165,7 @@ GRUPOS = [
              irmas=("inventario:etiquetas",),
              ajuda="Peças sem etiqueta, danificadas e paradas, e o que fazer com cada uma."),
     )),
-    Grupo("dinheiro", "Dinheiro", ajuda="O que a loja deve, o que entrou e o que o banco diz.",
+    Grupo("dinheiro", "Contas a pagar", ajuda="O que a loja deve, o que entrou e o que o banco diz.",
           telas=(
         Item("financeiro:contas_a_pagar", "Financeiro", "financeiro.ver_financeiro",
              irmas=("financeiro:despesas", "financeiro:contas_a_receber",
@@ -291,7 +291,7 @@ def permitidos(itens, usuario):
 def grupos_de(usuario):
     """Os assuntos que esta pessoa enxerga, já sem as telas que ela não pode abrir.
 
-    Assunto que ficou sem nenhuma tela some do topo inteiro: mostrar "Dinheiro" para
+    Assunto que ficou sem nenhuma tela some do topo inteiro: mostrar "Contas a pagar" para
     quem não pode abrir nada de dinheiro é oferecer uma porta trancada.
     """
     visiveis = []

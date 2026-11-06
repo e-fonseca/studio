@@ -4,7 +4,7 @@
 e a meta de cada sábado, domingo e feriado. Mostra também o desconto que o SET não mostra: o
 preço do produto mudado no caixa antes de fechar a venda. Desde a versão 1.46.0.
 
-**Onde fica**: no menu de cima, **Dinheiro > Descontos e metas**. As regras ficam no botão
+**Onde fica**: no menu de cima, **Contas a pagar > Descontos e metas**. As regras ficam no botão
 **Regras e metas**, no alto da tela.
 
 **Quem pode usar**: quem tem a permissão **Controlar descontos e metas**. Na instalação, só o

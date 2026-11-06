@@ -10,7 +10,7 @@ conta é feita e de onde cada número sai.
 
 ## Onde fica e quem vê
 
-- **Dinheiro > Descontos e metas** (`/sistema/caixa/descontos/`), logo depois do Caixa. O
+- **Contas a pagar > Descontos e metas** (`/sistema/caixa/descontos/`), logo depois do Caixa. O
   botão **Regras e metas** abre a tela das regras (`/sistema/caixa/descontos/regras/`).
 - Permissão nova: **Controlar descontos e metas** (`caixa.controlar_descontos`), no grupo
   Dinheiro do catálogo. Entra sozinha no perfil Administrador gerência quando o instalador roda

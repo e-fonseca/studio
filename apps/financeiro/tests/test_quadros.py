@@ -117,7 +117,8 @@ class PagasPorAnoTest(BaseQuadros):
         self.assertEqual(self.mes("jul").sentido, "bom")
         self.assertEqual(self.mes("jan").sentido, "neutro")
         # No faturamento a mesma subida é verde.
-        self.assertEqual(dashboard.Mes("Out/25", Decimal("2000"), valor_ano_passado=Decimal("1000")).sentido, "bom")
+        self.assertEqual(dashboard.Coluna("out", [dashboard.Celula(2025, Decimal("2000")),
+                                                   dashboard.Celula(2024, Decimal("1000"))]).sentido, "bom")
 
     def test_o_mes_que_ainda_nao_chegou_fica_em_branco_e_os_anos_passados_mostram_o_que_vem(self):
         outubro = self.mes("out")
@@ -195,7 +196,7 @@ class ComecoDoSetTest(BaseQuadros):
 
     def test_a_tela_diz_de_quando_o_set_tem_lancamento(self):
         html = render_to_string("painel/_monitor_anos.html",
-                                {"pagas": quadros.pagas_por_ano(self.importacao), "o_que": "Contas pagas"})
+                                {"tres": quadros.pagas_por_ano(self.importacao), "o_que": "Contas pagas"})
         self.assertIn("O SET só tem conta paga lançada desde 27/02/2024: antes de mar/2024", html)
 
     def test_primeira_conta_no_dia_primeiro_conta_o_mes_dela(self):
@@ -212,7 +213,7 @@ class ComecoDoSetTest(BaseQuadros):
         pagas = quadros.pagas_por_ano(self.importacao)
         self.assertIsNone(pagas.lancado_desde)
         self.assertEqual(pagas.meses[8].celulas[2].valor, Decimal("500.00"))
-        html = render_to_string("painel/_monitor_anos.html", {"pagas": pagas, "o_que": "Contas pagas"})
+        html = render_to_string("painel/_monitor_anos.html", {"tres": pagas, "o_que": "Contas pagas"})
         self.assertNotIn("O SET só tem conta paga", html)
 
     def test_o_comeco_do_lancado(self):
