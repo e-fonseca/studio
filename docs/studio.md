@@ -40,3 +40,6 @@ Os dois nunca dividem banco, pasta, porta nem tarefa: parar um não mexe no outr
    Cabana. A primeira importação do backup do Studio confere se é igual.
 6. **Trello e Kommo**: qual quadro do Trello, os nomes das listas, e se a conta do Kommo já
    existe (ver [integracao-agente.md](integracao-agente.md)).
+7. **Planejamento (2.1.0)**: a exportação do protótipo veio com os movimentos entre empresas
+   só com a data; quem lança os de outubro de novo (ou exporta outra vez)? O saldo em conta
+   veio sem data, e o dia do Pronampe está "a confirmar". Ver [planejamento.md](planejamento.md).

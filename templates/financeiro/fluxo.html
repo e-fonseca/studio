@@ -6,19 +6,18 @@
   <h1>Fluxo de caixa</h1>
   <p><a href="{% url 'financeiro:contas_a_pagar' %}">Contas a pagar</a> ·
      <a href="{% url 'financeiro:contas_a_receber' %}">Contas a receber</a> ·
-     <a href="{% url 'projetos:lista' %}">Projetos</a></p>
+     <a href="{% url 'planejamento:visao' %}">Planejamento dos pedidos</a></p>
 </div>
 
 <p class="ajuda">O que entrou e saiu nos últimos {{ meses_antes }} meses e o que está
-   marcado para entrar e sair nos próximos {{ meses_depois }}. Junta o financeiro do SET (pela
-   última importação) com as parcelas dos projetos; parcela marcada como "já está lançada no
-   SET" conta uma vez só.</p>
+   marcado para entrar e sair nos próximos {{ meses_depois }}, pelo financeiro do SET (pela
+   última importação). O dinheiro dos pedidos pelas regras de cada oficina está no
+   <a href="{% url 'planejamento:visao' %}">Planejamento</a>.</p>
 
-{% if not fluxo.tem_set and not fluxo.tem_projetos %}
+{% if not fluxo.tem_set %}
 <section class="cartao cartao-destaque">
   <h2>Ainda não há dinheiro para mostrar</h2>
-  <p>O fluxo aparece quando a importação do SET trouxer contas a pagar e a receber, ou quando
-     os projetos tiverem as parcelas do cliente e da oficina lançadas.</p>
+  <p>O fluxo aparece quando a importação do SET trouxer contas a pagar e a receber.</p>
 </section>
 {% endif %}
 
@@ -80,7 +79,7 @@
 {% block ajuda %}
 <script type="application/json" id="passos-ajuda">
 [
-  {"titulo": "Fluxo de caixa", "texto": "O que entrou, o que saiu e o que vem nos próximos meses, juntando o SET e os projetos."},
+  {"titulo": "Fluxo de caixa", "texto": "O que entrou, o que saiu e o que vem nos próximos meses, pelo financeiro do SET."},
   {"seletor": ".tabela-fluxo", "titulo": "Mês a mês", "texto": "O projetado acumulado diz se o que vai entrar cobre o que vai sair, mês depois de mês. Número negativo é o mês em que vai faltar."}
 ]
 </script>

@@ -5,10 +5,10 @@
 <div class="cabecalho-pagina">
   <h1>Oficinas parceiras</h1>
   <p>{% if pode_editar %}<a class="botao" href="{% url 'projetos:oficina_nova' %}">Oficina nova</a>{% endif %}
-     <a href="{% url 'projetos:lista' %}">Voltar aos projetos</a></p>
+     <a href="{% url 'projetos:lista' %}">Voltar aos pedidos</a></p>
 </div>
 
-<p class="ajuda">As serralherias e oficinas que fazem os projetos do Studio, com quanto cada
+<p class="ajuda">As serralherias e oficinas que fazem os pedidos do Studio, com quanto cada
    uma tem para fazer e quanto ainda falta pagar a ela.</p>
 
 {% if oficinas %}
@@ -18,7 +18,7 @@
       <tr>
         <th scope="col">Oficina</th>
         <th scope="col">Contato</th>
-        <th scope="col">Especialidade</th>
+        <th scope="col">Como recebe</th>
         <th scope="col" class="numerico">Em andamento</th>
         <th scope="col" class="numerico">Entregues</th>
         <th scope="col" class="numerico">A pagar</th>
@@ -29,7 +29,7 @@
       <tr>
         <td><a href="{% url 'projetos:oficina' o.pk %}">{{ o.nome }}</a>{% if not o.ativa %} <span class="etiqueta etiqueta-cancelado">não trabalha mais</span>{% endif %}</td>
         <td>{{ o.contato|default:"—" }}{% if o.telefone %}<br><small>{{ o.telefone }}</small>{% endif %}</td>
-        <td>{{ o.especialidade|default:"—" }}</td>
+        <td>{{ o.get_pagamento_display }}{% if o.pagamento == "mensal" %}<br><small>{{ o.parcelas_mensais }}x dia {{ o.dia_pagamento }}, corte {{ o.dia_corte|default:o.dia_pagamento }}</small>{% endif %}</td>
         <td class="numerico">{{ o.em_andamento }}</td>
         <td class="numerico">{{ o.entregues }}</td>
         <td class="numerico">{{ o.a_pagar|reais }}</td>

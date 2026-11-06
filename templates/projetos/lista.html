@@ -3,9 +3,10 @@
 {% block conteudo %}
 
 <div class="cabecalho-pagina">
-  <h1>Projetos</h1>
-  <p>{% if pode_editar %}<a class="botao" href="{% url 'projetos:novo' %}">Projeto novo</a>{% endif %}
-     <a href="{% url 'projetos:oficinas' %}">Oficinas parceiras</a></p>
+  <h1>Pedidos</h1>
+  <p>{% if pode_editar %}<a class="botao" href="{% url 'projetos:novo' %}">Pedido novo</a>{% endif %}
+     <a href="{% url 'projetos:lista_em_arquivo' %}?filtro={{ filtro }}{% if busca %}&amp;busca={{ busca|urlencode }}{% endif %}">Baixar esta lista (Excel)</a>
+     · <a href="{% url 'projetos:oficinas' %}">Oficinas parceiras</a></p>
 </div>
 
 <div class="resumo-painel">
@@ -15,25 +16,25 @@
   </div>
   <div>
     <span class="numero">{{ resumo.a_receber|reais }}</span>
-    <span class="rotulo">A receber dos clientes{% if resumo.a_receber_vencido %} · <strong>{{ resumo.a_receber_vencido|reais }} vencido</strong>{% endif %}</span>
+    <span class="rotulo">Saldo dos clientes em Pix{% if resumo.a_receber_vencido %} · <strong>{{ resumo.a_receber_vencido|reais }} de pedido já entregue</strong>{% endif %}</span>
   </div>
   <div>
     <span class="numero">{{ resumo.a_pagar|reais }}</span>
-    <span class="rotulo">A pagar às oficinas e custos{% if resumo.a_pagar_vencido %} · <strong>{{ resumo.a_pagar_vencido|reais }} vencido</strong>{% endif %}</span>
+    <span class="rotulo">A pagar às oficinas, de hoje em diante{% if resumo.a_pagar_sem_data %} · <strong>mais {{ resumo.a_pagar_sem_data|reais }} sem data de entrega</strong>{% endif %}</span>
   </div>
 </div>
 
 <section class="cartao">
-  <h2>Procurar um projeto</h2>
+  <h2>Procurar um pedido</h2>
   <form method="get" class="busca-produto" role="search">
     <input type="hidden" name="filtro" value="{{ filtro }}">
-    <label for="busca">Cliente, móvel, oficina ou o que está na descrição</label>
-    <input type="search" id="busca" name="busca" value="{{ busca }}" placeholder="Ex.: mesa, Mariana, Serralheria Silva" autocomplete="off">
+    <label for="busca">Número do card, cliente, arquiteto, móvel ou oficina</label>
+    <input type="search" id="busca" name="busca" value="{{ busca }}" placeholder="Ex.: 28634, Laura, Rogério" autocomplete="off">
     <button type="submit" class="botao">Procurar</button>
   </form>
 </section>
 
-<nav class="filtros-ficha" aria-label="Filtrar os projetos">
+<nav class="filtros-ficha" aria-label="Filtrar os pedidos">
   {% for f in resumo.filtros %}
   <a href="?filtro={{ f.chave }}{% if busca %}&amp;busca={{ busca|urlencode }}{% endif %}" class="filtro{% if f.chave == filtro %} filtro-ativo{% endif %}"
      {% if f.chave == filtro %}aria-current="true"{% endif %} title="{{ f.ajuda }}">
@@ -46,36 +47,44 @@
 {% if projetos %}
 <div class="tabela-rolavel">
   <table class="tabela-projetos">
-    <caption>{{ projetos|length }} projeto{{ projetos|length|pluralize }}{% if filtro == "andamento" or filtro == "atrasados" %}, do prazo mais perto para o mais longe{% endif %}.</caption>
+    <caption>{{ projetos|length }} pedido{{ projetos|length|pluralize }}{% if filtro == "andamento" or filtro == "atrasados" or filtro == "alerta" or filtro == "incompletos" %}, do prazo mais perto para o mais longe{% endif %}.</caption>
     <thead>
       <tr>
-        <th scope="col">Projeto</th>
+        <th scope="col">Pedido</th>
         <th scope="col">Cliente</th>
         <th scope="col">Oficina</th>
         <th scope="col">Etapa</th>
-        <th scope="col">Prazo</th>
+        <th scope="col">Entrega prevista</th>
         <th scope="col" class="numerico">Venda</th>
+        <th scope="col" class="numerico">Custo oficina</th>
         <th scope="col" class="numerico">Margem</th>
+        <th scope="col" class="numerico">Saldo do cliente</th>
+        <th scope="col">Card</th>
       </tr>
     </thead>
     <tbody>
       {% for p in projetos %}
       <tr{% if p.atraso %} class="linha-erro"{% endif %}>
-        <td><a href="{% url 'projetos:ficha' p.pk %}">{{ p.codigo }}</a> {{ p.titulo }}</td>
+        <td><a href="{% url 'projetos:ficha' p.pk %}">{{ p.codigo }}</a>{% if p.titulo %}<br><small>{{ p.titulo }}</small>{% endif %}</td>
         <td>{{ p.cliente_nome }}</td>
         <td>{{ p.oficina|default:"—" }}</td>
-        <td>{{ p.get_etapa_display }}</td>
+        <td>{{ p.get_etapa_display }}{% if not p.incluir %}<br><small>fora das contas</small>{% endif %}</td>
         <td>{{ p.prazo_entrega|date:"d/m/Y"|default:"—" }}
           {% if p.atraso %}<br><span class="etiqueta etiqueta-erro">{{ p.atraso }} dia{{ p.atraso|pluralize }} de atraso</span>{% endif %}</td>
         <td class="numerico">{{ p.valor_venda|reais }}</td>
-        <td class="numerico">{{ p.margem|reais }}{% if p.margem_percentual is not None %}<br><small>{{ p.margem_percentual }}%</small>{% endif %}</td>
+        <td class="numerico">{{ p.custo_oficina|reais }}</td>
+        <td class="numerico">{% if p.m %}<span class="etiqueta {% if p.m.percentual < margem_minima %}etiqueta-erro{% else %}etiqueta-recebido{% endif %}">{{ p.m.percentual|floatformat:"1" }}%</span>{% if p.m.estimada %}<br><small>estimada</small>{% endif %}{% else %}—{% endif %}</td>
+        <td class="numerico">{% if p.saldo %}{% if p.saldo.saldo %}{{ p.saldo.saldo|reais }}{% else %}quitado{% endif %}{% else %}—{% endif %}</td>
+        <td>{% if p.falta %}<span class="etiqueta etiqueta-atencao" title="Falta: {{ p.falta|join:', ' }}">{{ p.falta|length }} pendência{{ p.falta|length|pluralize }}</span>{% elif p.vendido %}<span class="etiqueta etiqueta-recebido">completo</span>{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+<p class="ajuda">Margem = (venda − oficina − frete, embalagem, RT e projeto − taxa de antecipação do cartão) ÷ venda.
+   "Estimada" quando não se sabe quanto entrou no cartão: a conta usa o % dos Ajustes do planejamento.</p>
 {% else %}
-<p class="vazio">Nenhum projeto aqui{% if busca %} com "{{ busca }}"{% endif %}.</p>
+<p class="vazio">Nenhum pedido aqui{% if busca %} com "{{ busca }}"{% endif %}.</p>
 {% endif %}
 
 {% endblock %}
@@ -83,9 +92,9 @@
 {% block ajuda %}
 <script type="application/json" id="passos-ajuda">
 [
-  {"titulo": "Projetos", "texto": "Cada móvel sob medida, do orçamento à entrega, com a oficina que está fazendo e o dinheiro que entra e sai."},
-  {"seletor": ".resumo-painel", "titulo": "O dinheiro dos projetos", "texto": "O que ainda vai entrar dos clientes e o que ainda vai sair para as oficinas, somando as parcelas lançadas em cada projeto."},
-  {"seletor": ".filtros-ficha", "titulo": "Filtros", "texto": "A tela abre pelo que está em andamento, do prazo mais perto para o mais longe. Os atrasados ficam em vermelho."}
+  {"titulo": "Pedidos", "texto": "Cada móvel sob medida, do projeto à entrega, com a oficina que está fazendo, a margem e o que falta o cliente pagar."},
+  {"seletor": ".resumo-painel", "titulo": "O dinheiro dos pedidos", "texto": "O saldo dos clientes em Pix e o que ainda vai sair para as oficinas, calculado pela regra de cada oficina."},
+  {"seletor": ".filtros-ficha", "titulo": "Filtros", "texto": "A tela abre pelo que está em aberto. 'Com alerta' junta margem baixa, atraso e saldo depois da entrega; 'Cards incompletos' mostra o que falta preencher."}
 ]
 </script>
 {% endblock %}

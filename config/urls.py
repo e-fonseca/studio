@@ -12,6 +12,7 @@ rotas_sistema = [
     path("", include("apps.contas.urls")),
     path("painel/", include("apps.painel.urls")),
     path("projetos/", include("apps.projetos.urls")),
+    path("planejamento/", include("apps.planejamento.urls")),
     path("leads/", include("apps.leads.urls")),
     path("integracao/", include("apps.integracao.urls")),
     path("compras/", include("apps.compras.urls")),

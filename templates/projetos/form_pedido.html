@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>{{ titulo }}</h1>
+  {% if projeto %}<a href="{% url 'projetos:ficha' projeto.pk %}">Voltar ao pedido</a>
+  {% elif voltar %}<a href="{% url voltar %}">Voltar</a>{% endif %}
+</div>
+
+<form method="post" class="formulario" novalidate>{% csrf_token %}
+  {% if form.errors %}<div class="mensagem error" role="alert"><p>Confira os campos marcados abaixo.</p>{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+  {% for secao in form.secoes %}
+  <section class="cartao">
+    <h2>{{ secao.titulo }}</h2>
+    <p class="ajuda">{{ secao.ajuda }}</p>
+    <div class="campos-em-grade">
+      {% include "_campos.html" with campos=secao.campos largos=secao.largos %}
+    </div>
+  </section>
+  {% endfor %}
+  <div class="acoes"><button type="submit" class="botao">Salvar</button></div>
+</form>
+
+{% endblock %}

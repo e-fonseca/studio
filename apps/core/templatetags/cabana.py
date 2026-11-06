@@ -123,3 +123,12 @@ def reais_com_sinal(valor):
     if numero == 0:
         return reais(numero)
     return ("+ " if numero > 0 else "− ") + reais(abs(numero))
+
+
+@register.filter
+def percentual(fracao, casas=1):
+    """Uma fração como porcentagem brasileira: 0.375 vira "37,5%" (Planejamento, Studio)."""
+    if fracao is None or fracao == "":
+        return "—"
+    numero = (Decimal(str(fracao)) * 100).quantize(Decimal(1).scaleb(-int(casas)), rounding=ROUND_HALF_UP)
+    return f"{numero}".replace(".", ",") + "%"

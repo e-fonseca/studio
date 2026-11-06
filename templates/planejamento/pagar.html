@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>A pagar · {{ rotulo }}</h1>
+  {% include "planejamento/_mes.html" %}
+</div>
+{% include "planejamento/_abas.html" %}
+
+<div class="grade-visao">
+  <section class="cartao">
+    <h2>Total do mês: {{ total|reais }}</h2>
+    {% if barras %}
+    <ul class="barras-pagar">
+      {% for b in barras %}
+      <li><span class="pagar-nome">{{ b.nome }}</span>
+          <span class="pagar-trilho" aria-hidden="true"><span class="pagar-cheia" style="width: {{ b.largura }}%"></span></span>
+          <span class="pagar-valor">{{ b.valor|reais }}</span></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <p class="ajuda">Cartão cai na fatura pelo fechamento de cada cartão. Oficina de parcelas
+       mensais paga no dia dela, pelo corte. A 2ª parcela do padrão sai em Pix na entrega.</p>
+  </section>
+
+  <section class="cartao">
+    <h2>Sem data</h2>
+    {% if sem_data %}
+    <p class="ajuda">2ª parcela de pedido em produção sem data de entrega. Entra no calendário quando o pedido tiver a data.</p>
+    <table>
+      <tbody>
+        {% for s in sem_data %}<tr><td><a href="{% url 'projetos:ficha' s.projeto.pk %}">{{ s.projeto.codigo }}</a></td><td>{{ s.projeto.oficina|default:"—" }}</td><td class="numerico">{{ s.valor|reais }}</td></tr>{% endfor %}
+        <tr><th scope="row" colspan="2">Total</th><td class="numerico"><strong>{{ total_sem_data|reais }}</strong></td></tr>
+      </tbody>
+    </table>
+    {% else %}
+    <p class="vazio">Todos os pedidos têm data.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="cartao">
+  <h2>Dia a dia</h2>
+  {% if itens %}
+  <div class="tabela-rolavel">
+    <table>
+      <thead><tr><th scope="col">Data</th><th scope="col">Como</th><th scope="col">Pedido</th><th scope="col">Oficina ou item</th><th scope="col">Parcela</th><th scope="col" class="numerico">Valor</th></tr></thead>
+      <tbody>
+        {% for s in itens %}
+        <tr{% if s.data < hoje %} class="linha-passada"{% endif %}>
+          <td>{{ s.data|date:"d/m/Y" }}</td>
+          <td>{{ s.grupo }}{% if s.previsto %} <span class="etiqueta etiqueta-atencao">previsto</span>{% endif %}</td>
+          <td>{% if s.projeto %}<a href="{% url 'projetos:ficha' s.projeto.pk %}">{{ s.projeto.codigo }}</a>{% endif %}</td>
+          <td>{% if s.projeto %}{{ s.projeto.oficina|default:"—" }}{% else %}{{ s.descricao }}{% endif %}</td>
+          <td>{% if s.projeto %}{{ s.descricao }} {{ s.parcela }}{% endif %}</td>
+          <td class="numerico">{{ s.valor|reais }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="vazio">Nada a pagar neste mês.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

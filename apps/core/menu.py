@@ -123,14 +123,14 @@ GRUPOS = [
              irmas=("leads:ficha", "leads:novo", "leads:editar", "leads:fechados"),
              ajuda="O que falar hoje, o funil por etapa e quanto vira projeto."),
     )),
-    Grupo("projetos", "Projetos", ajuda="Os móveis sob medida, da aprovação à entrega, e as oficinas.",
+    Grupo("projetos", "Pedidos", ajuda="Os móveis sob medida, da venda à entrega, e as oficinas.",
           telas=(
-        Item("projetos:lista", "Projetos", "projetos.ver_projetos",
+        Item("projetos:lista", "Pedidos", "projetos.ver_projetos",
              irmas=("projetos:ficha", "projetos:novo", "projetos:editar"),
-             ajuda="Cada projeto com a etapa, o prazo, a oficina e o dinheiro."),
+             ajuda="Cada pedido com a etapa, o prazo, a oficina, a margem e o saldo do cliente."),
         Item("projetos:oficinas", "Oficinas parceiras", "projetos.ver_projetos",
              irmas=("projetos:oficina", "projetos:oficina_nova", "projetos:oficina_editar"),
-             ajuda="As serralherias que fazem os projetos e quanto falta pagar a cada uma."),
+             ajuda="As serralherias que fazem os pedidos, como recebem e quanto falta pagar a cada uma."),
     )),
     Grupo("compras", "Compras", ajuda="Decidir o que comprar e fechar com o fornecedor.",
           telas=(
@@ -186,10 +186,15 @@ GRUPOS = [
     )),
     Grupo("dinheiro", "Dinheiro", ajuda="O que a loja deve, o que entrou e o que o banco diz.",
           telas=(
-        # Primeira de propósito no Studio (05/11/2026): "controlar o financeiro, o que
-        # entrou, o que saiu e a projeção futura". Clicar em Dinheiro cai aqui.
+        # Primeira de propósito no Studio: "controlar o financeiro, o que entrou, o que
+        # saiu e a projeção futura" (05/11/2026), com as regras do protótipo da Henriett
+        # (06/11/2026). Clicar em Dinheiro cai aqui.
+        Item("planejamento:visao", "Planejamento", "planejamento.ver_planejamento",
+             irmas=("planejamento:pagar", "planejamento:receber", "planejamento:fechamento",
+                    "planejamento:entre_empresas", "planejamento:ajustes"),
+             ajuda="Caixa dos próximos 30 dias, a pagar, a receber, fechamento e entre empresas."),
         Item("financeiro:fluxo", "Fluxo de caixa", "financeiro.ver_financeiro",
-             ajuda="O que entrou, o que saiu e o que vem nos próximos meses, do SET e dos projetos."),
+             ajuda="O que entrou, o que saiu e o que vem nos próximos meses, pelo financeiro do SET."),
         Item("financeiro:contas_a_pagar", "Financeiro", "financeiro.ver_financeiro",
              irmas=("financeiro:despesas", "financeiro:contas_a_receber",
                     "financeiro:pagamentos"),

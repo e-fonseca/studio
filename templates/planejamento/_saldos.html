@@ -1,0 +1,20 @@
+{% load cabana %}
+{% if lista %}
+<div class="tabela-rolavel">
+  <table>
+    <thead><tr><th scope="col">Pedido</th><th scope="col">Cliente</th><th scope="col">{{ coluna }}</th><th scope="col" class="numerico">Saldo em Pix</th></tr></thead>
+    <tbody>
+      {% for c in lista %}
+      <tr>
+        <td><a href="{% url 'projetos:ficha' c.projeto.pk %}">{{ c.projeto.codigo }}</a></td>
+        <td>{{ c.projeto.cliente_nome }}{% if c.a_confirmar %} <span class="etiqueta etiqueta-atencao">forma a confirmar</span>{% endif %}</td>
+        <td>{{ c.data|date:"d/m/Y"|default:"—" }}{% if c.data and c.data < hoje and not c.vencido %} <span class="etiqueta etiqueta-atencao">prazo passou</span>{% endif %}</td>
+        <td class="numerico">{{ c.saldo|reais }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="vazio">Nada aqui.</p>
+{% endif %}

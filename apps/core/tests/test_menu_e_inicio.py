@@ -50,7 +50,7 @@ class TestMenuPorAssunto(TestCase):
 
     def test_o_topo_tem_sete_entradas_com_o_dashboard_na_frente(self):
         self.assertEqual([grupo.rotulo for grupo in menu.GRUPOS],
-                         ["Dashboard", "Visão geral", "Leads", "Projetos", "Compras", "Vendas",
+                         ["Dashboard", "Visão geral", "Leads", "Pedidos", "Compras", "Vendas",
                           "Estoque", "Dinheiro", "Sistema"])
 
     def test_nenhuma_tela_aparece_em_dois_assuntos(self):
@@ -72,7 +72,8 @@ class TestMenuPorAssunto(TestCase):
         primeira = corpo[corpo.index("menu-principal"):corpo.index("menu-apoio")]
         aceso = primeira[:primeira.index('aria-current="page"')].rsplit("<a ", 1)[-1]
         self.assertIn(">Dinheiro<", primeira)
-        self.assertIn(reverse("financeiro:contas_a_pagar"), aceso)
+        # O endereço do assunto é a primeira tela dele: o Planejamento, desde 06/11/2026.
+        self.assertIn(reverse("planejamento:visao"), aceso)
 
     def test_a_tela_aberta_fica_marcada_mesmo_vindo_de_uma_tela_irma(self):
         """Abrir Despesas tem que acender Financeiro, senão a pessoa perde onde está."""

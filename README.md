@@ -9,14 +9,18 @@ Endereço: `https://192.168.3.254:8444/studio/` (e `http://192.168.3.254:8096/st
 balcão), acessível pela rede da loja e pela VPN. Na intranet, menu **Gestão > Sistema aux SET**
 do Studio.
 
-## O que é só do Studio (2.0.0)
+## O que é só do Studio (2.0.0 e 2.1.0)
 
 - **Leads** (SDR): o que falar hoje, o funil por etapa, cada conversa registrada e o botão que
   transforma o lead fechado em projeto.
-- **Projetos** sob medida e **oficinas parceiras**: etapa, prazo, venda, custo, margem, e as
-  entradas do cliente e os pagamentos à oficina, cada um com data.
-- **Fluxo de caixa**: o que entrou, o que saiu e a projeção dos próximos seis meses, juntando
-  o financeiro do SET e as parcelas dos projetos.
+- **Pedidos** sob medida e **oficinas parceiras**: o número do card do Trello, etapa, prazo,
+  venda, o que o cliente já pagou, margem de lucro e os pagamentos à oficina calculados pela
+  regra de cada uma (padrão, parcelas mensais com corte, ou tudo no cartão).
+- **Planejamento** (2.1.0, regras do protótipo da Henriett): caixa dos próximos 30 dias, a
+  pagar por cartão e oficina, a receber em Pix, fechamento por competência e caixa, saldo
+  entre Studio e Cabana, pró-labore e alertas ([como funciona](docs/planejamento.md)).
+- **Fluxo de caixa**: o que entrou, o que saiu e a projeção dos próximos seis meses, pelo
+  financeiro do SET.
 - **Sem compras e sem estoque no menu** (`STUDIO_ASSUNTOS_DESLIGADOS=compras,estoque`).
 - **Integração com o Trello e o Kommo** pelo agente da casa do Edson, por uma API com chave
   própria, pela VPN ([como funciona](docs/integracao-agente.md)).

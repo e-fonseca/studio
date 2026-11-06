@@ -79,8 +79,9 @@ _ADMINISTRATIVO = [
     # pedido continua sendo da gerência, junto de mudar a quantidade.
     "pedidos.view_pedido",
     "pedidos.anexar_documento",
-    # Studio (05/11/2026): o dia a dia do Studio é o projeto sob medida e o lead. Quem
-    # cuida das contas é quem lança a entrada do cliente e o pagamento da oficina.
+    # Studio (05/11/2026): o dia a dia do Studio é o pedido sob medida e o lead. Quem
+    # cuida das contas é quem lança o que o cliente pagou e o pagamento da oficina. O
+    # planejamento (pró-labore, entre empresas) fica com a gerência.
     "projetos.ver_projetos",
     "projetos.editar_projetos",
     "leads.ver_leads",

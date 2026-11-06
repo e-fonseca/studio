@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Entre empresas</h1>
+  <p>Studio × Cabana (Essenza). Não entra como receita nem despesa; a parte do Henry vira pró-labore.</p>
+</div>
+{% include "planejamento/_abas.html" %}
+
+<div class="resumo-painel">
+  <div><span class="numero">{{ saldo_abs|reais }}</span><span class="rotulo">{% if saldo >= 0 %}A Cabana deve ao Studio{% else %}O Studio deve à Cabana{% endif %}, somando todos os meses</span></div>
+  <div><span class="numero">{{ prolabore.studio|reais }}</span><span class="rotulo">Pró-labore pago pelo Studio</span></div>
+  <div><span class="numero">{{ prolabore.cabana|reais }}</span><span class="rotulo">Pró-labore pago pela Cabana</span></div>
+</div>
+
+{% if pode_editar %}
+<section class="cartao">
+  <h2>Lançar movimento</h2>
+  <form method="post" class="formulario" novalidate>{% csrf_token %}
+    <div class="campos-em-grade">
+      {% include "_campos.html" with campos=form.visible_fields largos="descricao" %}
+    </div>
+    <div class="acoes"><button type="submit" class="botao">Lançar</button></div>
+  </form>
+</section>
+{% endif %}
+
+{% for m in meses %}
+<section class="cartao">
+  <h2>{{ m.rotulo }}</h2>
+  <p class="ajuda">No mês: {% if m.no_mes >= 0 %}a Cabana passou a dever {% else %}o Studio passou a dever {% endif %}<strong>{{ m.no_mes|reais_com_sinal }}</strong> · acumulado até aqui {{ m.acumulado|reais_com_sinal }} ({% if m.acumulado >= 0 %}a favor do Studio{% else %}a favor da Cabana{% endif %}).</p>
+  {% if m.movimentos %}
+  <div class="tabela-rolavel">
+    <table>
+      <thead><tr><th scope="col">Data</th><th scope="col">Tipo</th><th scope="col">Descrição</th><th scope="col">Quem deve</th><th scope="col" class="numerico">Valor</th>{% if pode_editar %}<th scope="col"><span class="oculto-visualmente">Ação</span></th>{% endif %}</tr></thead>
+      <tbody>
+        {% for mov in m.movimentos %}
+        <tr><td>{{ mov.data|date:"d/m/Y" }}</td><td>{{ mov.get_tipo_display }}</td><td>{{ mov.descricao|default:"—" }}</td><td>{{ mov.get_sentido_display }}</td><td class="numerico">{{ mov.valor|reais }}</td>
+          {% if pode_editar %}<td>{% include "planejamento/_cancelar.html" %}</td>{% endif %}</tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% if m.prolabores %}
+  <h3>Pró-labore</h3>
+  <table>
+    <tbody>
+      {% for mov in m.prolabores %}
+      <tr><td>{{ mov.data|date:"d/m/Y" }}</td><td>pago pelo {{ mov.get_empresa_display }}</td><td>{{ mov.descricao|default:"—" }}</td><td class="numerico">{{ mov.valor|reais }}</td>
+        {% if pode_editar %}<td>{% include "planejamento/_cancelar.html" %}</td>{% endif %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+{% empty %}
+<p class="vazio">Nenhum movimento lançado ainda.</p>
+{% endfor %}
+
+{% endblock %}

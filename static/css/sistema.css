@@ -3170,3 +3170,32 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
 .linha-do-tempo { list-style: none; padding: 0; margin: 0; }
 .linha-do-tempo li { border-left: 3px solid var(--cor-borda-forte); padding: .2rem 0 .6rem .8rem; margin-bottom: .4rem; }
 .linha-do-tempo li p { margin: .2rem 0 0; }
+
+/* Planejamento do Studio (06/11/2026): o saldo projetado dia a dia, desenhado no servidor. */
+.grafico-caixa { margin: 0; }
+.grafico-caixa svg { display: block; width: 100%; height: auto; max-height: 18rem; }
+.grafico-caixa text { font-size: 11px; fill: var(--cor-texto-suave); }
+.grafico-caixa .grade { stroke: var(--cor-borda); stroke-width: 1; }
+.grafico-caixa .zero { stroke: var(--cor-texto-suave); stroke-dasharray: 3 3; }
+.grafico-caixa .area { fill: var(--cor-primaria-fraca); opacity: .7; }
+.grafico-caixa .linha { fill: none; stroke: var(--cor-acao); stroke-width: 2; }
+.grafico-caixa .ponto-ruim { fill: var(--cor-erro); }
+.grafico-caixa .ponto-bom { fill: var(--cor-sucesso); }
+.lista-alertas { list-style: none; padding: 0; margin: 0; }
+.lista-alertas li { padding: .45rem 0 .45rem .7rem; border-left: 3px solid var(--cor-borda-forte); margin-bottom: .35rem; }
+.lista-alertas .alerta-ruim { border-left-color: var(--cor-erro); }
+.lista-alertas .alerta-atencao { border-left-color: var(--cor-alerta); }
+.barras-pagar { list-style: none; padding: 0; margin: 0 0 .8rem; }
+.barras-pagar li { display: grid; grid-template-columns: minmax(8rem, 1.2fr) 2fr auto; gap: .6rem; align-items: center; padding: .25rem 0; }
+.pagar-trilho { display: block; height: .55rem; background: var(--cor-superficie-2); border-radius: 99px; overflow: hidden; }
+.pagar-cheia { display: block; height: 100%; background: var(--cor-acao); }
+.pagar-valor { font-variant-numeric: tabular-nums; text-align: right; }
+.escolher-mes { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.escolher-mes select { width: auto; }
+.linha-passada { color: var(--cor-texto-suave); }
+.tabela-ajustes input, .tabela-ajustes select { min-width: 5.5rem; }
+.tabela-ajustes td:first-child input { min-width: 14rem; }
+@media (max-width: 40rem) {
+  .barras-pagar li { grid-template-columns: 1fr auto; }
+  .barras-pagar .pagar-trilho { grid-column: 1 / -1; grid-row: 2; }
+}

@@ -1,0 +1,3 @@
+<form method="post" action="{% url 'planejamento:cancelar_movimento' mov.pk %}">{% csrf_token %}
+  <button type="submit" class="botao secundario">Cancelar<span class="oculto-visualmente"> o lançamento de {{ mov.data|date:"d/m/Y" }}</span></button>
+</form>

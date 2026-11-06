@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Fechamento · {{ fech.rotulo }}</h1>
+  {% include "planejamento/_mes.html" %}
+</div>
+{% include "planejamento/_abas.html" %}
+
+<div class="grade-visao">
+  <section class="cartao">
+    <h2>Competência: as vendas do mês</h2>
+    <p class="ajuda">{{ fech.competencia.pedidos }} pedido{{ fech.competencia.pedidos|pluralize }} com data de venda em {{ fech.rotulo }}. Mostra se as vendas do mês pagam a operação.</p>
+    <table>
+      <tbody>
+        <tr><td>Vendas</td><td class="numerico">{{ fech.competencia.vendas|reais }}</td></tr>
+        <tr><td>Custo de oficina</td><td class="numerico">− {{ fech.competencia.custo|reais }}</td></tr>
+        <tr><td>Frete, embalagem, RT, projeto e outros</td><td class="numerico">− {{ fech.competencia.outros|reais }}</td></tr>
+        <tr><td>Taxa de antecipação (estimada)</td><td class="numerico">− {{ fech.competencia.taxa|reais }}</td></tr>
+        <tr><th scope="row">Margem bruta{% if fech.competencia.margem_percentual is not None %} ({{ fech.competencia.margem_percentual|floatformat:"1" }}%){% endif %}</th><td class="numerico"><strong>{{ fech.competencia.margem|reais_com_sinal }}</strong></td></tr>
+        <tr><td>Fixos + juros</td><td class="numerico">− {{ fech.competencia.fixos|reais }}</td></tr>
+        <tr><th scope="row">Resultado</th><td class="numerico"><strong>{{ fech.competencia.resultado|reais_com_sinal }}</strong></td></tr>
+      </tbody>
+    </table>
+    {% if fech.competencia.baixas %}
+    <h3>Abaixo de {{ margem_minima|floatformat:"-2" }}% de margem</h3>
+    <ul>{% for projeto, m in fech.competencia.baixas %}<li><a href="{% url 'projetos:ficha' projeto.pk %}">{{ projeto.codigo }}</a> {{ projeto.cliente_nome }} · {{ m.percentual|floatformat:"1" }}%</li>{% endfor %}</ul>
+    {% endif %}
+  </section>
+
+  <section class="cartao">
+    <h2>Caixa: o que entra e sai no mês</h2>
+    <p class="ajuda">Previsto pelos pedidos e pelos Ajustes. O realizado entra quando o extrato
+       do banco for conferido na <a href="{% url 'conciliacao:lista' %}">Conciliação</a>.</p>
+    <table>
+      <tbody>
+        <tr><td>Pix de clientes previstos</td><td class="numerico">{{ fech.caixa.entradas|reais }}</td></tr>
+        <tr><td>Oficinas (cartão, Pix e parcelas mensais)</td><td class="numerico">− {{ fech.caixa.oficinas|reais }}</td></tr>
+        <tr><td>Fixos, empréstimos, juros e avulsos</td><td class="numerico">− {{ fech.caixa.fixos|reais }}</td></tr>
+        <tr><td>Pró-labore pago pelo Studio</td><td class="numerico">− {{ fech.caixa.prolabore|reais }}</td></tr>
+        <tr><th scope="row">Resultado de caixa</th><td class="numerico"><strong>{{ fech.caixa.resultado|reais_com_sinal }}</strong></td></tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+
+{% endblock %}

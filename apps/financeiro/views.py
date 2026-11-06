@@ -170,7 +170,7 @@ def despesas(request):
 @login_required
 @permission_required("financeiro.ver_financeiro", raise_exception=True)
 def fluxo_de_caixa(request):
-    """O que entrou, o que saiu e o que vem, mês a mês: SET e projetos juntos (Studio)."""
+    """O que entrou, o que saiu e o que vem, mês a mês, pelo SET. Os pedidos ficam no Planejamento."""
     from . import fluxo
 
     estado, contexto = _base("Fluxo de caixa")

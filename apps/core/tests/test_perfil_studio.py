@@ -17,7 +17,7 @@ class MenuDoStudioTest(TestCase):
     def test_o_topo_nao_tem_compras_nem_estoque(self):
         pagina = self.client.get(reverse("projetos:lista"))
         topo = [grupo.rotulo for grupo in menu.ativos()]
-        self.assertEqual(topo, ["Dashboard", "Visão geral", "Leads", "Projetos", "Vendas",
+        self.assertEqual(topo, ["Dashboard", "Visão geral", "Leads", "Pedidos", "Vendas",
                                 "Dinheiro", "Sistema"])
         self.assertNotContains(pagina, 'href="/studio/compras/lista/"')
         self.assertNotContains(pagina, 'href="/studio/importacao/consulta/"')
@@ -29,9 +29,11 @@ class MenuDoStudioTest(TestCase):
         self.assertNotIn("inventario:lista", rotas)
         self.assertIn("projetos:lista", rotas)
 
-    def test_dinheiro_abre_pelo_fluxo_de_caixa(self):
+    def test_dinheiro_abre_pelo_planejamento(self):
+        """Desde o protótipo da Henriett (06/11/2026) Dinheiro cai no Planejamento, e o
+        Fluxo de caixa do SET vem logo depois."""
         dinheiro = next(g for g in menu.ativos() if g.chave == "dinheiro")
-        self.assertEqual(dinheiro.telas[0].rota, "financeiro:fluxo")
+        self.assertEqual([t.rota for t in dinheiro.telas[:2]], ["planejamento:visao", "financeiro:fluxo"])
 
     def test_a_tela_escondida_continua_pedindo_permissao(self):
         """Esconder do menu não é trancar: quem tranca é a permissão de cada tela."""
@@ -46,6 +48,7 @@ class MenuDoStudioTest(TestCase):
         self.assertRedirects(resposta, reverse("leads:funil"), fetch_redirect_response=False)
         self.assertEqual(self.client.get(reverse("projetos:lista")).status_code, 403)
         self.assertEqual(self.client.get(reverse("financeiro:fluxo")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("planejamento:visao")).status_code, 403)
 
 
 class PadraoDoStudioTest(TestCase):

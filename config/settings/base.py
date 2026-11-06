@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.alertas",
     "apps.backup",
     "apps.tempo",
+    "apps.planejamento",
     "apps.projetos",
     "apps.leads",
     "apps.integracao",

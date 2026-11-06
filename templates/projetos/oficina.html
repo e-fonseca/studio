@@ -9,8 +9,9 @@
 </div>
 
 <div class="resumo-painel">
-  <div><span class="numero">{{ pago|reais }}</span><span class="rotulo">Já pago a esta oficina</span></div>
-  <div><span class="numero">{{ a_pagar|reais }}</span><span class="rotulo">Ainda a pagar</span></div>
+  <div><span class="numero">{{ pago|reais }}</span><span class="rotulo">Já pago, pela regra (parcelas com data que passou)</span></div>
+  <div><span class="numero">{{ a_pagar|reais }}</span><span class="rotulo">Ainda a pagar{% if sem_data %}, contando a 2ª parcela sem data{% endif %}</span></div>
+  <div><span class="numero">{{ oficina.get_pagamento_display }}</span><span class="rotulo">{% if oficina.pagamento == "mensal" %}{{ oficina.parcelas_mensais }}x todo dia {{ oficina.dia_pagamento }}, corte no dia {{ oficina.dia_corte|default:oficina.dia_pagamento }}{% else %}Como esta oficina recebe{% endif %}</span></div>
 </div>
 
 <section class="cartao">
@@ -19,18 +20,35 @@
     <div><dt>Pessoa</dt><dd>{{ oficina.contato|default:"—" }}</dd></div>
     <div><dt>Telefone</dt><dd>{{ oficina.telefone|default:"—" }}</dd></div>
     <div><dt>Cidade</dt><dd>{{ oficina.cidade|default:"—" }}</dd></div>
+    <div><dt>Como recebe</dt><dd>{{ oficina.get_pagamento_display }}</dd></div>
     <div><dt>Especialidade</dt><dd>{{ oficina.especialidade|default:"—" }}</dd></div>
     <div><dt>Situação</dt><dd>{% if oficina.ativa %}Trabalha com o Studio{% else %}Não trabalha mais{% endif %}</dd></div>
   </dl>
   {% if oficina.observacao %}<p class="destaque">{{ oficina.observacao|linebreaksbr }}</p>{% endif %}
 </section>
 
+{% if proximas %}
 <section class="cartao">
-  <h2>Projetos desta oficina</h2>
+  <h2>Próximos pagamentos</h2>
+  <div class="tabela-rolavel">
+    <table>
+      <thead><tr><th scope="col">Data</th><th scope="col">Pedido</th><th scope="col">Como</th><th scope="col">Parcela</th><th scope="col" class="numerico">Valor</th></tr></thead>
+      <tbody>
+        {% for s in proximas %}
+        <tr><td>{{ s.data|date:"d/m/Y" }}</td><td><a href="{% url 'projetos:ficha' s.projeto.pk %}">{{ s.projeto.codigo }}</a></td><td>{{ s.grupo }}</td><td>{{ s.descricao }} {{ s.parcela }}</td><td class="numerico">{{ s.valor|reais }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>Pedidos desta oficina</h2>
   {% if projetos %}
   <div class="tabela-rolavel">
     <table>
-      <thead><tr><th scope="col">Projeto</th><th scope="col">Cliente</th><th scope="col">Etapa</th><th scope="col">Prazo</th><th scope="col" class="numerico">Custo da oficina</th></tr></thead>
+      <thead><tr><th scope="col">Pedido</th><th scope="col">Cliente</th><th scope="col">Etapa</th><th scope="col">Prazo</th><th scope="col" class="numerico">Custo da oficina</th></tr></thead>
       <tbody>
         {% for p in projetos %}
         <tr{% if p.atraso %} class="linha-erro"{% endif %}>
@@ -45,7 +63,7 @@
     </table>
   </div>
   {% else %}
-  <p class="vazio">Nenhum projeto com esta oficina ainda.</p>
+  <p class="vazio">Nenhum pedido com esta oficina ainda.</p>
   {% endif %}
 </section>
 

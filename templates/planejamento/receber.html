@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>A receber</h1>
+  <p>Só saldos em Pix: o cartão do cliente já entrou antecipado.</p>
+</div>
+{% include "planejamento/_abas.html" %}
+
+<div class="resumo-painel">
+  <div><span class="numero">{{ total_vencidos|reais }}</span><span class="rotulo">Já entregue e não pago · {{ vencidos|length }} pedido{{ vencidos|length|pluralize }} · cobrar já</span></div>
+  <div><span class="numero">{{ total_previstos|reais }}</span><span class="rotulo">Previsto, com data · {{ previstos|length }} pedido{{ previstos|length|pluralize }}</span></div>
+  <div><span class="numero">{{ total_sem_data|reais }}</span><span class="rotulo">Em produção sem data · {{ sem_data|length }} pedido{{ sem_data|length|pluralize }} · pedir a data à produção</span></div>
+</div>
+
+<section class="cartao">
+  <h2>Já entregue, falta receber</h2>
+  {% include "planejamento/_saldos.html" with lista=vencidos coluna="Entregue em" %}
+</section>
+<section class="cartao">
+  <h2>Previsto</h2>
+  {% include "planejamento/_saldos.html" with lista=previstos coluna="Entrega prevista" %}
+</section>
+<section class="cartao">
+  <h2>Sem data</h2>
+  {% include "planejamento/_saldos.html" with lista=sem_data coluna="Entrega" %}
+</section>
+<p class="ajuda">A data é a entrega real do pedido ou, se não houver, o prazo previsto. Prazo
+   vencido com o pedido ainda em produção conta como hoje. O prazo do card nem sempre é a
+   entrega real: confirme com a produção antes de contar com o Pix.</p>
+
+{% endblock %}

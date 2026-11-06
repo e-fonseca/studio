@@ -1,20 +1,22 @@
-"""Fluxo de caixa: o que entrou, o que saiu e o que vem pela frente, mês a mês.
+"""Fluxo de caixa: o que entrou, o que saiu e o que vem pela frente, mês a mês, pelo SET.
 
 Pedido do Edson, 05/11/2026: *"um dos objetivos é controlar o financeiro, o que entrou, o
 que saiu e a projeção futura."*
 
-Duas fontes, somadas sem contar nada duas vezes:
+A fonte é **o SET**, pela última importação: contas a receber e a pagar, pagas (o que
+entrou e saiu) e em aberto (o que vem), mais os pagamentos previstos registrados aqui que
+ainda não estão no SET.
 
-- **o SET**, pela última importação: contas a receber e a pagar, pagas (o que entrou e
-  saiu) e em aberto (o que vem), mais os pagamentos previstos registrados aqui que ainda
-  não estão no SET;
-- **os projetos** (apps/projetos): as parcelas do cliente e da oficina. Parcela marcada
-  como "já está lançada no SET" fica de fora, porque o SET já a conta.
+Até 06/11/2026 somava também as parcelas lançadas nos projetos. Com o protótipo da
+Henriett, os pedidos passaram a ter o dinheiro calculado pelas regras de cada oficina, e
+essa conta mora no Planejamento (apps/planejamento). Somar os dois aqui contaria duas
+vezes o que o SET também tem lançado, e não há como saber o que é a mesma conta: por isso
+esta tela é a do SET e o Planejamento é a das regras do Studio.
 
 O mês corrente aparece com o realizado e o previsto lado a lado: metade do mês já
 aconteceu e metade ainda vai acontecer. O que venceu e não foi pago (dos dois lados) entra
 como previsto no mês corrente, porque é dinheiro que se espera agora, e é mostrado à parte
-para não passar por conta em dia. Projeto cancelado não projeta nada.
+para não passar por conta em dia.
 """
 
 from dataclasses import dataclass, field
@@ -23,8 +25,6 @@ from decimal import Decimal
 
 from django.db.models import Sum
 from django.utils import timezone
-
-from apps.projetos.models import Parcela, Projeto
 
 from .models import Lancamento, PagamentoPrevisto
 
@@ -75,7 +75,6 @@ class Fluxo:
     atrasado_sair: Decimal = ZERO
     sem_data_sair: Decimal = ZERO
     tem_set: bool = False
-    tem_projetos: bool = False
 
     @property
     def total_vai_entrar(self):
@@ -148,23 +147,6 @@ def montar(importacao, hoje=None):
     somar(previstos.filter(vencimento__gte=hoje, vencimento__lt=depois_do_fim),
           "vencimento", "valor", "vai_sair")
     fluxo.atrasado_sair += previstos.filter(vencimento__lt=hoje).aggregate(v=Sum("valor"))["v"] or ZERO
-
-    # Os projetos -----------------------------------------------------------------------
-    parcelas = Parcela.objects.filter(lancada_no_set=False)
-    fluxo.tem_projetos = parcelas.exists()
-    pagas = parcelas.filter(pago_em__gte=primeiro_dia, pago_em__lte=hoje)
-    somar(pagas.filter(tipo=Parcela.Tipo.RECEBER), "pago_em", "valor", "entrou")
-    somar(pagas.filter(tipo__in=Parcela.SAIDAS), "pago_em", "valor", "saiu")
-    abertas = parcelas.filter(pago_em__isnull=True).exclude(projeto__etapa=Projeto.Etapa.CANCELADO)
-    for tipos, atributo in (([Parcela.Tipo.RECEBER], "vai_entrar"), (Parcela.SAIDAS, "vai_sair")):
-        somar(abertas.filter(tipo__in=tipos, vencimento__gte=hoje, vencimento__lt=depois_do_fim),
-              "vencimento", "valor", atributo)
-        atrasado = abertas.filter(tipo__in=tipos, vencimento__lt=hoje).aggregate(
-            v=Sum("valor"))["v"] or ZERO
-        if atributo == "vai_entrar":
-            fluxo.atrasado_entrar += atrasado
-        else:
-            fluxo.atrasado_sair += atrasado
 
     # O atrasado é esperado agora: entra no previsto do mês corrente.
     atual.vai_entrar += fluxo.atrasado_entrar

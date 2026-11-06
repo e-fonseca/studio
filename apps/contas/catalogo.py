@@ -44,7 +44,7 @@ class Permissao:
 MODULOS = (
     "Indicadores",
     "Leads",
-    "Projetos",
+    "Pedidos sob medida",
     "Compras",
     "Pedidos",
     "Fornecedores",
@@ -67,12 +67,12 @@ CATALOGO = (
               "O funil, quem falar hoje, os ganhos e perdidos e a conversa de cada lead."),
     Permissao("leads.trabalhar_leads", "Leads", "Trabalhar os leads",
               "Anotar lead novo, registrar conversa, marcar o próximo contato e mudar a etapa."),
-    # Projetos (Studio, 05/11/2026) --------------------------------------------------
-    Permissao("projetos.ver_projetos", "Projetos", "Ver os projetos",
-              "Os projetos sob medida e as oficinas parceiras, com venda, custo, margem e o "
-              "que entrou e saiu de cada um.", dinheiro=True),
-    Permissao("projetos.editar_projetos", "Projetos", "Cadastrar e mudar projetos",
-              "Projeto novo, etapa, oficina, valores e as parcelas do cliente e da oficina.",
+    # Pedidos sob medida (Studio, 05/11/2026) ----------------------------------------
+    Permissao("projetos.ver_projetos", "Pedidos sob medida", "Ver os pedidos",
+              "Os pedidos sob medida e as oficinas parceiras, com venda, custo, margem, saldo "
+              "do cliente e os pagamentos à oficina de cada um.", dinheiro=True),
+    Permissao("projetos.editar_projetos", "Pedidos sob medida", "Cadastrar e mudar pedidos",
+              "Pedido novo, etapa, oficina, valores, como a oficina recebe e o que já foi pago.",
               dinheiro=True),
     # Compras ------------------------------------------------------------------------
     Permissao("compras.ver_compras", "Compras", "Ver a lista de compra",
@@ -119,6 +119,14 @@ CATALOGO = (
               "Fechar a contagem, tirar a lista de ajustes para o SET e organizar as "
               "próximas contagens."),
     # Dinheiro -----------------------------------------------------------------------
+    # Planejamento do Studio (protótipo da Henriett, 06/11/2026) ----------------------
+    Permissao("planejamento.ver_planejamento", "Dinheiro", "Ver o planejamento financeiro",
+              "Caixa dos próximos 30 dias, a pagar por cartão e oficina, a receber, "
+              "fechamento por competência e caixa, e o saldo entre Studio e Cabana com o "
+              "pró-labore.", dinheiro=True),
+    Permissao("planejamento.editar_planejamento", "Dinheiro", "Mudar os ajustes do planejamento",
+              "Saldo em conta, cartões, custos fixos, dívidas, saídas avulsas e os lançamentos "
+              "entre empresas.", dinheiro=True),
     Permissao("financeiro.ver_financeiro", "Dinheiro", "Ver o financeiro",
               "Contas a pagar e a receber, despesas e pagamentos.", dinheiro=True),
     Permissao("financeiro.lancar_pagamento", "Dinheiro", "Lançar pagamento previsto",

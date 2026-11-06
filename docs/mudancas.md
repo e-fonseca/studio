@@ -7,6 +7,37 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 2.1.0 — 06/11/2026 · Planejamento financeiro do protótipo da Henriett
+
+O Edson trouxe o painel financeiro que rodava no Claude do perfil da Henriett (*"importei um
+protótipo que rodava dentro do claude do perfil da henriett"*), com 60 pedidos conferidos
+contra Trello, Kommo, faturas e extratos. As regras dele passaram a ser as do sistema
+([docs/planejamento.md](planejamento.md)).
+
+- **Pedidos** (era Projetos): número do card do Trello, vendedor, arquiteto, data da venda,
+  o que o cliente já pagou e como vem o saldo (Pix, cartão, quitado), frete, embalagem, RT e
+  projeto. A parcela lançada à mão saiu: o pagamento à oficina **é calculado pela regra**.
+- **Oficina diz como recebe**: padrão (metade no cartão, metade em Pix na entrega), parcelas
+  mensais em dia fixo com corte (Rogério 3x dia 30, corte 25; Breno 3x dia 15, corte 10) ou
+  tudo no cartão. O pedido pode trocar a regra.
+- **Cartão pelo fechamento**: a compra cai na fatura cujo fechamento é no dia dela ou depois,
+  a regra que o protótipo conferiu nas faturas de outubro e novembro.
+- **Planejamento**, primeira tela de Dinheiro, com seis abas: caixa em 30 dias (gráfico dia a
+  dia e alertas), a pagar do mês por cartão e oficina, a receber em Pix, fechamento com
+  competência e caixa lado a lado, entre empresas (Studio × Cabana, pró-labore) e ajustes
+  (saldo em conta, cartões, custos fixos, empréstimos, dívidas com juros e avulsos).
+- **Alertas**: margem abaixo de 25%, pedido 10 dias depois do prazo, cliente com saldo depois
+  da entrega, 2ª parcela da oficina a pagar depois da entrega, caixa negativo em 30 dias e
+  card incompleto. Na lista de pedidos viram os filtros "Com alerta" e "Cards incompletos".
+- **Baixar a lista de pedidos** em CSV para o Excel, como o botão do protótipo.
+- **Comando `importar_prototipo`**: traz os pedidos, os ajustes e os movimentos do arquivo
+  exportado do protótipo; roda de novo sem duplicar.
+- **Conferido contra o protótipo**: com os 60 pedidos e a data de 05/11/2026, o caixa em 30
+  dias (−R$ 121.269,23), o Rogério de 30/11 (R$ 42.211,78), o Breno de 15/11
+  (R$ 14.938,33), o a receber e os alertas bateram ao centavo.
+- **Fluxo de caixa** passa a ser só do SET: somar os pedidos ali contaria duas vezes o que o
+  SET também tem lançado.
+
 ## 2.0.0 — 05/11/2026 · Studio Industrial
 
 Primeira versão do sistema auxiliar do **Studio Industrial**, copiada por inteiro do sistema

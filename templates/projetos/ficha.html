@@ -3,53 +3,64 @@
 {% block conteudo %}
 
 <div class="cabecalho-pagina">
-  <h1>{{ projeto.codigo }} · {{ projeto.titulo }}</h1>
-  <p><a href="{% url 'projetos:lista' %}">Voltar aos projetos</a>
+  <h1>{{ titulo }}</h1>
+  <p><a href="{% url 'projetos:lista' %}">Voltar aos pedidos</a>
      {% if pode_editar %} · <a href="{% url 'projetos:editar' projeto.pk %}">Mudar os dados</a>{% endif %}</p>
 </div>
 
 <div class="resumo-painel">
   <div>
     <span class="numero">{{ projeto.get_etapa_display }}</span>
-    <span class="rotulo">{% if atraso %}<strong>{{ atraso }} dia{{ atraso|pluralize }} de atraso</strong> · {% endif %}prazo {{ projeto.prazo_entrega|date:"d/m/Y"|default:"não combinado" }}</span>
+    <span class="rotulo">{% if atraso %}<strong>{{ atraso }} dia{{ atraso|pluralize }} de atraso</strong> · {% endif %}entrega prevista {{ projeto.prazo_entrega|date:"d/m/Y"|default:"sem data" }}{% if projeto.entregue_em %} · entregue em {{ projeto.entregue_em|date:"d/m/Y" }}{% endif %}</span>
   </div>
   <div>
     <span class="numero">{{ projeto.valor_venda|reais }}</span>
-    <span class="rotulo">Venda · margem {{ projeto.margem|reais }}{% if projeto.margem_percentual is not None %} ({{ projeto.margem_percentual }}%){% endif %}</span>
+    <span class="rotulo">Venda{% if projeto.m %} · margem {{ projeto.m.lucro|reais }} ({{ projeto.m.percentual|floatformat:"1" }}%{% if projeto.m.estimada %}, estimada{% endif %}){% endif %}</span>
   </div>
   <div>
-    <span class="numero">{{ projeto.recebido|reais }}</span>
-    <span class="rotulo">Recebido do cliente · falta {{ projeto.a_receber|reais }}{% if projeto.sem_parcela %} · <strong>{{ projeto.sem_parcela|reais }} sem parcela lançada</strong>{% endif %}</span>
+    <span class="numero">{% if projeto.saldo %}{{ projeto.saldo.saldo|reais }}{% else %}—{% endif %}</span>
+    <span class="rotulo">Saldo do cliente em Pix · recebido {{ projeto.recebido|reais }} · {{ projeto.get_saldo_forma_display }}</span>
   </div>
   <div>
-    <span class="numero">{{ projeto.pago|reais }}</span>
-    <span class="rotulo">Pago à oficina e custos · falta {{ projeto.a_pagar|reais }}</span>
+    <span class="numero">{{ total_oficina|reais }}</span>
+    <span class="rotulo">À oficina pela regra: {{ projeto.get_regime_display|lower }}{% if not projeto.regime %} ({{ projeto.oficina.get_pagamento_display|default:"padrão"|lower }}){% endif %}{% if not projeto.incluir %} · <strong>fora das contas a pagar</strong>{% endif %}</span>
   </div>
 </div>
 
+{% if avisos %}
+<section class="cartao cartao-atencao">
+  <h2>Pede atenção</h2>
+  <ul>{% for a in avisos %}<li><strong>{{ a.tipo }}:</strong> {{ a.texto }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
 <div class="grade-visao grade-topo">
   <section class="cartao">
-    <h2>O projeto</h2>
+    <h2>O pedido</h2>
     <dl class="ficha">
       <div><dt>Cliente</dt><dd>{{ projeto.cliente_nome }}</dd></div>
       {% if projeto.cliente_telefone %}<div><dt>Telefone</dt><dd>{{ projeto.cliente_telefone }}</dd></div>{% endif %}
       {% if projeto.cliente_email %}<div><dt>E-mail</dt><dd>{{ projeto.cliente_email }}</dd></div>{% endif %}
+      {% if projeto.arquiteto %}<div><dt>Arquiteto</dt><dd>{{ projeto.arquiteto }}</dd></div>{% endif %}
+      {% if projeto.vendedor %}<div><dt>Vendedor</dt><dd>{{ projeto.vendedor }}</dd></div>{% endif %}
+      <div><dt>Data da venda</dt><dd>{{ projeto.data_venda|date:"d/m/Y"|default:"—" }}</dd></div>
       <div><dt>Oficina</dt><dd>{% if projeto.oficina %}<a href="{% url 'projetos:oficina' projeto.oficina.pk %}">{{ projeto.oficina }}</a>{% else %}Ainda não definida{% endif %}</dd></div>
       <div><dt>Responsável</dt><dd>{{ projeto.responsavel|nome_pessoa }}</dd></div>
       <div><dt>Custo da oficina</dt><dd>{{ projeto.custo_oficina|reais }}</dd></div>
-      <div><dt>Outros custos</dt><dd>{{ projeto.outros_custos|reais }}</dd></div>
-      <div><dt>Aprovado em</dt><dd>{{ projeto.aprovado_em|date:"d/m/Y"|default:"—" }}</dd></div>
-      <div><dt>Entregue em</dt><dd>{{ projeto.entregue_em|date:"d/m/Y"|default:"—" }}</dd></div>
+      <div><dt>Custo total (oficina, frete, embalagem, RT, projeto e outros)</dt><dd>{{ projeto.custo_total|reais }}</dd></div>
+      {% if projeto.m %}<div><dt>Taxa do cartão (estimada)</dt><dd>{{ projeto.m.taxa|reais }}</dd></div>{% endif %}
       {% for lead in leads %}<div><dt>Veio do lead</dt><dd><a href="{% url 'leads:ficha' lead.pk %}">{{ lead.nome }}</a></dd></div>{% endfor %}
     </dl>
     {% if projeto.descricao %}<p class="destaque">{{ projeto.descricao|linebreaksbr }}</p>{% endif %}
+    {% if projeto.observacao %}<p class="destaque">{{ projeto.observacao|linebreaksbr }}</p>{% endif %}
+    {% if projeto.falta %}<p class="ajuda"><strong>Falta no card:</strong> {{ projeto.falta|join:", " }}.</p>{% endif %}
   </section>
 
   {% if pode_editar %}
   <section class="cartao">
     <h2>Mudar a etapa</h2>
-    <p class="ajuda">Aprovado ganha a data de hoje como aprovação; entregue ganha a data da
-       entrega. Tudo fica na auditoria com quem mudou.</p>
+    <p class="ajuda">Entregue ganha a data de hoje como entrega, se não tiver outra. Tudo
+       fica na auditoria com quem mudou.</p>
     <form method="post" action="{% url 'projetos:mudar_etapa' projeto.pk %}" class="formulario">{% csrf_token %}
       <div class="campo">
         <label for="etapa">Etapa</label>
@@ -63,64 +74,51 @@
   {% endif %}
 </div>
 
-<section class="cartao" id="parcelas">
-  <h2>Entradas e saídas do projeto</h2>
-  <p class="ajuda">O que o cliente paga e o que vai para a oficina, com a data. É daqui que
-     sai o Fluxo de caixa dos projetos.</p>
-  {% if parcelas %}
+<section class="cartao" id="oficina">
+  <h2>Pagamentos à oficina</h2>
+  <p class="ajuda">Calculados pela regra: cartão cai na fatura pelo fechamento de cada cartão;
+     oficina de parcelas mensais paga no dia dela, pelo corte; a 2ª parcela do padrão sai em Pix na entrega.</p>
+  {% if agenda.saidas or agenda.sem_data %}
   <div class="tabela-rolavel">
-    <table class="tabela-parcelas">
-      <thead>
-        <tr>
-          <th scope="col">Vence</th>
-          <th scope="col">Tipo</th>
-          <th scope="col">Descrição</th>
-          <th scope="col" class="numerico">Valor</th>
-          <th scope="col">Situação</th>
-          {% if pode_editar %}<th scope="col"><span class="oculto-visualmente">Ação</span></th>{% endif %}
-        </tr>
-      </thead>
+    <table>
+      <thead><tr><th scope="col">Data</th><th scope="col">Como</th><th scope="col">Parcela</th><th scope="col" class="numerico">Valor</th><th scope="col">Situação</th></tr></thead>
       <tbody>
-        {% for p in parcelas %}
-        <tr{% if p.atraso %} class="linha-erro"{% endif %}>
-          <td>{{ p.vencimento|date:"d/m/Y" }}</td>
-          <td>{{ p.get_tipo_display }}</td>
-          <td>{{ p.descricao|default:"—" }}{% if p.forma %} · {{ p.forma }}{% endif %}{% if p.lancada_no_set %}<br><small>Também lançada no SET</small>{% endif %}</td>
-          <td class="numerico">{% if p.entrada %}+{% else %}−{% endif %} {{ p.valor|reais }}</td>
-          <td>{% if p.pago_em %}{% if p.entrada %}Recebida{% else %}Paga{% endif %} em {{ p.pago_em|date:"d/m/Y" }}
-              {% elif p.atraso %}<span class="etiqueta etiqueta-erro">{{ p.atraso }} dia{{ p.atraso|pluralize }} em atraso</span>
-              {% else %}Em aberto{% endif %}</td>
-          {% if pode_editar %}
-          <td>
-            <form method="post" action="{% url 'projetos:baixar_parcela' p.pk %}">{% csrf_token %}
-              {% if p.pago_em %}<input type="hidden" name="desfazer" value="1">
-                <button type="submit" class="botao secundario">Voltar para em aberto</button>
-              {% else %}
-                <button type="submit" class="botao secundario">{% if p.entrada %}Recebi hoje{% else %}Paguei hoje{% endif %}</button>
-              {% endif %}
-            </form>
-          </td>
-          {% endif %}
+        {% for s in agenda.saidas %}
+        <tr>
+          <td>{{ s.data|date:"d/m/Y" }}</td>
+          <td>{{ s.grupo }}</td>
+          <td>{{ s.descricao }}{% if s.parcela %} {{ s.parcela }}{% endif %}</td>
+          <td class="numerico">{{ s.valor|reais }}</td>
+          <td>{% if s.data < hoje %}Já passou{% elif s.previsto %}<span class="etiqueta etiqueta-atencao">previsto</span>{% else %}Agendado{% endif %}</td>
         </tr>
+        {% endfor %}
+        {% for s in agenda.sem_data %}
+        <tr><td>—</td><td>{{ s.grupo }}</td><td>{{ s.descricao }}</td><td class="numerico">{{ s.valor|reais }}</td><td><span class="etiqueta etiqueta-atencao">sem data</span></td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% else %}
-  <p class="vazio">Nenhuma parcela lançada ainda.</p>
+  <p class="vazio">{% if not projeto.incluir %}Este pedido está fora das contas a pagar.{% elif not projeto.vendido %}Orçamento e cancelado não geram pagamento.{% else %}Sem custo de oficina lançado.{% endif %}</p>
   {% endif %}
 
-  {% if pode_editar %}
-  <details class="lancar-parcela"{% if abrir_parcela or not parcelas %} open{% endif %}>
-    <summary>Lançar entrada ou saída</summary>
-    <form method="post" action="{% url 'projetos:nova_parcela' projeto.pk %}#parcelas" class="formulario" novalidate>{% csrf_token %}
-      {% if form_parcela.non_field_errors %}<div class="mensagem error" role="alert">{% for e in form_parcela.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
-      <div class="campos-em-grade">
-        {% include "_campos.html" with campos=form_parcela.visible_fields %}
-      </div>
-      <div class="acoes"><button type="submit" class="botao">Lançar</button></div>
+  {% if pode_editar and projeto.vendido and projeto.custo_oficina and projeto.incluir %}
+  <div class="acoes">
+    {% if projeto.regime_efetivo != "mensal" %}
+    <form method="post" action="{% url 'projetos:pagar' projeto.pk %}">{% csrf_token %}
+      <input type="hidden" name="parcela" value="pg1">
+      {% if projeto.pg1_data %}<input type="hidden" name="desfazer" value="1"><button type="submit" class="botao secundario">1ª parcela não foi paga</button>
+      {% else %}<button type="submit" class="botao secundario">Paguei a 1ª parcela hoje</button>{% endif %}
     </form>
-  </details>
+    {% endif %}
+    {% if projeto.regime_efetivo == "padrao" %}
+    <form method="post" action="{% url 'projetos:pagar' projeto.pk %}">{% csrf_token %}
+      <input type="hidden" name="parcela" value="pg2">
+      {% if projeto.pg2_data %}<input type="hidden" name="desfazer" value="1"><button type="submit" class="botao secundario">2ª parcela não foi paga</button>
+      {% else %}<button type="submit" class="botao secundario">Paguei a 2ª parcela (Pix) hoje</button>{% endif %}
+    </form>
+    {% endif %}
+  </div>
   {% endif %}
 </section>
 

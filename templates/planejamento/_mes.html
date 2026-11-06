@@ -1,0 +1,7 @@
+<form method="get" class="escolher-mes">
+  <label for="mes">Mês</label>
+  <select id="mes" name="mes">
+    {% for m in meses %}<option value="{{ m.valor }}"{% if m.escolhido %} selected{% endif %}>{{ m.rotulo }}</option>{% endfor %}
+  </select>
+  <button type="submit" class="botao secundario">Ver</button>
+</form>

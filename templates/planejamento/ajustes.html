@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Ajustes do planejamento</h1>
+  <p>Fixos + juros por mês: <strong>{{ fixos_mes|reais }}</strong></p>
+</div>
+{% include "planejamento/_abas.html" %}
+
+<section class="cartao" id="parametros">
+  <h2>Regras e alertas</h2>
+  <form method="post" class="formulario" novalidate>{% csrf_token %}
+    <input type="hidden" name="bloco" value="parametros">
+    {% if form.non_field_errors %}<div class="mensagem error" role="alert">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+    <div class="campos-em-grade">
+      {% include "_campos.html" with campos=form.visible_fields %}
+    </div>
+    {% if pode_editar %}<div class="acoes"><button type="submit" class="botao">Salvar as regras</button></div>{% endif %}
+  </form>
+</section>
+
+{% for chave, titulo, conjunto in conjuntos %}
+<section class="cartao" id="{{ chave }}">
+  <h2>{{ titulo }}</h2>
+  {% if chave == "cartoes" %}<p class="ajuda">Compra feita até o fechamento (vencimento menos os dias) cai nesta fatura; depois dele, na seguinte.</p>
+  {% elif chave == "fixos" %}<p class="ajuda">Folha, aluguel, Simples, tráfego, gerais e as parcelas de empréstimo, no dia de cada um. O que não vale mais, desmarque "ativo".</p>
+  {% elif chave == "dividas" %}<p class="ajuda">Limite e conta garantida. O juro do mês é saldo × taxa e sai no dia de cada uma. Taxa em %: 7 quer dizer 7% ao mês.</p>
+  {% elif chave == "avulsos" %}<p class="ajuda">Saída que acontece uma vez. Marque "já foi pago" quando pagar: ela sai das contas.</p>{% endif %}
+  <form method="post" action="{% url 'planejamento:ajustes' %}#{{ chave }}" class="formulario" novalidate>{% csrf_token %}
+    <input type="hidden" name="bloco" value="{{ chave }}">
+    {{ conjunto.management_form }}
+    {% if conjunto.non_form_errors %}<div class="mensagem error" role="alert">{% for e in conjunto.non_form_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+    <div class="tabela-rolavel">
+      <table class="tabela-ajustes">
+        <thead><tr>{% for campo in conjunto.empty_form.visible_fields %}<th scope="col">{{ campo.label|capfirst }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for f in conjunto %}
+          <tr>
+            {% for campo in f.hidden_fields %}{{ campo }}{% endfor %}
+            {% for campo in f.visible_fields %}
+            <td{% if campo.errors %} class="com-erro"{% endif %}>
+              {% if campo.widget_type == "checkbox" %}<label>{{ campo }}<span class="oculto-visualmente"> {{ campo.label }}</span></label>
+              {% else %}<label class="oculto-visualmente" for="{{ campo.id_for_label }}">{{ campo.label }}{% if forloop.parentloop.last %} (linha nova){% endif %}</label>{{ campo }}{% endif %}
+              {% for e in campo.errors %}<p class="erro-campo" role="alert">{{ e }}</p>{% endfor %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="ajuda">A última linha, vazia, é para incluir um item novo.</p>
+    {% if pode_editar %}<div class="acoes"><button type="submit" class="botao">Salvar: {{ titulo|lower }}</button></div>{% endif %}
+  </form>
+</section>
+{% endfor %}
+
+{% endblock %}

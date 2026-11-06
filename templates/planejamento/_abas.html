@@ -1,0 +1,7 @@
+<nav class="filtros-ficha abas-planejamento" aria-label="Partes do planejamento">
+  {% for rota, rotulo in abas %}
+  <a href="{% url rota %}" class="filtro{% if rota == aba %} filtro-ativo{% endif %}"{% if rota == aba %} aria-current="page"{% endif %}>
+    <span class="filtro-rotulo">{{ rotulo }}</span>
+  </a>
+  {% endfor %}
+</nav>

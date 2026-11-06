@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load cabana %}
+{% block conteudo %}
+
+<div class="cabecalho-pagina">
+  <h1>Planejamento</h1>
+  <p>Hoje, {% now "d/m/Y" %} · {{ pedidos }} pedido{{ pedidos|pluralize }} vendido{{ pedidos|pluralize }} nas contas · <a href="{% url 'projetos:lista' %}">Pedidos</a></p>
+</div>
+{% include "planejamento/_abas.html" %}
+
+{% if saldo_velho %}
+<section class="cartao cartao-atencao">
+  <h2>Confira o saldo em conta</h2>
+  <p>O caixa projetado começa em {{ parametros.saldo_inicial|reais_com_sinal }}{% if parametros.saldo_em %}, saldo olhado em {{ parametros.saldo_em|date:"d/m/Y" }}{% else %}, e ninguém disse quando esse saldo foi olhado{% endif %}.
+     {% if pode_editar %}<a href="{% url 'planejamento:ajustes' %}">Atualizar nos Ajustes</a>.{% endif %}</p>
+</section>
+{% endif %}
+
+<div class="cartoes-numero">
+  <div class="cartao-numero {% if proj.final < 0 %}nivel-ruim{% else %}nivel-bom{% endif %}">
+    <span class="cartao-titulo">Caixa em 30 dias</span>
+    <span class="cartao-valor">{{ proj.final|reais_com_sinal }}</span>
+    <span class="cartao-rodape">começa em {{ parametros.saldo_inicial|reais_com_sinal }} · pior ponto {{ proj.minimo|reais_com_sinal }} em {{ proj.dia_minimo|date:"d/m" }}</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Entradas previstas em 30 dias</span>
+    <span class="cartao-valor">{{ proj.entradas|reais }}</span>
+    <span class="cartao-rodape">saldos em Pix de clientes, na entrega</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Saídas previstas em 30 dias</span>
+    <span class="cartao-valor">{{ proj.saidas|reais }}</span>
+    <span class="cartao-rodape">oficinas, cartões, fixos, juros e avulsos</span>
+  </div>
+  <div class="cartao-numero">
+    <span class="cartao-titulo">Venda mínima no mês</span>
+    <span class="cartao-valor">{{ ponto|reais|default:"—" }}</span>
+    <span class="cartao-rodape">fixos + juros {{ fixos_mes|reais }}{% if margem_media is not None %} · margem média {{ margem_media|percentual }}{% endif %}</span>
+  </div>
+</div>
+
+<section class="cartao">
+  <h2>Saldo projetado, dia a dia</h2>
+  <figure class="grafico-caixa">
+    <svg viewBox="0 0 {{ grafico.largura }} {{ grafico.altura }}" role="img" aria-labelledby="grafico-caixa-desc">
+      <desc id="grafico-caixa-desc">Saldo projetado de hoje até daqui a 30 dias. Começa em {{ parametros.saldo_inicial|reais_com_sinal }}, termina em {{ proj.final|reais_com_sinal }}; o pior ponto é {{ proj.minimo|reais_com_sinal }} em {{ proj.dia_minimo|date:"d/m/Y" }}.</desc>
+      {% for l in grafico.linhas %}<line x1="{{ grafico.esq }}" x2="{{ grafico.dir }}" y1="{{ l.y }}" y2="{{ l.y }}" class="grade"/><text x="{{ grafico.rotulo_x }}" y="{{ l.y }}" dy="3" text-anchor="end">{{ l.rotulo }}</text>{% endfor %}
+      {% for d in grafico.datas %}<text x="{{ d.x }}" y="{{ grafico.rotulo_y }}" text-anchor="middle">{{ d.rotulo }}</text>{% endfor %}
+      <line x1="{{ grafico.esq }}" x2="{{ grafico.dir }}" y1="{{ grafico.zero }}" y2="{{ grafico.zero }}" class="zero"/>
+      <path d="{{ grafico.area }}" class="area"/>
+      <path d="{{ grafico.caminho }}" class="linha"/>
+      <circle cx="{{ grafico.fim_x }}" cy="{{ grafico.fim_y }}" r="4" class="{% if grafico.negativo %}ponto-ruim{% else %}ponto-bom{% endif %}"/>
+    </svg>
+    <figcaption class="ajuda">O saldo em conta vem dos Ajustes; as datas de entrega, dos pedidos. Linha tracejada é o zero.</figcaption>
+  </figure>
+</section>
+
+<div class="grade-visao">
+  <section class="cartao">
+    <h2>Alertas</h2>
+    {% if avisos %}
+    <ul class="lista-alertas">
+      {% for a in avisos %}
+      <li class="alerta-{{ a.gravidade }}"><strong>{{ a.tipo }}</strong>{% if a.projeto %} · <a href="{% url 'projetos:ficha' a.projeto.pk %}">{{ a.projeto.codigo }}</a> {{ a.projeto.cliente_nome }}{% endif %}<br><small>{{ a.texto }}</small></li>
+      {% endfor %}
+    </ul>
+    {% if mais > 0 %}<p><a href="{% url 'projetos:lista' %}?filtro=alerta">Mais {{ mais }} na lista de pedidos com alerta</a></p>{% endif %}
+    {% else %}
+    <p class="vazio">Nenhum alerta grave.</p>
+    {% endif %}
+    {% if incompletos %}<p class="ajuda"><a href="{% url 'projetos:lista' %}?filtro=incompletos">{{ incompletos }} card{{ incompletos|pluralize }} incompleto{{ incompletos|pluralize }}</a>.</p>{% endif %}
+  </section>
+
+  <section class="cartao">
+    <h2>Mês atual · {{ fech.rotulo }}</h2>
+    <table>
+      <tbody>
+        <tr><td>Vendas (pela data da venda)</td><td class="numerico">{{ fech.competencia.vendas|reais }}</td></tr>
+        <tr><td>Margem bruta dessas vendas</td><td class="numerico">{{ fech.competencia.margem|reais_com_sinal }}</td></tr>
+        <tr><td>A pagar às oficinas no mês</td><td class="numerico">− {{ fech.caixa.oficinas|reais }}</td></tr>
+        <tr><td>Fixos + juros</td><td class="numerico">− {{ fech.caixa.fixos|reais }}</td></tr>
+        <tr><td>Pix de clientes previstos no mês</td><td class="numerico">{{ fech.caixa.entradas|reais }}</td></tr>
+        <tr><th scope="row">Resultado de caixa previsto</th><td class="numerico"><strong>{{ fech.caixa.resultado|reais_com_sinal }}</strong></td></tr>
+      </tbody>
+    </table>
+    <p><a href="{% url 'planejamento:fechamento' %}">Abrir o fechamento completo</a></p>
+  </section>
+</div>
+
+{% endblock %}
+
+{% block ajuda %}
+<script type="application/json" id="passos-ajuda">
+[
+  {"titulo": "Planejamento", "texto": "O caixa dos próximos 30 dias pelas regras do Studio: oficinas pela regra de cada uma, cartões pelo fechamento, saldos em Pix dos clientes, fixos e juros."},
+  {"seletor": ".grafico-caixa", "titulo": "Saldo dia a dia", "texto": "Começa no saldo em conta dos Ajustes. Se a linha passa do zero para baixo, aparece um alerta de caixa negativo."},
+  {"seletor": ".lista-alertas", "titulo": "Alertas", "texto": "Margem abaixo do mínimo, pedido atrasado, cliente com saldo depois da entrega e 2ª parcela da oficina a pagar."}
+]
+</script>
+{% endblock %}
