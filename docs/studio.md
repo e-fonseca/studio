@@ -31,6 +31,10 @@ Os dois nunca dividem banco, pasta, porta nem tarefa: parar um não mexe no outr
 1. **Instalador**: os scripts `instalar.ps1`, `atualizar.ps1` e `higienizar.ps1` da Cabana não
    estão no repositório `e-fonseca/sistema`. Para instalar o Studio é preciso a versão deles
    com os nomes do Studio.
+   **A pasta do pacote não pode ser a da Cabana.** O código ainda mostra
+   `C:\instalacao\pacote` (Ficha técnica, diagnóstico da importação), herdado da cópia: é a
+   pasta de onde o `atualizar.ps1` da Cabana pega o zip. O pacote do Studio precisa de pasta
+   própria (proposta: `C:\instalacao-studio\pacote`), trocada junto com os scripts.
 2. **Usuários**: a migração `contas` da Cabana cria as contas da gerência da Cabana. Quem são
    as pessoas do Studio e em que perfil cada uma entra?
 3. **E-mail dos alertas**: os padrões vieram da Cabana; qual caixa o Studio usa?
