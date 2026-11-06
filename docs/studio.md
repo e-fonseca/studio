@@ -18,8 +18,30 @@ Cabana e o que ainda falta decidir.
 | Backup do SET | `C:\backup-Set\Cabana\Set-Cabana` | `C:\backup-Set\Studio\Set-Studio` |
 | Tarefas do Windows | `\Cabana\CabanaSistema`, `CabanaImportacao` | `\Studio\StudioSistema`, `StudioImportacao` |
 | Certificado | autoridade "Cabana do Jacaranda" | autoridade "Studio Industrial" |
+| Pacote de atualização | `C:\instalacao\pacote` | `C:\intranet\pacotes\studio` (2.2.0) |
+| Cookies | `cabana_sessao`, `cabana_csrf` em `/sistema` | `studio_sessao`, `studio_csrf` em `/studio` (2.2.0) |
 
 Os dois nunca dividem banco, pasta, porta nem tarefa: parar um não mexe no outro.
+
+## Dentro da intranet (2.2.0)
+
+A intranet (`https://192.168.3.254/intranet/`, v1.78.0) mostra o Studio num quadro ao lado do
+menu dela, em Gestão › Sistema aux SET, a pedido do Edson (06/11/2026): *"queria que o
+sistema aux studio abrisse ao lado do menu dentro da pagina da intranet e não abrisse um
+outro link"*.
+
+- Quem deixa o quadro abrir é o Studio: `apps/core/moldura.py` responde com
+  `Content-Security-Policy: frame-ancestors 'self'` mais os endereços de
+  `STUDIO_INTRANET_ORIGENS` (padrão `https://192.168.3.254`), e tira o `X-Frame-Options: DENY`.
+  Variável vazia volta ao `DENY`. Outro site continua sem poder emoldurar o sistema.
+- O login continua o do Studio. A intranet está noutra origem (porta 443 contra 8444): ela não
+  lê o quadro, e o quadro não lê a intranet. Os cookies funcionam lá dentro porque os dois são o
+  mesmo site (mesmo servidor, mesmo `https`).
+- O aparelho precisa confiar no certificado do Studio (tela Certificado): dentro de um quadro o
+  navegador não mostra o aviso de "não seguro", só recusa. A intranet percebe e mostra um aviso
+  com o botão de abrir em outra aba.
+- Se a intranet for aberta também por um nome de máquina, o nome entra em
+  `STUDIO_INTRANET_ORIGENS` (`https://nome`), separado por vírgula.
 
 ## Variáveis próprias do Studio
 
@@ -31,10 +53,13 @@ Os dois nunca dividem banco, pasta, porta nem tarefa: parar um não mexe no outr
 1. **Instalador**: os scripts `instalar.ps1`, `atualizar.ps1` e `higienizar.ps1` da Cabana não
    estão no repositório `e-fonseca/sistema`. Para instalar o Studio é preciso a versão deles
    com os nomes do Studio.
-   **A pasta do pacote não pode ser a da Cabana.** O código ainda mostra
-   `C:\instalacao\pacote` (Ficha técnica, diagnóstico da importação), herdado da cópia: é a
-   pasta de onde o `atualizar.ps1` da Cabana pega o zip. O pacote do Studio precisa de pasta
-   própria (proposta: `C:\instalacao-studio\pacote`), trocada junto com os scripts.
+   **A pasta do pacote é `C:\intranet\pacotes\studio`** (decidido em 06/11/2026, a pedido
+   do Edson; ADR 0020 da intranet). O zip, os comandos e as subpastas `logs`, `downloads` e
+   `historico` ficam ali; o programa continua em `C:\studio-sistema`. O código já mostra esse
+   caminho (Ficha técnica, diagnóstico da importação, `apps/core/pastas.py`), e os scripts,
+   quando vierem da Cabana, têm de trocar `C:\instalacao` por ele: os testes de
+   `apps/core/tests/test_atualizador.py` passam a cobrar isso assim que eles entrarem em
+   `implantacao/`.
 2. **Usuários**: a migração `contas` da Cabana cria as contas da gerência da Cabana. Quem são
    as pessoas do Studio e em que perfil cada uma entra?
 3. **E-mail dos alertas**: os padrões vieram da Cabana; qual caixa o Studio usa?

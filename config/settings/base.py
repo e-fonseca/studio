@@ -69,6 +69,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Depois do XFrameOptions de propósito: na volta da resposta ele roda antes, e
+    # é ele quem diz se a intranet pode mostrar o sistema num quadro (2.2.0).
+    "apps.core.moldura.MolduraMiddleware",
     "apps.auditoria.middleware.CorrelacaoMiddleware",
     # A data marcada para o acesso acabar (1.42.0): antes de qualquer coisa ler
     # request.user, para a conta vencida já chegar desligada à conferência.
@@ -174,8 +177,11 @@ LOGOUT_REDIRECT_URL = "contas:entrar"
 
 SESSION_COOKIE_PATH = PREFIXO
 CSRF_COOKIE_PATH = PREFIXO
-SESSION_COOKIE_NAME = "cabana_sessao"
-CSRF_COOKIE_NAME = "cabana_csrf"
+# Nomes próprios do Studio (2.2.0). Vieram da Cabana como cabana_sessao e cabana_csrf; o
+# caminho (/studio contra /sistema) já separava os dois no navegador, mas cookie com o
+# nome do outro sistema confunde quem for olhar, e cookie não separa por porta.
+SESSION_COOKIE_NAME = "studio_sessao"
+CSRF_COOKIE_NAME = "studio_csrf"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
@@ -195,6 +201,12 @@ SESSAO_PARADA_SEGUNDOS = int(env("STUDIO_SESSAO_PARADA_MINUTOS", 30)) * 60
 PORTA_HTTPS = env("STUDIO_PORTA_HTTPS", "8444")
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 X_FRAME_OPTIONS = "DENY"
+# Quem pode mostrar o sistema dentro de uma página (2.2.0): a intranet da loja, que o abre
+# ao lado do menu dela em Gestão › Sistema aux SET. Endereço completo, com https e sem
+# barra no fim; mais de um, separados por vírgula (por exemplo, se a intranet também for
+# aberta por um nome de máquina). Vazio volta a proibir qualquer quadro. Ver
+# apps/core/moldura.py.
+INTRANET_ORIGENS = env_lista("STUDIO_INTRANET_ORIGENS", "https://192.168.3.254")
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 

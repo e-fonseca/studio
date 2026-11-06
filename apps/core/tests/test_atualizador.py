@@ -11,8 +11,12 @@ Agora a escolha é pela versão no nome, e um pacote mais antigo que o instalado
 parar antes de encostar em qualquer coisa. Estes testes leem o script, porque um erro aqui
 não aparece em nenhuma tela: aparece na loja, horas depois.
 
-Desde a 1.47.1 o zip chega em C:\\instalacao\\pacote, a mesma pasta de onde os dois comandos
-rodam (pedido do Edson em 04/11/2026), e o higienizar.ps1 roda de lá também.
+Desde a 1.47.1 o zip chega na mesma pasta de onde os dois comandos rodam (pedido do Edson
+em 04/11/2026), e o higienizar.ps1 roda de lá também. No Studio essa pasta é
+C:\\intranet\\pacotes\\studio desde a 2.2.0 (pedido dele em 06/11/2026; ver
+apps/core/pastas.py): C:\\instalacao\\pacote, que veio na cópia, é a da Cabana. Quando os
+scripts de instalação do Studio entrarem em implantacao/, estes testes passam a valer e
+cobram a pasta certa.
 """
 
 from pathlib import Path
@@ -75,7 +79,7 @@ class TestOAtualizadorNaoVoltaNoTempo(SimpleTestCase):
 
 
 class TestOZipChegaNaPastaDoPacote(SimpleTestCase):
-    """Uma pasta só desde a 1.47.1: o zip chega em C:\\instalacao\\pacote.
+    """Uma pasta só desde a 1.47.1: o zip chega em C:\\intranet\\pacotes\\studio (2.2.0).
 
     Em 04/11/2026 o Edson salvou o zip da 1.47.0 dentro de C:\\instalacao\\pacote, ao lado
     do atualizar.ps1 e do higienizar.ps1, e pediu que fosse sempre assim. O atualizador de
@@ -123,8 +127,8 @@ class TestOZipChegaNaPastaDoPacote(SimpleTestCase):
 
     def test_o_cabecalho_mostra_os_dois_comandos_da_pasta_do_pacote(self):
         cabecalho = self.texto[: self.texto.index("#>")]
-        self.assertIn(r"C:\instalacao\pacote\atualizar.ps1", cabecalho)
-        self.assertIn(r"C:\instalacao\pacote\higienizar.ps1", cabecalho)
+        self.assertIn(r"C:\intranet\pacotes\studio\atualizar.ps1", cabecalho)
+        self.assertIn(r"C:\intranet\pacotes\studio\higienizar.ps1", cabecalho)
 
     def test_o_leia_me_ensina_a_sair_de_uma_versao_antiga(self):
         """O atualizador já instalado é o que procura o próximo zip, e o antigo não olha em pacote."""
@@ -132,7 +136,7 @@ class TestOZipChegaNaPastaDoPacote(SimpleTestCase):
             self.skipTest("LEIA-ME.txt só existe no repositório")
         texto = LEIA_ME.read_text(encoding="utf-8-sig")
         self.assertIn("Vindo de uma versão anterior à 1.47.1", texto)
-        self.assertIn(r"C:\instalacao\pacote\atualizar.ps1", texto)
+        self.assertIn(r"C:\intranet\pacotes\studio\atualizar.ps1", texto)
 
 
 class TestAHigienizacaoRodaDasDuasPastas(SimpleTestCase):
@@ -174,7 +178,7 @@ class TestAHigienizacaoRodaDasDuasPastas(SimpleTestCase):
 
     def test_o_cabecalho_mostra_os_comandos_da_pasta_do_pacote(self):
         cabecalho = self.texto[: self.texto.index("#>")]
-        self.assertIn(r"C:\instalacao\pacote\higienizar.ps1 -Conferir", cabecalho)
+        self.assertIn(r"C:\intranet\pacotes\studio\higienizar.ps1 -Conferir", cabecalho)
 
 
 class TestOsAvisosMandamParaAPastaDoPacote(SimpleTestCase):
@@ -189,5 +193,5 @@ class TestOsAvisosMandamParaAPastaDoPacote(SimpleTestCase):
         self.assertTrue(com_comando)
         for passo in com_comando:
             if "C:" in passo:
-                self.assertIn(r"C:\instalacao\pacote\atualizar.ps1", passo)
-            self.assertNotIn(r"C:\instalacao\atualizar.ps1", passo)
+                self.assertIn(r"C:\intranet\pacotes\studio\atualizar.ps1", passo)
+            self.assertNotIn(r"C:\instalacao", passo)

@@ -7,6 +7,25 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 2.2.0 — 06/11/2026 · Dentro da intranet, e a atualização na pasta da intranet
+
+Dois pedidos do Edson de 06/11/2026: *"queria que o sistema aux studio abrisse ao lado do
+menu dentro da pagina da intranet e não abrisse um outro link"* e *"manter atualização do
+sistema studio industrial em um subdiretório dentro da intranet, fazer a melhor escolha e
+boa pratica sempre"*.
+
+- **A intranet pode mostrar o sistema num quadro**, e só ela: `frame-ancestors` com os
+  endereços de `STUDIO_INTRANET_ORIGENS` (padrão `https://192.168.3.254`) no lugar do
+  `X-Frame-Options: DENY` (`apps/core/moldura.py`). A política se soma à dos anexos
+  (`default-src 'none'`), não a troca. Conferido num navegador: a intranet abre o sistema, dá
+  para entrar por dentro do quadro, e uma página de outro endereço é recusada.
+- **A atualização mora em `C:\intranet\pacotes\studio`** (Ficha técnica, avisos de erro da
+  importação, documentação). Antes os textos diziam `C:\instalacao\pacote`, que é a pasta do
+  sistema da Cabana. O caminho está num lugar só: `apps/core/pastas.py`.
+- **Cookies com o nome do Studio**: `studio_sessao` e `studio_csrf` (eram `cabana_*`).
+- **A tela de entrada parou de pedir a foto da fachada da Cabana**, que não veio na cópia e
+  dava "não encontrado" a cada visita.
+
 ## 2.1.0 — 06/11/2026 · Planejamento financeiro do protótipo da Henriett
 
 O Edson trouxe o painel financeiro que rodava no Claude do perfil da Henriett (*"importei um

@@ -12,29 +12,31 @@ No PowerShell, como administrador, no servidor da loja, da pasta do pacote:
 
 ```
 # ver o que tem para limpar, sem limpar nada
-powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\higienizar.ps1 -Conferir
+powershell -ExecutionPolicy Bypass -File C:\intranet\pacotes\studio\higienizar.ps1 -Conferir
 
 # limpar agora
-powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\higienizar.ps1
+powershell -ExecutionPolicy Bypass -File C:\intranet\pacotes\studio\higienizar.ps1
 
 # atualizar o sistema; anda junto com os de cima, a pedido do Edson (19/10/2026)
-powershell -ExecutionPolicy Bypass -File C:\instalacao\pacote\atualizar.ps1
+powershell -ExecutionPolicy Bypass -File C:\intranet\pacotes\studio\atualizar.ps1
 ```
 
-**Uma pasta só desde a 1.47.1** (pedido do Edson em 04/11/2026: *"padronizar envio do
-pacote de atualização sempre no diretório /pacote"*): o zip novo chega em
-`C:\instalacao\pacote`, e os dois comandos rodam de lá. O `atualizar.ps1` acha o zip nessa
-pasta (e ainda em `C:\instalacao`, o lugar de antes), guarda o zip em `historico` antes de
-trocar a versão e esvazia a pasta em vez de apagá-la, porque o Windows não apaga pasta
-aberta num PowerShell. O `higienizar.ps1` acha o sistema sozinho: da cópia instalada em
-`C:\studio-sistema\scripts`, que é a que a tarefa da madrugada roda, ele sobe uma pasta;
-da pasta do pacote, ele vai para `C:\studio-sistema`. Antes da 1.47.1, o mesmo script
-rodado fora de `scripts` procurava o Python na pasta errada e saía calado.
+**A pasta do pacote é `C:\intranet\pacotes\studio` desde a 2.2.0** (pedido do Edson em
+06/11/2026: *"manter atualização do sistema studio industrial em um subdiretório dentro da
+intranet"*): o zip novo chega ali, ao lado dos pacotes da intranet, e os dois comandos rodam
+de lá. Logs, downloads e o histórico de pacotes ficam em subpastas dela. O caminho está num
+lugar só no código, `apps/core/pastas.py`, e o porquê está no ADR 0020 da intranet.
 
-Os comandos de antes continuam valendo (`C:\instalacao\atualizar.ps1` é uma cópia que o
-próprio atualizador mantém em dia, e `C:\studio-sistema\scripts\higienizar.ps1` é a cópia
-instalada). É pelo de antes que um servidor numa versão anterior à 1.47.1 sai dela, porque
-o atualizador antigo ainda não procura o zip em `pacote`.
+A regra de uma pasta só vem da Cabana (1.47.1, pedido de 04/11/2026: *"padronizar envio do
+pacote de atualização sempre no diretório /pacote"*): o atualizador acha o zip na pasta do
+pacote, guarda o zip em `historico` antes de trocar a versão e esvazia a pasta em vez de
+apagá-la, porque o Windows não apaga pasta aberta num PowerShell. O `higienizar.ps1` acha o
+sistema sozinho: da cópia instalada em `C:\studio-sistema\scripts`, que é a que a tarefa da
+madrugada roda, ele sobe uma pasta; da pasta do pacote, ele vai para `C:\studio-sistema`.
+
+**`C:\instalacao` é a pasta do sistema da Cabana.** Até a 2.1.0 os textos daqui diziam
+`C:\instalacao\pacote`, herdado da cópia; um zip do Studio salvo ali seria instalado pelo
+instalador da Cabana, por cima do sistema dela. Nada do Studio vai para lá.
 
 **Os dois comandos nunca aparecem sozinhos.** Quem abre o PowerShell no servidor
 costuma fazer as duas coisas na mesma visita, e procurar o outro comando em outro

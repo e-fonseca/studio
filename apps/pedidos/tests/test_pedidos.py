@@ -282,7 +282,11 @@ class TelasTest(BasePedido):
         self.entrar()
         resposta = self.client.get(reverse("pedidos:baixar", args=[pedido.numero, anexo.pk]))
         self.assertEqual(resposta.status_code, 200)
-        self.assertEqual(resposta["Content-Security-Policy"], "default-src 'none'")
+        # O anexo não roda nada (default-src 'none'); desde a 2.2.0 a política ganha também
+        # quem pode emoldurar, para o anexo abrir dentro do quadro da intranet.
+        politica = resposta["Content-Security-Policy"]
+        self.assertTrue(politica.startswith("default-src 'none'"), politica)
+        self.assertIn("frame-ancestors 'self' https://192.168.3.254", politica)
         self.assertTrue(EventoAuditoria.objects.filter(acao="pedido.anexo_baixado").exists())
 
     def test_anexo_de_outro_pedido_nao_abre_pelo_endereco(self):

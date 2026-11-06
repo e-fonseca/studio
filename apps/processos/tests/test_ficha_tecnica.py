@@ -88,17 +88,25 @@ class FichaTecnica(TestCase):
         self.client.force_login(self.gerente)
         corpo = self.client.get(self.endereco).content.decode()
         bloco = corpo[corpo.index("Os comandos do servidor"):]
-        # Da mesma pasta, onde o zip chega, desde a 1.47.1 (pedido dele em 04/11/2026).
-        self.assertIn(r"C:\instalacao\pacote\atualizar.ps1", bloco)
-        self.assertIn(r"C:\instalacao\pacote\higienizar.ps1", bloco)
+        # Da mesma pasta, onde o zip chega: a subpasta do Studio dentro dos pacotes da
+        # intranet desde a 2.2.0 (pedido dele em 06/11/2026).
+        self.assertIn(r"C:\intranet\pacotes\studio\atualizar.ps1", bloco)
+        self.assertIn(r"C:\intranet\pacotes\studio\higienizar.ps1", bloco)
         self.assertIn("-Conferir", bloco)
-        self.assertNotIn(r"C:\instalacao\atualizar.ps1", bloco)
         self.assertNotIn(r"C:\studio-sistema\scripts\higienizar.ps1", bloco)
 
     def test_quem_atualiza_salva_o_zip_na_pasta_do_pacote(self):
         self.client.force_login(self.gerente)
         corpo = self.client.get(self.endereco).content.decode()
-        self.assertIn(r"salva esse arquivo em <code>C:\instalacao\pacote</code>", corpo)
+        self.assertIn(r"salva esse arquivo em <code>C:\intranet\pacotes\studio</code>", corpo)
+
+    def test_nenhum_comando_manda_o_zip_para_a_pasta_da_cabana(self):
+        """C:\\instalacao é do sistema da Cabana: zip do Studio ali entraria por cima dele."""
+        self.client.force_login(self.gerente)
+        corpo = self.client.get(self.endereco).content.decode()
+        self.assertNotIn(r"C:\instalacao\pacote", corpo)
+        self.assertNotIn(r"-File C:\instalacao", corpo)
+        self.assertIn(r"C:\intranet\pacotes\studio", corpo)
 
     def test_o_leia_me_do_pacote_tambem_traz_os_dois(self):
         """O mesmo pedido, no papel que vai dentro do zip. Pulado fora do repositório."""
@@ -109,8 +117,8 @@ class FichaTecnica(TestCase):
             self.skipTest("LEIA-ME.txt só existe no repositório")
         texto = leia_me.read_text(encoding="utf-8")
         bloco = texto[texto.index("HIGIENIZAÇÃO"):]
-        self.assertIn(r"C:\instalacao\pacote\atualizar.ps1", bloco)
-        self.assertIn(r"C:\instalacao\pacote\higienizar.ps1", bloco)
+        self.assertIn(r"C:\intranet\pacotes\studio\atualizar.ps1", bloco)
+        self.assertIn(r"C:\intranet\pacotes\studio\higienizar.ps1", bloco)
 
     def test_o_motor_firebird_mostra_o_que_o_instalador_gravou(self):
         """Carregar a DLL só para perguntar a versão é caro: quem sabe é quem instalou."""

@@ -9,6 +9,8 @@ que enviar para quem for olhar.
 import re
 from dataclasses import dataclass, field
 
+from apps.core import pastas
+
 
 @dataclass
 class Explicacao:
@@ -47,7 +49,7 @@ CAUSAS = [
             como_resolver=[
                 "Abra a pasta do backup e confira o que o programa de backup está gravando.",
                 "Se o backup do banco for gerado em outra pasta, informe a pasta certa rodando: "
-                "powershell -ExecutionPolicy Bypass -File C:\\instalacao\\pacote\\atualizar.ps1 "
+                f"powershell -ExecutionPolicy Bypass -File {pastas.ATUALIZAR} "
                 "-PastaBackupSet \"CAMINHO\\DA\\PASTA\"",
                 "Depois clique em Importar agora.",
             ],
@@ -73,7 +75,7 @@ CAUSAS = [
             o_que_aconteceu="A configuração STUDIO_SET_BACKUP está vazia, então não há pasta para procurar.",
             como_resolver=[
                 "No servidor, rode como administrador: powershell -ExecutionPolicy Bypass -File "
-                "C:\\instalacao\\pacote\\atualizar.ps1 -PastaBackupSet \"C:\\backup-Set\\Studio\\Set-Studio\"",
+                f"{pastas.ATUALIZAR} -PastaBackupSet \"C:\\backup-Set\\Studio\\Set-Studio\"",
                 "Ou abra C:\\studio-sistema\\config\\studio.env e escreva o caminho na linha "
                 "STUDIO_SET_BACKUP, depois reinicie a tarefa \\Studio\\StudioSistema.",
                 "Em seguida clique em Importar agora.",
@@ -117,8 +119,8 @@ CAUSAS = [
             o_que_aconteceu="A instalação não colocou a biblioteca firebird-driver no servidor.",
             como_resolver=[
                 "Rode a atualização de novo com o pacote completo: powershell -ExecutionPolicy Bypass "
-                "-File C:\\instalacao\\pacote\\atualizar.ps1",
-                "Se repetir, envie o log de C:\\instalacao\\logs.",
+                f"-File {pastas.ATUALIZAR}",
+                f"Se repetir, envie o log de {pastas.LOGS}.",
             ],
         ),
     ),
@@ -132,11 +134,11 @@ CAUSAS = [
                             "está certo e nada disso afeta o SET.",
             como_resolver=[
                 "No servidor, rode como administrador: powershell -ExecutionPolicy Bypass -File "
-                "C:\\instalacao\\pacote\\atualizar.ps1",
+                f"{pastas.ATUALIZAR}",
                 "A atualização troca o motor por um de 64 bits (ela baixa o Firebird 4 x64 se o "
                 "servidor não tiver um) e já faz a importação no fim.",
                 "Se o servidor estiver sem internet, baixe o zip Firebird-4.0.6.3221-0-x64.zip do "
-                "site firebirdsql.org, salve em C:\\instalacao\\downloads e rode a atualização.",
+                f"site firebirdsql.org, salve em {pastas.DOWNLOADS} e rode a atualização.",
             ],
         ),
     ),

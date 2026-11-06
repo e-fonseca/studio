@@ -30,6 +30,7 @@ import django
 from django.conf import settings
 from django.db import connection
 
+from apps.core import pastas
 from apps.core import versao as versao_do_sistema
 from apps.importacao.fontes.firebird import _arquitetura_do_pe
 
@@ -143,6 +144,7 @@ def caminhos():
         ("Onde o backup do SET é procurado", str(getattr(settings, "IMPORTACAO_BACKUP_ORIGEM", "")) or NAO_LIDO),
         ("Motor Firebird", firebird or NAO_LIDO),
         ("Anexos enviados nas telas", str(settings.MEDIA_ROOT)),
+        ("Onde o pacote de atualização chega", pastas.ATUALIZACAO),
     ]
 
 
@@ -225,4 +227,5 @@ def montar():
         "pecas": pecas(),
         "caminhos": caminhos(),
         "decisoes": DECISOES,
+        "pastas": pastas,
     }

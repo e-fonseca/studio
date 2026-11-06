@@ -57,4 +57,4 @@ if __name__ == "__main__":
     porta = int(os.environ.get("STUDIO_PORTA", "8096"))
     _subir_https(porta)
     serve(application, host=host, port=porta,
-          threads=int(os.environ.get("STUDIO_THREADS", "4")), ident="cabana")
+          threads=int(os.environ.get("STUDIO_THREADS", "4")), ident="studio")

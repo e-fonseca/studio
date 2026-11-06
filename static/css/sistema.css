@@ -273,7 +273,9 @@ main { max-width: var(--largura); margin: 0 auto; padding: 1.5rem 1.25rem 3rem; 
    Valem para as quatro telas de quem ainda não entrou: entrar, esqueci a senha, o código
    que chegou no e-mail e o acesso bloqueado (todas em contas/_entrada.html). */
 .entrada {
-  --entrada-foto: url("../img/fachada-marca-dagua.jpg");
+  /* A fachada era a da Cabana e não veio na cópia: sem foto do Studio, a linha do
+     --entrada-foto saiu (2.2.0), e com ela o "não encontrado" a cada tela de entrada.
+     Para pôr a do Studio: o arquivo em static/img e a linha de volta, com o nome dele. */
   position: relative; isolation: isolate;
   min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
   color: var(--cor-escuro-texto);
