@@ -5,12 +5,14 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.db import connection
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
 from apps.auditoria.models import EventoAuditoria
 from apps.auditoria.servicos import registrar
 from apps.core import atualizacoes, certificado as certificado_servicos, https, menu, versao
+from apps.core import cotacoes as cotacoes_da_faixa
 
 logger = logging.getLogger(__name__)
 
@@ -160,3 +162,14 @@ def certificado_autoridade(request):
     return FileResponse(caminho.open("rb"), as_attachment=True,
                         filename="cabana-autoridade.crt",
                         content_type="application/x-x509-ca-cert")
+
+
+@never_cache
+@login_required
+@permission_required("importacao.ver_painel", raise_exception=True)
+def cotacoes(request):
+    """O miolo da faixa do topo (1.50.0), que a tela pede a cada minuto. Lê só o cache: quem
+    vai à internet é a busca em segundo plano de apps/core/cotacoes.py. Este pedido não
+    conta como uso do sistema (apps/contas/sessao.py). Só para quem vê número da loja: a
+    tela do vendedor não mostra R$ nenhum, nem o do dólar (condição do Edson)."""
+    return JsonResponse({"html": render_to_string("core/_cotacoes.html", {"cotacoes": cotacoes_da_faixa.faixa()})})

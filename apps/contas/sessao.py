@@ -20,6 +20,7 @@ CABANA_SESSAO_PARADA_MINUTOS), para mudar sem mexer no código.
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -145,6 +146,14 @@ def _quando(valor):
     return quando
 
 
+def _pedido_de_fundo(request):
+    """O pedido que a própria tela faz sozinha, sem ninguém clicar: a faixa do topo busca o
+    dólar a cada minuto (1.50.0). Ele não conta como uso, senão a tela esquecida aberta no
+    balcão nunca chegaria aos 30 minutos parada; e, quando a sessão acaba, ele recebe 401
+    em vez da página de entrada, para a tela ir sozinha para lá."""
+    return request.path == reverse("core:cotacoes")
+
+
 class LimiteDeSessaoMiddleware:
     """Desconecta quem passou do tempo logado ou ficou tempo demais sem usar."""
 
@@ -155,11 +164,15 @@ class LimiteDeSessaoMiddleware:
         usuario = getattr(request, "user", None)
         if usuario is not None and usuario.is_authenticated:
             motivo = self._motivo_para_encerrar(request)
+            de_fundo = _pedido_de_fundo(request)
             if motivo:
                 logout(request)
                 messages.info(request, motivo)
+                if de_fundo:
+                    return JsonResponse({"sessao": "encerrada"}, status=401)
                 return redirect(reverse("contas:entrar"))
-            self._anotar_uso(request.session)
+            if not de_fundo:
+                self._anotar_uso(request.session)
         return self.get_response(request)
 
     def _motivo_para_encerrar(self, request):

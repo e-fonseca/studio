@@ -277,6 +277,10 @@ class TelaTest(BaseQuadros):
     def test_a_tela_mostra_os_tres_quadros(self):
         usuario("gerente", ADMINISTRACAO)
         self.client.login(username="gerente", password=SENHA_TESTE)
+        # Uma conta paga há mais de um ano, como no SET de verdade: com a conta de três dias
+        # sozinha, o SET "começaria" neste mês, que ficaria em branco (1.48.0) — o teste só
+        # passava quando os três dias caíam no dia 1º.
+        self.paga(timezone.localdate() - timedelta(days=400), "500")
         self.paga(timezone.localdate() - timedelta(days=3), "1000")
         self.aberta(timezone.localdate() - timedelta(days=2), "300")
         self.importacao.data_corte = timezone.localdate() - timedelta(days=1)

@@ -42,3 +42,7 @@ def _nada_de_internet(*_args, **_criterios):
 
 
 _urllib_request.urlopen = _nada_de_internet
+
+# A faixa do topo (1.50.0) não dispara a busca em segundo plano nos testes: quem testa a
+# busca chama apps.core.cotacoes.atualizar com uma internet de mentira.
+COTACOES_NA_INTERNET = False

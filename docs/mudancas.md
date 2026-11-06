@@ -7,6 +7,27 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 1.50.0 — 06/11/2026
+
+Pedido dele (06/11/2026): *"na area logada / na parte de cima do menu colocar a data e hora
+em real time / na parte de cima do menu colocar um linha formato carrossel informando valor
+do dólar comercial no momento em destaque e os principais ações em alta e queda de em real
+time"*. Ficha: `docs/cotacoes.md`.
+
+- **Faixa do topo**, logo acima do menu, em todas as telas depois de entrar: o relógio (dia,
+  data e hora, andando a cada segundo), o **dólar comercial** em destaque (preço de venda,
+  variação do dia e hora do preço) e as ações rolando, em **Em alta**, **Em queda** e **Sem
+  mudança**.
+- **De onde vem**: o dólar da AwesomeAPI e as ações da brapi.dev, de graça e sem cadastro.
+  Sem cadastro a brapi responde quatro ações (Petrobras, Vale, Itaú e Magalu), com uns 30
+  minutos de atraso: o preço ao vivo da B3 é pago. A faixa diz a hora de cada preço.
+- **Nenhuma tela espera a internet**: a tela lê o que o servidor guardou, e o servidor busca
+  em segundo plano (o dólar no máximo uma vez por minuto, as ações a cada 15 minutos, e só
+  enquanto alguém está com o sistema aberto). Sem internet, fica o último valor.
+- **O pedido de cada minuto não conta como uso**: a sessão parada continua acabando em 30
+  minutos, e a tela esquecida aberta agora vai sozinha para a entrada quando ela acaba.
+- **O vendedor fica só com o relógio**: a tela dele não mostra R$ nenhum, nem o do dólar.
+
 ## 1.49.0 — 04/11/2026
 
 Pedido dele (04/11/2026, com o print do Faturamento mês a mês e do menu): *"dashboard = nesse

@@ -1,0 +1,15 @@
+{% comment %}O miolo da faixa do topo (1.50.0): o dólar em destaque e as ações rolando. A tela
+pede este trecho de novo a cada minuto (static/js/cotacoes.js), e o mesmo arquivo serve à
+primeira abertura e às trocas, para os dois nunca saírem diferentes.{% endcomment %}
+{% if cotacoes.dolar %}<p class="cotacao-dolar" title="Dólar comercial, preço de venda (AwesomeAPI)">
+  <span>Dólar comercial</span> <strong class="cotacao-dolar-valor">{{ cotacoes.dolar.valor }}</strong>
+  <span class="cotacao-{{ cotacoes.dolar.sentido }}">{{ cotacoes.dolar.seta }}&nbsp;{{ cotacoes.dolar.variacao }}</span>
+  <span class="cotacao-hora">{{ cotacoes.dolar.hora }}</span>
+</p>{% endif %}
+{% if cotacoes.grupos %}<div class="cotacao-rolo-area" title="Ações da B3 com uns 30 minutos de atraso (brapi.dev, plano grátis)">
+  <div class="cotacao-rolo"><p class="cotacao-trecho">
+    {% for grupo in cotacoes.grupos %}<span class="cotacao-grupo">{{ grupo.titulo }}</span>
+    {% for acao in grupo.acoes %}<span class="cotacao-acao">{{ acao.nome }} <span class="cotacao-codigo">{{ acao.codigo }}</span> {{ acao.preco }} <span class="cotacao-{{ acao.sentido }}">{{ acao.seta }}&nbsp;{{ acao.variacao }}</span></span>
+    {% endfor %}{% endfor %}<span class="cotacao-hora">preços {{ cotacoes.hora_das_acoes }}</span>
+  </p></div>
+</div>{% endif %}
