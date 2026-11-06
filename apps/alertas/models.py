@@ -4,7 +4,9 @@ Pedido do Edson em 08/10/2026: "quero que envie os relatórios de alertas e
 notificações por e-mail", para cabanadojacaranda@gmail.com — contas a pagar todo
 dia, estoque e sugestão de compra toda semana. Em 10/10/2026 ele definiu por onde
 sai: a caixa naoresponder@cabanadojacaranda.com.br, do próprio domínio da loja, na
-Hostinger.
+Hostinger. Isso era a Cabana. No Studio (2.4.1, pedido de 06/11/2026: "os alertas do
+studio industrial pelo e-mail administrativo = queroindustrial@gmail.com") a caixa que
+envia e a que recebe é a queroindustrial@gmail.com, pelo Gmail.
 
 Duas decisões que o modelo carrega:
 
@@ -73,20 +75,22 @@ class ConfiguracaoDeEmail(models.Model):
         "mandar os relatórios por e-mail", default=False,
         help_text="Desligado, o sistema não manda e-mail. As telas continuam iguais.",
     )
-    # Os padrões são os da Cabana, ditos pelo Edson em 10/10/2026: a caixa do próprio
-    # domínio da loja, hospedada na Hostinger. Tudo isto é campo de tela: quem trocar de
-    # provedor um dia troca aqui, sem mexer no código.
+    # Os padrões são os do Studio, ditos pelo Edson em 06/11/2026: "os alertas do studio
+    # industrial pelo e-mail administrativo = queroindustrial@gmail.com". A caixa é do Gmail,
+    # que pede uma senha de app (não a senha da conta). Os da Cabana (caixa da Hostinger no
+    # domínio dela) vieram da cópia e saíram na 2.4.1: o Studio não manda pela caixa da Cabana.
+    # Tudo isto é campo de tela: quem trocar de provedor um dia troca aqui, sem mexer no código.
     servidor = models.CharField(
-        "servidor de saída (SMTP)", max_length=120, default="smtp.hostinger.com")
+        "servidor de saída (SMTP)", max_length=120, default="smtp.gmail.com")
     porta = models.PositiveIntegerField(
-        default=465, help_text="Na Hostinger é 465. Em outros provedores costuma ser 587.")
+        default=587, help_text="No Gmail é 587. Na Hostinger e em outros provedores costuma ser 465.")
     usar_tls = models.BooleanField(
         "conexão segura", default=True,
         help_text="Deixe ligado. Na porta 465 a conexão é SSL; na 587, TLS.",
     )
     usuario = models.CharField(
         "usuário (o e-mail que envia)", max_length=200, blank=True,
-        default="naoresponder@cabanadojacaranda.com.br")
+        default="queroindustrial@gmail.com")
     # Guardada cifrada; o formulário nunca a mostra de volta. Ver apps/alertas/cifra.py.
     senha_guardada = models.TextField(blank=True, default="")
     remetente = models.CharField(
@@ -94,7 +98,7 @@ class ConfiguracaoDeEmail(models.Model):
         help_text="O nome que aparece na caixa de entrada antes do endereço.",
     )
     destinatarios = models.TextField(
-        "para quem mandar", blank=True, default="cabanadojacaranda@gmail.com",
+        "para quem mandar", blank=True, default="queroindustrial@gmail.com",
         help_text="Um e-mail por linha.",
     )
 

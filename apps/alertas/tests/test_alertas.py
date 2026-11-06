@@ -78,18 +78,21 @@ class ConfiguracaoTest(TestCase):
         self.assertIsNotNone(agenda.proximo_envio(configuracao))
 
     def test_so_falta_a_senha_porque_o_resto_ja_vem_preenchido(self):
-        """Servidor, porta, quem envia e para quem já são os da loja (10/10/2026)."""
+        """Servidor, porta, quem envia e para quem já são os do Studio (06/11/2026)."""
         configuracao = ConfiguracaoDeEmail.atual()
-        self.assertEqual(configuracao.servidor, "smtp.hostinger.com")
-        self.assertEqual(configuracao.porta, 465)
-        self.assertEqual(configuracao.usuario, "naoresponder@cabanadojacaranda.com.br")
-        self.assertEqual(configuracao.lista_de_destinatarios, ["cabanadojacaranda@gmail.com"])
+        self.assertEqual(configuracao.servidor, "smtp.gmail.com")
+        self.assertEqual(configuracao.porta, 587)
+        self.assertTrue(configuracao.usar_tls)
+        self.assertEqual(configuracao.usuario, "queroindustrial@gmail.com")
+        self.assertEqual(configuracao.lista_de_destinatarios, ["queroindustrial@gmail.com"])
         self.assertEqual(configuracao.o_que_falta, ["a senha da caixa de e-mail"])
         self.assertFalse(configuracao.pronta)
 
     def test_a_porta_465_pede_ssl_e_a_587_pede_tls(self):
         """Trocar um pelo outro não dá erro de senha: dá conexão travada."""
         configuracao = ConfiguracaoDeEmail.atual()
+        self.assertFalse(configuracao.porta_de_ssl)  # o Gmail do Studio vem na 587 (2.4.1)
+        configuracao.porta = 465
         self.assertTrue(configuracao.porta_de_ssl)
         configuracao.porta = 587
         self.assertFalse(configuracao.porta_de_ssl)

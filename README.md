@@ -73,7 +73,7 @@ Requer Python 3.11+ e PostgreSQL 14+.
 ```bash
 python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-export STUDIO_SECRET_KEY=dev STUDIO_DB_NOME=cabana STUDIO_DB_USUARIO=cabana
+export STUDIO_SECRET_KEY=dev STUDIO_DB_NOME=studio STUDIO_DB_USUARIO=studio
 python manage.py migrate
 python manage.py configurar_perfis
 python manage.py carregar_roteiro --prazo AAAA-MM-DD   # último dia do aviso prévio

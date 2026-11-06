@@ -6,6 +6,20 @@ from .base import env, env_lista
 from apps.core import pastas  # noqa: E402  (só constantes, sem Django)
 
 DEBUG = False
+
+# O banco do Studio nunca é o da Cabana (2.4.1). O PostgreSQL do servidor guarda os dois; sem
+# STUDIO_DB_NOME no studio.env, ou com o nome da Cabana nele, o serviço não sobe, em vez de
+# migrar e gravar por cima dos dados da outra empresa.
+NOMES_DA_CABANA = {"cabana", "cabana_sistema", "cabana-sistema", "sistema"}
+DATABASES["default"]["NAME"] = env("STUDIO_DB_NOME", obrigatorio=True)  # noqa: F405
+DATABASES["default"]["USER"] = env("STUDIO_DB_USUARIO", obrigatorio=True)  # noqa: F405
+if DATABASES["default"]["NAME"].strip().lower() in NOMES_DA_CABANA:  # noqa: F405
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        f"STUDIO_DB_NOME={DATABASES['default']['NAME']!r} é o banco da Cabana. "  # noqa: F405
+        "O Studio usa o banco dele (studio)."
+    )
 CSRF_TRUSTED_ORIGINS = env_lista("STUDIO_CSRF_TRUSTED_ORIGINS", "https://192.168.3.254")
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True

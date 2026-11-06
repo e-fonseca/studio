@@ -2,6 +2,11 @@
 
 Tela em `/sistema/alertas/`, código em `apps/alertas/`.
 
+> **No Studio (2.4.1):** a caixa que envia e a que recebe é a `queroindustrial@gmail.com`,
+> pelo Gmail (`smtp.gmail.com`, porta 587, TLS, senha de app). Pedido do Edson de 06/11/2026:
+> *"os alertas do studio industrial pelo e-mail administrativo = queroindustrial@gmail.com"*.
+> O histórico abaixo é o da Cabana, de onde o Studio foi copiado.
+
 ## O pedido
 
 Em 08/10/2026 o Edson pediu: *"quero que envie os relatório de alertas e notificações por

@@ -7,6 +7,24 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 2.4.1 — 06/11/2026 · O Studio longe do banco e da caixa de e-mail da Cabana
+
+Pedido do Edson de 06/11/2026, depois da revisão dos repositórios: *"os alertas do studio
+industrial pelo e-mail administrativo = queroindustrial@gmail.com"*, *"sim os procedimentos
+sugeridos"* e *"sem impactar no sistema da cabana do jacaranda"*.
+
+- **O banco do Studio nunca é o da Cabana.** Da cópia veio o padrão `cabana` no nome e no
+  usuário do banco. O PostgreSQL do servidor é o mesmo das duas empresas: um `studio.env` sem
+  `STUDIO_DB_NOME` faria o Studio migrar e gravar no banco da Cabana. Agora o padrão é
+  `studio`, e em produção e homologação (o `servir.py`) `STUDIO_DB_NOME` e `STUDIO_DB_USUARIO`
+  são obrigatórios e o nome da Cabana é recusado: o serviço não sobe, com a mensagem dizendo
+  por quê, em vez de escrever no lugar errado.
+- **Os alertas saem e chegam pela queroindustrial@gmail.com**, pelo Gmail (`smtp.gmail.com`,
+  porta 587, TLS). Falta só a senha, que no Gmail é uma senha de app (Conta do Google ›
+  Segurança › Senhas de app), colada na tela de Alertas. A migração troca a caixa da Cabana
+  pela do Studio só onde ninguém gravou senha; configuração feita à mão fica como está.
+- Nada muda na Cabana: as mudanças estão só neste repositório.
+
 ## 2.4.0 — 06/11/2026 · O que a Cabana ganhou na 1.50.0, e o backup do SET lido como o da Cabana
 
 Pedidos do Edson de 06/11/2026, com o print da pasta do servidor: *"sempre checar ultima versão

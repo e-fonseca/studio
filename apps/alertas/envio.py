@@ -43,14 +43,14 @@ TRADUCOES = (
      "O servidor de e-mail não foi encontrado pelo nome. Confira o endereço do servidor de "
      "saída e se o servidor da loja está com internet."),
     ("connection refused",
-     "O servidor de e-mail recusou a conexão. Confira a porta: na Hostinger é 465."),
+     "O servidor de e-mail recusou a conexão. Confira a porta: no Gmail é 587; na Hostinger, 465."),
     ("timed out",
      "O servidor de e-mail não respondeu a tempo. Costuma ser internet do servidor, "
      "firewall bloqueando a porta de saída, ou a porta trocada (465 e 587 não são a mesma "
      "coisa: a 465 é SSL e a 587 é TLS)."),
     ("wrong version number",
      "O servidor atendeu, mas não falou a mesma língua: é a porta trocada. A 465 é SSL e a "
-     "587 é TLS. Na Hostinger, use 465."),
+     "587 é TLS. No Gmail, use 587; na Hostinger, 465."),
 )
 
 

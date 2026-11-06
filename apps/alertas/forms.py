@@ -31,7 +31,7 @@ class ConfiguracaoForm(forms.ModelForm):
             "destinatarios", "hora_diaria", "dia_semanal", "hora_semanal",
         ]
         widgets = {
-            "destinatarios": forms.Textarea(attrs={"rows": 3, "placeholder": "cabanadojacaranda@gmail.com"}),
+            "destinatarios": forms.Textarea(attrs={"rows": 3, "placeholder": "queroindustrial@gmail.com"}),
             "hora_diaria": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
             "hora_semanal": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
             "usuario": forms.EmailInput(attrs={"autocomplete": "off"}),

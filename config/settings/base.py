@@ -111,8 +111,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("STUDIO_DB_NOME", "cabana"),
-        "USER": env("STUDIO_DB_USUARIO", "cabana"),
+        # Padrão "studio", e não "cabana" como veio da cópia (2.4.1): o PostgreSQL do servidor
+        # é o mesmo das duas empresas, e um studio.env sem o nome do banco abriria o da Cabana.
+        # Em produção os dois são obrigatórios e o da Cabana é recusado (prod.py).
+        "NAME": env("STUDIO_DB_NOME", "studio"),
+        "USER": env("STUDIO_DB_USUARIO", "studio"),
         "PASSWORD": env("STUDIO_DB_SENHA", ""),
         "HOST": env("STUDIO_DB_HOST", "127.0.0.1"),
         "PORT": env("STUDIO_DB_PORTA", "5432"),
