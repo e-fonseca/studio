@@ -37,7 +37,7 @@ sempre a loja toda: a busca e o filtro mudam só a lista de baixo.{% endcomment 
         {% include "painel/_monitor_info.html" with nome="as contas pagas mês a mês" texto="Tudo o que a loja pagou em cada mês, pelo lançamento do SET: fornecedor, aluguel, folha e o resto. São os últimos três anos, de janeiro a dezembro, uma linha para cada ano: a verde é este ano, a laranja é o ano passado e a azul é o ano retrasado. Assim o mês que costuma pesar aparece nos três anos, e os meses que ainda faltam neste ano mostram quanto a loja pagou neles antes. A porcentagem embaixo do mês compara este ano com o ano passado, na cor do caixa: vermelho é mês em que a loja pagou mais, verde é mês em que pagou menos. O mês que ainda corre é tracejado e se compara com o mesmo pedaço do ano passado. O valor de cada mês aparece com o mouse em cima e na tabela logo abaixo do gráfico." %}
       </div>
       <p class="monitor-sub">os últimos três anos, de janeiro a dezembro</p>
-      {% include "painel/_monitor_anos.html" with pagas=quadros.pagas o_que="Contas pagas" %}
+      {% include "painel/_monitor_anos.html" with tres=quadros.pagas o_que="Contas pagas" %}
     </section>
     {% endif %}
 

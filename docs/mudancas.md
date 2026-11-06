@@ -7,6 +7,25 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 2.3.0 — 06/11/2026 · O que a Cabana ganhou na 1.49.0, e o backup do SET do Studio
+
+Pedidos do Edson de 06/11/2026: *"atualizar o pacote cabana / atualizar pacote studio"* e
+*"conectar na base backup do servidor 192.168.3.254 C:\backup-Set\Studio\Set-Studio utilizar
+sempre a ultima versão do backup"*.
+
+- **Da Cabana 1.49.0** (o Studio é uma cópia dela e segue as correções): o Faturamento mês a
+  mês do Dashboard com os três últimos anos, de janeiro a dezembro, e a importação lendo a
+  venda por mês desde o dia 1º de 36 meses antes. Até a primeira importação depois de
+  atualizar, o começo do ano retrasado fica em branco, e não em zero.
+- **O menu continua "Dinheiro"** no Studio. Na Cabana ele virou "Contas a pagar" porque lá o
+  assunto é pagar contas; aqui ele abre no Planejamento e junta o que entra, o que sai e a
+  projeção, e "Contas a pagar" diria só um terço disso.
+- **O backup do SET do Studio é procurado em `C:\backup-Set\Studio\Set-Studio`**, no
+  servidor, sem precisar de nada no `studio.env`: é a pasta, e não um arquivo, e dela a
+  importação lê sempre o arquivo mais novo com conteúdo, inclusive em subpastas por data
+  (`apps/importacao/conferencia.py`). `STUDIO_SET_BACKUP` preenchido continua mandando. O
+  caminho está em `apps/core/pastas.py`, e nunca é o da Cabana.
+
 ## 2.2.0 — 06/11/2026 · Dentro da intranet, e a atualização na pasta da intranet
 
 Dois pedidos do Edson de 06/11/2026: *"queria que o sistema aux studio abrisse ao lado do
@@ -88,6 +107,27 @@ versões abaixo desta são a história da Cabana, que veio junto com o código.
 - **Ponte com o agente da casa** para o Trello e o Kommo: os projetos viram cartões e os
   leads do WhatsApp entram no funil com as conversas, por uma chave própria pela VPN. O
   servidor não guarda senha do Trello nem do Kommo (docs/integracao-agente.md).
+## 1.49.0 — 04/11/2026
+
+*Da Cabana. No Studio entrou na 2.3.0, menos o nome do menu.*
+
+Pedido dele (04/11/2026, com o print do Faturamento mês a mês e do menu): *"dashboard = nesse
+gráfico de faturamento mês a mês informar os últimos 3 anos letivos / no menu Dinheiro =
+alterar para Contas a pagar, eu acho que faz mais sentido e fica intuitivo"*.
+
+- **Faturamento mês a mês do Dashboard com os três últimos anos**, de janeiro a dezembro, uma
+  linha por ano (verde este ano, laranja o passado, azul o retrasado): o desenho das Contas
+  pagas mês a mês da 1.48.0, com a cor da porcentagem ao contrário (vender mais é verde). A
+  tabela "Ver o valor de cada mês" tem os três anos e a linha "Até 3/nov" de cada um. Os 13
+  meses de antes saíram (`_monitor_linha.html`, `Mes`, `GraficoDeLinha`).
+- **A importação lê a venda por mês desde o dia 1º de 36 meses antes** (eram 730 dias) e grava
+  `vendas_mes_desde`; o pedaço do mês do corte (`mes_parcial`) ganhou o do ano retrasado. Até
+  a primeira importação depois de atualizar, o começo de 2024 fica em branco, e não em zero.
+  A compra por mês continua nos 730 dias.
+- **Menu: "Dinheiro" virou "Contas a pagar"**, com as mesmas telas (Financeiro, Caixa,
+  Descontos e metas, Conciliação). Endereços e permissões não mudaram.
+- Por dentro: os três anos são um código só (`dashboard.tres_anos` e `TresAnos`), usado pelo
+  Dashboard e por Contas a pagar.
 
 ## 1.48.0 — 04/11/2026
 

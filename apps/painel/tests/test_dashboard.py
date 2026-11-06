@@ -190,45 +190,66 @@ class TestFiltros(BaseDashboard):
 
 
 class TestGraficos(BaseDashboard):
-    def test_mes_a_mes_traz_o_mesmo_mes_do_ano_passado(self):
-        d = dashboard.montar(self.importacao)
-        agosto = d.meses[-2]
-        self.assertEqual(agosto.rotulo, "ago/26")
-        self.assertEqual(agosto.valor, Decimal("1500.00"))
-        self.assertEqual(agosto.valor_ano_passado, Decimal("1000.00"))
+    def test_mes_a_mes_mostra_os_tres_anos_de_janeiro_a_dezembro(self):
+        """Pedido do Edson em 04/11/2026: "nesse gráfico de faturamento mês a mês informar
+        os últimos 3 anos". Vender mais que no ano passado é verde."""
+        tres = dashboard.montar(self.importacao).tres_anos
+        self.assertEqual(tres.anos, [2026, 2025, 2024])
+        self.assertEqual([mes.rotulo for mes in tres.meses], list(dashboard.MESES_CURTOS[1:]))
+        agosto = tres.meses[7]
+        self.assertEqual([c.valor for c in agosto.celulas[:2]], [Decimal("1500.00"), Decimal("1000.00")])
         self.assertGreater(agosto.variacao, 0)
+        self.assertEqual(agosto.sentido, "bom")
         self.assertFalse(agosto.parcial)
+        # O mês que ainda não chegou fica em branco neste ano, e não em zero.
+        self.assertIsNone(tres.meses[9].celulas[0].valor)
 
     def test_mes_que_ainda_corre_compara_com_o_mesmo_pedaco_do_ano_passado(self):
         """O que o Edson viu: sete dias deste mês contra o mês inteiro do ano passado.
 
         Com o corte em 20/09, setembro ainda está correndo. A comparação tem que ser
-        com o dia 1 ao dia 20 do ano passado, não com setembro inteiro.
+        com o dia 1 ao dia 20 do ano passado, não com setembro inteiro; e o mesmo pedaço
+        fecha o "Até 20/set" de cada ano.
         """
-        self.importacao.detalhe["mes_parcial"] = [2026, 9, 20, 1200.0]
+        self.importacao.detalhe.update(mes_parcial=[2026, 9, 20, 1200.0, 900.0], vendas_mes_desde="2023-09-01")
         self.importacao.save(update_fields=["detalhe"])
-        d = dashboard.montar(self.importacao)
-        setembro = d.meses[-1]
-        self.assertEqual(setembro.rotulo, "set/26")
-        self.assertTrue(setembro.parcial)
-        self.assertEqual(setembro.dia_parcial, 20)
-        self.assertEqual(setembro.ate_o_dia, "até dia 20")
-        self.assertEqual(setembro.valor_ano_passado, Decimal("1200.00"))
+        tres = dashboard.montar(self.importacao).tres_anos
+        setembro = tres.mes_que_corre
+        self.assertEqual((setembro.rotulo, setembro.dia_parcial, setembro.ate_o_dia), ("set", 20, "até dia 20"))
+        self.assertEqual(setembro.antes_no_pedaco, Decimal("1200.00"))
         self.assertLess(setembro.variacao, 0)
+        self.assertEqual(setembro.sentido, "ruim")
+        self.assertEqual(tres.ate_o_corte.rotulo, "Até 20/set")
+        self.assertEqual([c.valor for c in tres.ate_o_corte.celulas],
+                         [Decimal("2500.00"), Decimal("2200.00"), Decimal("900.00")])
+
+    def test_foto_da_1_48_nao_tem_o_pedaco_do_ano_retrasado(self):
+        self.importacao.detalhe.update(mes_parcial=[2026, 9, 20, 1200.0], vendas_mes_desde="2023-09-01")
+        self.importacao.save(update_fields=["detalhe"])
+        tres = dashboard.montar(self.importacao).tres_anos
+        self.assertEqual([c.valor for c in tres.ate_o_corte.celulas],
+                         [Decimal("2500.00"), Decimal("2200.00"), None])
 
     def test_sem_o_pedaco_do_ano_passado_o_mes_que_corre_nao_compara(self):
         """Importação antiga não traz esse número: melhor sem comparação que com uma errada."""
-        d = dashboard.montar(self.importacao)
-        setembro = d.meses[-1]
-        self.assertTrue(setembro.parcial)
-        self.assertIsNone(setembro.valor_ano_passado)
+        setembro = dashboard.montar(self.importacao).tres_anos.mes_que_corre
+        self.assertIsNone(setembro.antes_no_pedaco)
         self.assertIsNone(setembro.variacao)
+
+    def test_foto_antiga_deixa_em_branco_o_que_os_730_dias_nao_tem_inteiro(self):
+        """Até a 1.48.0 a importação lia 730 dias: com o corte em 20/09/2026, de 21/09/2024
+        em diante. Setembro de 2024 fica em branco, e não em zero; outubro já aparece."""
+        tres = dashboard.montar(self.importacao).tres_anos
+        self.assertIsNone(tres.meses[8].celulas[2].valor)
+        self.assertEqual(tres.meses[9].celulas[2].valor, Decimal("0.00"))
+        self.assertIsNone(tres.ate_o_corte.celulas[2].valor)
 
     def test_sem_vendas_mes_no_detalhe_o_grafico_fica_vazio_sem_quebrar(self):
         self.importacao.detalhe = {}
         self.importacao.save(update_fields=["detalhe"])
-        d = dashboard.montar(self.importacao)
-        self.assertEqual(d.meses, [])
+        tres = dashboard.montar(self.importacao).tres_anos
+        self.assertFalse(tres.grafico.tem)
+        self.assertEqual(tres.meses, [])
 
     def test_a_curva_abc_separa_oitenta_quinze_e_cinco(self):
         for numero in range(1, 21):
@@ -365,27 +386,20 @@ class TestQuadrosDoGrafana(BaseDashboard):
         """O tombo do mês que ainda corre é falta de dias, não queda de venda."""
         self.importacao.detalhe["mes_parcial"] = [2026, 9, 20, 1200.0]
         self.importacao.save(update_fields=["detalhe"])
-        d = dashboard.montar(self.importacao)
-        linha = d.linha_dos_meses
-        self.assertTrue(linha.tem)
-        self.assertEqual(linha.colunas, len(d.meses))
-        self.assertTrue(linha.parcial)
-        self.assertEqual(linha.agora.count("L") + 1, len(d.meses) - 1)
-        self.assertNotIn(",", linha.agora + linha.agora_area + linha.parcial + linha.antes)
+        g = dashboard.montar(self.importacao).tres_anos.grafico
+        self.assertTrue(g.tem)
+        self.assertEqual(g.colunas, 12)
+        agora = next(linha for linha in g.linhas if linha.papel == "agora")
+        self.assertTrue(agora.parcial)
+        desenho = " ".join(linha.caminho + linha.area + linha.parcial + linha.pontos for linha in g.linhas)
+        self.assertNotIn(",", desenho)
 
     def test_mes_fechado_fica_todo_na_linha_cheia(self):
         self.importacao.data_corte = date(2026, 9, 30)
         self.importacao.save(update_fields=["data_corte"])
-        linha = dashboard.montar(self.importacao).linha_dos_meses
-        self.assertEqual(linha.parcial, "")
-        self.assertEqual(linha.agora.count("L") + 1, linha.colunas)
-
-    def test_o_ano_passado_com_buraco_para_e_recomeca(self):
-        meses = [dashboard.Mes(rotulo=str(n), valor=Decimal("100"), valor_ano_passado=antes)
-                 for n, antes in enumerate([Decimal("90"), Decimal("80"), None,
-                                            Decimal("70"), Decimal("60")])]
-        linha = dashboard._grafico_de_linha(meses)
-        self.assertEqual(linha.antes.count("M"), 2)
+        tres = dashboard.montar(self.importacao).tres_anos
+        self.assertIsNone(tres.mes_que_corre)
+        self.assertTrue(all(linha.parcial == "" for linha in tres.grafico.linhas))
 
     def test_o_eixo_termina_num_numero_redondo(self):
         self.assertEqual(dashboard._escala(228153), (300000.0, 100000.0))
@@ -401,9 +415,9 @@ class TestQuadrosDoGrafana(BaseDashboard):
 
     def test_as_marcas_do_eixo_vao_do_zero_ao_topo_com_as_faixas_pedidas(self):
         """Pedido do Edson em 02/11/2026: 10, 50, 80, 120, 150 e 250 mil no eixo vertical."""
-        meses = [dashboard.Mes(rotulo="a", valor=Decimal("228153")),
-                 dashboard.Mes(rotulo="b", valor=Decimal("100000"))]
-        marcas = dashboard._grafico_de_linha(meses).marcas
+        linha = dashboard.LinhaDoAno(ano=2026, papel="agora",
+                                     valores=[Decimal("228153"), Decimal("100000")] + [None] * 10)
+        marcas = dashboard.grafico_de_anos([linha]).marcas
         self.assertEqual([m.rotulo for m in marcas], [
             "R$ 0", "R$ 10 mil", "R$ 50 mil", "R$ 80 mil", "R$ 100 mil", "R$ 120 mil",
             "R$ 150 mil", "R$ 200 mil", "R$ 250 mil", "R$ 300 mil"])

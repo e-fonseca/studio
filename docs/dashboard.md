@@ -48,7 +48,7 @@ O que a tela ganhou, quadro a quadro:
 | --- | --- |
 | Fileira de números com minigráfico | Situação da loja, Faturamento, Vendas, Ticket médio, Desconto dado e Cobertura do estoque. O número sai na cor da situação (verde bom, laranja atenção, vermelho ruim, azul neutro) e o minigráfico embaixo é o período dia a dia, ou semana a semana acima de 31 dias |
 | "Status geral" | **Situação da loja**: a palavra do item mais grave de "O que fazer agora" (Urgente, Atenção ou Tudo em dia), com a contagem embaixo. Não é regra nova: é a mesma agenda da Visão geral, filtrada pela permissão de quem olha |
-| Série temporal | **Faturamento mês a mês** em linha: verde este ano, laranja o mesmo mês do ano passado, o mês que ainda corre num trecho tracejado |
+| Série temporal | **Faturamento mês a mês** em linha: desde a 1.49.0, os três últimos anos de janeiro a dezembro (verde este ano, laranja o passado, azul o retrasado), o mês que ainda corre num trecho tracejado |
 | Mostrador "Disponibilidade" | **Margem bruta** em meia-volta |
 | Roscas de status | **Produtos que venderam no ano** (com e sem saldo no SET), **Estoque ao custo** (vendeu no ano e parado), **Forma de pagamento** e **De onde vem o faturamento** (grupos) |
 | CPU, memória, disco, rede | **Dia da semana** e **Hora do dia** em colunas |
@@ -170,10 +170,11 @@ acima). A regra do mês que corre não mudou: na linha ele é o trecho tracejado
 tabela "Ver o valor de cada mês" ele diz "até dia N". O que está abaixo sobre barras e
 colunas é a história da 1.20.x, que explica por que a escala é o maior dos dois anos.
 
-Vem de `importacao.detalhe["vendas_mes"]`, e não da tabela de vendas, porque o detalhe
-guarda 25 meses e a tabela 12 — sem os 25 não daria para comparar com o mesmo mês do ano
-passado, que é a comparação que o varejo usa. A tela mostra 13 meses: um ano fechado mais
-o mês corrente, que é o que cabe na largura do celular.
+Vem de `importacao.detalhe["vendas_mes"]`, e não da tabela de vendas, porque a tabela
+guarda 12 meses e não daria para comparar com o mesmo mês do ano passado, que é a
+comparação que o varejo usa. Até a 1.48.0 a tela mostrava 13 meses (um ano fechado mais o
+mês corrente); desde a 1.49.0 são os três últimos anos de janeiro a dezembro (ver "Três
+anos no Faturamento mês a mês", no fim).
 
 ### O mês que ainda está correndo (1.20.1)
 
@@ -298,8 +299,8 @@ cartão, com as outras duas formas (36 meses seguidos; os 13 meses de antes com 
 linha); a de janeiro a dezembro foi a recomendada.
 
 - **Desenho**: `dashboard.GraficoDeAnos` e `dashboard.LinhaDoAno`, em
-  `templates/painel/_monitor_anos.html`, com as classes da linha do tempo do Dashboard. O
-  Dashboard continua com `_monitor_linha.html` e os 13 meses, sem mudança nenhuma. Mês sem
+  `templates/painel/_monitor_anos.html`, com as classes da linha do tempo do Dashboard. Na
+  1.49.0 o Faturamento mês a mês do Dashboard passou a usar o mesmo desenho. Mês sem
   vizinho com número vira ponto (`.monitor-tempo-ponto`): corte em 10 de janeiro, o ano de
   agora é só o pedaço de janeiro, e uma linha de um ponto não aparece.
 - **Contas**: `quadros.pagas_por_ano`. A porcentagem embaixo do mês é o ano do corte contra
@@ -316,3 +317,21 @@ linha); a de janeiro a dezembro foi a recomendada.
   tem: fica em branco, nunca em zero, e o desenho começa no primeiro mês inteiro depois da
   primeira conta (`quadros._comeco_do_lancado`). A tabela diz isso numa linha. Março e abril
   de 2024 aparecem baixos (R$ 12,7 mil e R$ 72,9 mil) porque é o que o SET tem lançado.
+
+## Três anos no Faturamento mês a mês (1.49.0)
+
+Pedido dele (04/11/2026): *"nesse gráfico de faturamento mês a mês informar os últimos 3 anos
+letivos"*. É o desenho das Contas pagas mês a mês, no mesmo `_monitor_anos.html`, com a cor
+da porcentagem ao contrário: vender mais que no ano passado é verde (`Coluna.mais_e_bom`).
+
+- **Um código só**: `dashboard.tres_anos(corte, por_mes, pedacos, inteiro_desde, mais_e_bom)`
+  monta os doze meses, a linha "Até 3/nov" e o desenho; `quadros.pagas_por_ano` e
+  `dashboard._tres_anos` só juntam os números. `pedacos` é o mês do corte, do dia 1º ao dia
+  do corte, nos anos passados: compara o mês que corre e fecha o "Até 3/nov" de cada ano.
+- **Leitura**: a venda por mês vem desde `firebird.inicio_das_vendas_por_mes` (dia 1º de 36
+  meses antes, como o pago) e a importação grava `vendas_mes_desde`. `mes_parcial` é
+  `[ano, mês, dia, ano passado, ano retrasado]`; o quinto só existe desde a 1.49.0. Foto
+  antiga vale pelos 730 dias de antes (`DIAS_DA_LEITURA_ANTIGA`): o começo do retrasado fica
+  em branco até a primeira importação da versão nova. A compra por mês continua nos 730 dias.
+- Saíram `Mes`, `GraficoDeLinha`, `_grafico_de_linha`, `MESES_NO_GRAFICO` e
+  `_monitor_linha.html`: o gráfico de 13 meses não tinha mais quem usasse.

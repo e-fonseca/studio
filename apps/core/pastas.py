@@ -1,4 +1,4 @@
-r"""Onde a atualização do Studio acontece no servidor da loja (2.2.0).
+r"""Onde as coisas do Studio ficam no servidor da loja: a atualização (2.2.0) e o backup do SET (2.3.0).
 
 Pedido do Edson em 06/11/2026: *"manter atualização do sistema studio industrial em um
 subdiretório dentro da intranet, fazer a melhor escolha e boa pratica sempre."*
@@ -32,3 +32,13 @@ HISTORICO = ATUALIZACAO + r"\historico"
 # A pasta da Cabana, que o Studio nunca usa. Fica escrita para a suíte conferir que nenhum
 # texto daqui volte a mandar o zip para lá.
 DA_CABANA = r"C:\instalacao"
+
+# O backup do SET do Studio (2.3.0). Pedido do Edson em 06/11/2026: *"conectar na base backup
+# do servidor 192.168.3.254 C:\backup-Set\Studio\Set-Studio utilizar sempre a ultima versão
+# do backup"*. É a PASTA, e não um arquivo: dela a importação lê sempre o arquivo mais novo
+# com conteúdo, inclusive em subpastas por data (apps/importacao/conferencia.py). Vale no
+# servidor sem nada no studio.env (config/settings/prod.py); STUDIO_SET_BACKUP preenchido
+# continua mandando. Nunca a pasta da Cabana: o SET de lá é de outra empresa, e um Studio
+# lendo o banco da Cabana mostraria o faturamento dela como se fosse dele.
+BACKUP_SET = r"C:\backup-Set\Studio\Set-Studio"
+BACKUP_SET_DA_CABANA = r"C:\backup-Set\Cabana"

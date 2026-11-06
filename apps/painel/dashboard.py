@@ -29,13 +29,13 @@ Desde a 1.41.0 a tela tem o jeito do Grafana, que o Edson mandou de modelo em
 número grande com a cor da situação, minigráfico embaixo de cada número, linha do
 tempo, mostrador e rosca, e a lista do que fazer com a gravidade de cada item. As
 contas não mudaram; o que este arquivo ganhou foi a GEOMETRIA desses desenhos
-(`Faisca`, `GraficoDeLinha`, `Rosca`), feita aqui e não no template porque o Django
+(`Faisca`, `GraficoDeAnos`, `Rosca`), feita aqui e não no template porque o Django
 escreve número com vírgula, e coordenada com vírgula não desenha nada.
 """
 
 import calendar
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django.db.models import Count, F, Q, Sum
@@ -49,6 +49,7 @@ from apps.importacao.models import ProdutoImportado, VendaImportada
 
 ZERO = Decimal("0")
 CEM = Decimal("100")
+CENTAVO = Decimal("0.01")
 
 # (valor na URL, rótulo na tela, dias para trás)
 PERIODOS = (
@@ -64,9 +65,9 @@ ROTULO_DO_PERIODO = dict((chave, rotulo) for chave, rotulo, _ in PERIODOS)
 DIAS_DA_SEMANA = ("Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado")
 MESES_CURTOS = ("", "jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez")
 
-# Quantos meses o gráfico mostra. A importação guarda 25 meses, e 13 é o que cabe na
-# tela do celular sem a barra virar risco: um ano fechado mais o mês de agora.
-MESES_NO_GRAFICO = 13
+# A venda por mês que a importação lia até a 1.48.0: os 730 dias antes do corte. É o que
+# vale para a foto antiga, até a primeira importação da 1.49.0 trazer os três anos.
+DIAS_DA_LEITURA_ANTIGA = 730
 # Quantas linhas as listas de campeões mostram. Dez é o costume do varejo e é o que
 # alguém lê de uma vez.
 QUANTOS_CAMPEOES = 10
@@ -229,39 +230,6 @@ class Kpi:
 
 
 @dataclass
-class Mes:
-    rotulo: str
-    valor: Decimal
-    vendas: int = 0
-    valor_ano_passado: Decimal | None = None
-    altura: int = 0
-    altura_ano_passado: int | None = None
-    # Mês que ainda não terminou: o do corte dos dados, quase sempre.
-    parcial: bool = False
-    dia_parcial: int | None = None
-    # Faturamento que sobe é bom; conta paga que sobe é ruim. O mesmo desenho serve às
-    # duas telas (Contas a pagar, 1.47.0), e só a cor da porcentagem troca de lado.
-    mais_e_bom: bool = True
-
-    @property
-    def variacao(self):
-        return _variacao(self.valor, self.valor_ano_passado)
-
-    @property
-    def sentido(self):
-        """A cor da porcentagem embaixo do mês: "bom", "ruim" ou "neutro"."""
-        variacao = self.variacao
-        if variacao is None or variacao == 0:
-            return "neutro"
-        return "bom" if (variacao > 0) == self.mais_e_bom else "ruim"
-
-    @property
-    def ate_o_dia(self):
-        """Texto curto para a coluna do mês que ainda está correndo."""
-        return f"até dia {self.dia_parcial}" if self.parcial and self.dia_parcial else ""
-
-
-@dataclass
 class Fatia:
     nome: str
     valor: Decimal
@@ -307,28 +275,6 @@ def _fatiar(fatias, total):
         if giro < ZERO:
             giro += CEM
     return fatias
-
-
-@dataclass
-class GraficoDeLinha:
-    """Faturamento mês a mês em linhas: este ano e o mesmo mês do ano passado.
-
-    Antes eram duas barras por mês. A linha é o desenho do Grafana que o Edson mandou
-    de modelo, e lê-se do mesmo jeito: a de cima vendeu mais. Cada mês fica no MEIO da
-    sua coluna (`(posição + 0,5) / meses`), para o ponto cair em cima do nome do mês,
-    que é texto da página e não do desenho — texto dentro de SVG esticado sai torto.
-    """
-
-    agora: str = ""
-    agora_area: str = ""
-    parcial: str = ""        # o trecho do mês que ainda corre, tracejado
-    antes: str = ""
-    marcas: list = field(default_factory=list)  # as linhas de grade, de baixo para cima
-    colunas: int = 0
-
-    @property
-    def tem(self):
-        return bool(self.agora)
 
 
 LARGURA_DA_LINHA, ALTURA_DA_LINHA = 1000, 300
@@ -424,50 +370,6 @@ def _reais_curto(valor):
         texto = f"{valor / 1000:.1f}".rstrip("0").rstrip(".")
         return f"R$ {texto.replace('.', ',')} mil"
     return f"R$ {int(valor)}"
-
-
-def _grafico_de_linha(meses, faixas=FAIXAS_DO_FATURAMENTO):
-    """A linha do tempo de qualquer valor mês a mês, com o mesmo mês do ano passado.
-
-    `faixas` são as linhas de grade pedidas além das redondas. Contas a pagar usa as
-    mesmas do faturamento: a loja paga e vende na mesma escala de mês, e o Edson pediu o
-    mesmo formato de gráfico (04/11/2026).
-    """
-    if len(meses) < 2:
-        return GraficoDeLinha()
-    maior = max(max(m.valor, m.valor_ano_passado or ZERO) for m in meses)
-    topo, passo = _escala(maior)
-    quantos = len(meses)
-
-    def ponto(posicao, valor):
-        x = (posicao + 0.5) / quantos * LARGURA_DA_LINHA
-        y = ALTURA_DA_LINHA - float(valor) / topo * ALTURA_DA_LINHA
-        return f"{_coordenada(x)} {_coordenada(y)}"
-
-    # O mês que ainda corre sai da linha cheia e vira um trecho tracejado: ele tem só
-    # os dias até o corte, e ligado com a linha cheia pareceria um tombo nas vendas.
-    ultimo_cheio = quantos - 2 if meses[-1].parcial else quantos - 1
-    agora = "M" + " L".join(ponto(i, m.valor) for i, m in enumerate(meses[:ultimo_cheio + 1]))
-    area = (f"{agora} L{ponto(ultimo_cheio, 0)} L{ponto(0, 0)} Z")
-    parcial = ""
-    if meses[-1].parcial and ultimo_cheio >= 0:
-        parcial = f"M{ponto(ultimo_cheio, meses[ultimo_cheio].valor)} L{ponto(quantos - 1, meses[-1].valor)}"
-
-    # O ano passado pode ter buraco (mês sem número): a linha para ali e recomeça.
-    trechos, atual = [], []
-    for posicao, mes in enumerate(meses):
-        if mes.valor_ano_passado is None:
-            if atual:
-                trechos.append(atual)
-            atual = []
-            continue
-        atual.append(ponto(posicao, mes.valor_ano_passado))
-    if atual:
-        trechos.append(atual)
-    antes = " ".join("M" + " L".join(trecho) for trecho in trechos if len(trecho) > 1)
-
-    return GraficoDeLinha(agora=agora, agora_area=area, parcial=parcial, antes=antes,
-                          marcas=_marcas(topo, passo, faixas), colunas=quantos)
 
 
 # A ordem das cores do gráfico de anos: o ano de agora é a linha verde, como o "este ano"
@@ -583,6 +485,134 @@ variacao = _variacao
 
 
 @dataclass
+class Celula:
+    """O que um ano teve num mês. None é mês que não chegou ou que a foto não tem inteiro."""
+
+    ano: int
+    valor: Decimal | None
+    parcial: bool = False
+
+
+@dataclass
+class Coluna:
+    """Um mês do gráfico de anos, ou a linha "Até 3/nov" da tabela: o valor de cada ano,
+    do de agora para o mais antigo, e a variação do de agora contra o ano passado."""
+
+    rotulo: str
+    celulas: list
+    parcial: bool = False
+    dia_parcial: int | None = None
+    # O ano passado do dia 1º ao dia do corte: é com ele que o mês que corre se compara.
+    antes_no_pedaco: Decimal | None = None
+    # Faturamento que sobe é bom; conta paga que sobe é ruim.
+    mais_e_bom: bool = True
+
+    @property
+    def variacao(self):
+        agora = self.celulas[0].valor
+        antes = self.antes_no_pedaco if self.parcial else self.celulas[1].valor
+        if agora is None or antes is None:
+            return None
+        return _variacao(agora, antes)
+
+    @property
+    def sentido(self):
+        """A cor da porcentagem: verde quando o número andou para o lado bom."""
+        variacao = self.variacao
+        if variacao is None or variacao == 0:
+            return "neutro"
+        return "bom" if (variacao > 0) == self.mais_e_bom else "ruim"
+
+    @property
+    def ate_o_dia(self):
+        return f"até dia {self.dia_parcial}" if self.parcial and self.dia_parcial else ""
+
+
+@dataclass
+class TresAnos:
+    """Os três últimos anos, de janeiro a dezembro: as Contas pagas mês a mês (1.48.0) e o
+    Faturamento mês a mês do Dashboard (1.49.0). Os doze meses, a linha do total e o desenho."""
+
+    anos: list = field(default_factory=list)      # do de agora para o mais antigo: [2026, 2025, 2024]
+    meses: list = field(default_factory=list)     # doze Coluna, de janeiro a dezembro
+    ate_o_corte: Coluna | None = None             # de 1º de janeiro ao dia do corte, em cada ano
+    dia_do_corte: str = ""                        # "3/nov"
+    # Quando o SET só começou a lançar depois do começo do gráfico: o que ele lança ("conta
+    # paga"), o primeiro lançamento e o primeiro mês desenhado ("mar/2024").
+    lancamento: str = ""
+    lancado_desde: date | None = None
+    comeca_em: str = ""
+    grafico: GraficoDeAnos = field(default_factory=GraficoDeAnos)
+
+    @property
+    def mes_que_corre(self):
+        return next((mes for mes in self.meses if mes.parcial), None)
+
+    @property
+    def tem_buraco(self):
+        """Algum mês em branco: o que ainda não chegou, ou o que a foto não tem inteiro."""
+        return any(celula.valor is None for mes in self.meses for celula in mes.celulas)
+
+
+def tres_anos(corte, por_mes, pedacos, inteiro_desde, mais_e_bom=True):
+    """Os três anos a partir do valor de cada mês.
+
+    `por_mes` é {(ano, mês): valor}, com o mês do corte só até o dia do corte. `pedacos` é
+    {ano: valor} do mês do corte, do dia 1º ao dia do corte, nos anos passados: é com ele
+    que o mês que corre se compara, e é ele que fecha o "Até 3/nov" de cada ano (None ou
+    ausente: não se sabe, e a célula fica em branco). Mês antes de `inteiro_desde` também
+    fica em branco: a foto não o tem inteiro, e em zero o gráfico diria que não houve nada.
+    """
+    anos = [corte.year - atras for atras in range(len(PAPEIS_DOS_ANOS))]
+    corre = corte.day < calendar.monthrange(corte.year, corte.month)[1]
+
+    def inteiro(ano, mes):
+        return date(ano, mes, 1) >= inteiro_desde
+
+    def valor(ano, mes):
+        if (ano, mes) > (corte.year, corte.month) or not inteiro(ano, mes):
+            return None
+        return _decimal(por_mes.get((ano, mes))).quantize(CENTAVO)
+
+    def pedaco(ano):
+        if ano == corte.year:
+            return valor(ano, corte.month)
+        if not inteiro(ano, corte.month) or pedacos.get(ano) is None:
+            return None
+        return _decimal(pedacos[ano]).quantize(CENTAVO)
+
+    def ate_o_corte(ano):
+        partes = [valor(ano, mes) for mes in range(1, corte.month)] + [pedaco(ano)]
+        return None if any(parte is None for parte in partes) else sum(partes, ZERO)
+
+    meses = []
+    for mes in range(1, 13):
+        parcial = corre and mes == corte.month
+        meses.append(Coluna(
+            rotulo=MESES_CURTOS[mes],
+            celulas=[Celula(ano, valor(ano, mes), parcial=parcial and ano == corte.year) for ano in anos],
+            parcial=parcial,
+            dia_parcial=corte.day if parcial else None,
+            antes_no_pedaco=pedaco(anos[1]) if parcial else None,
+            mais_e_bom=mais_e_bom,
+        ))
+    dia_do_corte = f"{corte.day}/{MESES_CURTOS[corte.month]}"
+    # Do mais antigo para o de agora: a linha de agora fica por cima das outras.
+    linhas = [
+        LinhaDoAno(ano=ano, valores=[coluna.celulas[posicao].valor for coluna in meses],
+                   papel=PAPEIS_DOS_ANOS[posicao],
+                   mes_parcial=corte.month if posicao == 0 and corre else None)
+        for posicao, ano in reversed(list(enumerate(anos)))
+    ]
+    return TresAnos(
+        anos=anos, meses=meses, dia_do_corte=dia_do_corte,
+        ate_o_corte=Coluna(rotulo=f"Até {dia_do_corte}", mais_e_bom=mais_e_bom,
+                           celulas=[Celula(ano, ate_o_corte(ano)) for ano in anos]),
+        grafico=_grafico_de_anos(linhas),
+    )
+
+
+@dataclass
 class Campeao:
     codigo: str
     descricao: str
@@ -624,12 +654,12 @@ class Dashboard:
     fornecedores_disponiveis: list = field(default_factory=list)
     kpis_da_venda: list = field(default_factory=list)
     kpis_do_estoque: list = field(default_factory=list)
-    meses: list = field(default_factory=list)
     grupos: list = field(default_factory=list)
     abc: list = field(default_factory=list)
     campeoes_faturamento: list = field(default_factory=list)
     campeoes_margem: list = field(default_factory=list)
-    linha_dos_meses: GraficoDeLinha = field(default_factory=GraficoDeLinha)
+    # O Faturamento mês a mês: os três últimos anos, de janeiro a dezembro (1.49.0).
+    tres_anos: TresAnos = field(default_factory=TresAnos)
     # O lado do estoque em desenho: o mostrador da margem e as duas roscas.
     margem: Decimal = ZERO
     margem_traco: str = "0 100"
@@ -816,75 +846,46 @@ def _kpis_do_estoque(consulta):
     ]
 
 
-def _meses(importacao):
-    """Faturamento mês a mês, com o mesmo mês do ano passado ao lado.
+def _tres_anos(importacao):
+    """Faturamento mês a mês dos três últimos anos, de janeiro a dezembro (1.49.0).
 
-    Vem de `detalhe["vendas_mes"]`, calculado na importação, porque ele guarda 25
-    meses — a tabela de vendas guarda 12, que não daria para comparar com o ano
-    passado.
+    Vem de `detalhe["vendas_mes"]`, somado na importação: desde a 1.49.0 ela lê 36 meses
+    (`vendas_mes_desde`); antes eram 730 dias, e o começo do ano retrasado fica em branco
+    até a primeira importação da versão nova.
 
-    O último mês quase nunca está fechado: os dados vão até o dia do backup. Comparar
-    sete dias deste mês com o mês inteiro do ano passado dava "-84%", uma queda que não
-    existe — foi o que o Edson viu em 08/10/2026. Então o mês que ainda corre é comparado
-    com o MESMO PEDAÇO do ano passado (`detalhe["mes_parcial"]`), do dia 1 ao mesmo dia, e
-    a coluna diz "até dia 7". Importação antiga não tem esse número: aí o mês aparece sem
-    comparação nenhuma, que é melhor do que uma errada.
+    O mês do corte quase nunca está fechado: comparar sete dias deste mês com o mês inteiro
+    do ano passado dava "-84%", uma queda que não existe (Edson, 08/10/2026). Então ele se
+    compara com o MESMO PEDAÇO do ano passado (`detalhe["mes_parcial"]`, do dia 1º ao mesmo
+    dia), que é também o que fecha o "Até 3/nov" de cada ano. Importação sem esse número
+    deixa a comparação em branco, que é melhor do que uma errada.
     """
-    bruto = (importacao.detalhe or {}).get("vendas_mes") or []
-    por_mes = {}
-    for linha in bruto:
-        if len(linha) < 4:
-            continue
-        ano, mes, valor, vendas = int(linha[0]), int(linha[1]), _decimal(linha[2]), int(linha[3])
-        por_mes[(ano, mes)] = (valor, vendas)
-    chaves = sorted(por_mes)[-MESES_NO_GRAFICO:]
-
+    detalhe = importacao.detalhe or {}
     corte = importacao.data_corte
-    parcial = (importacao.detalhe or {}).get("mes_parcial") or []
-    preparados = []
-    for ano, mes in chaves:
-        valor, vendas = por_mes[(ano, mes)]
-        antes = por_mes.get((ano - 1, mes))
-        valor_antes = antes[0] if antes else None
-        e_parcial = bool(corte and (ano, mes) == (corte.year, corte.month)
-                         and corte.day < calendar.monthrange(ano, mes)[1])
-        if e_parcial:
-            valor_antes = _ano_passado_ate_o_dia(parcial, ano, mes)
-        preparados.append((ano, mes, valor, vendas, valor_antes, e_parcial))
-
-    maior = max((p[2] for p in preparados), default=ZERO)
-    for _ano, _mes, _valor, _vendas, valor_antes, _parcial in preparados:
-        if valor_antes:
-            maior = max(maior, valor_antes)
-
-    meses = []
-    for ano, mes, valor, vendas, valor_antes, e_parcial in preparados:
-        mes_pronto = Mes(
-            rotulo=f"{MESES_CURTOS[mes]}/{str(ano)[2:]}",
-            valor=valor.quantize(Decimal("0.01")),
-            vendas=vendas,
-            valor_ano_passado=valor_antes.quantize(Decimal("0.01")) if valor_antes else None,
-            altura=_largura(valor, maior),
-            parcial=e_parcial,
-            dia_parcial=corte.day if e_parcial and corte else None,
-        )
-        if valor_antes:
-            mes_pronto.altura_ano_passado = _largura(valor_antes, maior)
-        meses.append(mes_pronto)
-    return meses
+    bruto = detalhe.get("vendas_mes") or []
+    if corte is None or not bruto:
+        return TresAnos()
+    por_mes = {(int(linha[0]), int(linha[1])): _decimal(linha[2]) for linha in bruto if len(linha) >= 3}
+    parcial = detalhe.get("mes_parcial") or []
+    pedacos = {corte.year - atras: _pedaco_ate_o_dia(parcial, corte, atras) for atras in (1, 2)}
+    try:
+        inteiro_desde = date.fromisoformat(detalhe["vendas_mes_desde"])
+    except (KeyError, TypeError, ValueError):
+        inteiro_desde = corte - timedelta(days=DIAS_DA_LEITURA_ANTIGA - 1)
+    return tres_anos(corte, por_mes, pedacos, inteiro_desde, mais_e_bom=True)
 
 
-def _ano_passado_ate_o_dia(parcial, ano, mes):
-    """Quanto o mesmo mês do ano passado tinha vendido até o mesmo dia.
+def _pedaco_ate_o_dia(parcial, corte, atras):
+    """Quanto o mês do corte tinha vendido até o mesmo dia, `atras` anos antes.
 
-    None quando a importação é anterior à 1.20.1 e não traz esse número, ou quando o
-    ano passado não teve venda nenhuma nesse pedaço: nos dois casos é melhor não
-    comparar do que comparar com o mês inteiro.
+    `mes_parcial` é [ano, mês, dia, ano passado, ano retrasado]: o retrasado só existe
+    desde a 1.49.0, e nada disso antes da 1.20.1. None quando o número falta, é de outro
+    mês ou é zero: nos três casos é melhor não comparar do que comparar errado.
     """
-    if len(parcial) < 4 or int(parcial[0]) != ano or int(parcial[1]) != mes:
+    posicao = 2 + atras
+    if len(parcial) <= posicao or int(parcial[0]) != corte.year or int(parcial[1]) != corte.month:
         return None
-    valor = _decimal(parcial[3])
-    return valor if valor and valor > ZERO else None
+    valor = _decimal(parcial[posicao])
+    return valor if valor > ZERO else None
 
 
 def _grupos(consulta):
@@ -1082,8 +1083,7 @@ def montar(importacao, periodo=PERIODO_PADRAO, grupo="", fornecedor=""):
     consulta = _produtos(importacao, painel.filtro_grupo, painel.filtro_fornecedor)
     painel.produtos_no_filtro, numeros, painel.kpis_do_estoque = _kpis_do_estoque(consulta)
 
-    painel.meses = _meses(importacao)
-    painel.linha_dos_meses = _grafico_de_linha(painel.meses)
+    painel.tres_anos = _tres_anos(importacao)
     painel.grupos = _grupos(consulta)
     painel.abc = _abc(consulta)
     painel.campeoes_faturamento, painel.campeoes_margem = _campeoes(consulta)

@@ -101,16 +101,18 @@ antes (apps/painel/dashboard.py); as explicações longas foram para o "i" de ca
 
   {% comment %}Segunda fileira: a linha do tempo à esquerda e, à direita, o mostrador e
   as duas roscas, como o mapa e os três quadros de situação do modelo.{% endcomment %}
-  {% if d.linha_dos_meses.tem %}
-  {% with g=d.linha_dos_meses %}
+  {% if d.tres_anos.grafico.tem %}
+  {% comment %}Os últimos três anos, de janeiro a dezembro (1.49.0): "nesse gráfico de
+  faturamento mês a mês informar os últimos 3 anos", Edson em 04/11/2026. É o desenho das
+  Contas pagas mês a mês, com as cores ao contrário: aqui, subir é bom.{% endcomment %}
   <section class="monitor-quadro monitor-meses" id="mes-a-mes">
     <div class="monitor-titulo-linha">
       <h2 class="monitor-titulo">Faturamento mês a mês</h2>
-      {% include "painel/_monitor_info.html" with nome="o faturamento mês a mês" texto="Cada mês tem dois pontos: a linha verde é este ano e a laranja é o mesmo mês do ano passado. Linha verde abaixo da laranja é mês que vendeu menos que no ano anterior. O último mês ainda está correndo: o trecho dele é tracejado e a comparação é com o mesmo pedaço do ano passado, não com o mês inteiro. O valor de cada mês aparece com o mouse em cima e na tabela logo abaixo do gráfico." %}
+      {% include "painel/_monitor_info.html" with nome="o faturamento mês a mês" texto="Quanto a loja vendeu em cada mês. São os últimos três anos, de janeiro a dezembro, uma linha para cada ano: a verde é este ano, a laranja é o ano passado e a azul é o ano retrasado. Linha verde abaixo da laranja é mês que vendeu menos que no ano passado, e os meses que ainda faltam neste ano mostram quanto a loja vendeu neles antes. A porcentagem embaixo do mês compara este ano com o ano passado: verde é mês que vendeu mais, vermelho é mês que vendeu menos. O mês que ainda corre é tracejado e se compara com o mesmo pedaço do ano passado, não com o mês inteiro. O valor de cada mês aparece com o mouse em cima e em Ver o valor de cada mês." %}
     </div>
-    {% include "painel/_monitor_linha.html" with g=g meses=d.meses o_que="Faturamento" %}
+    <p class="monitor-sub">os últimos três anos, de janeiro a dezembro</p>
+    {% include "painel/_monitor_anos.html" with tres=d.tres_anos o_que="Faturamento" %}
   </section>
-  {% endwith %}
   {% endif %}
 
   <div class="monitor-coluna">
