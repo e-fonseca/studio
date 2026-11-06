@@ -46,3 +46,7 @@ _urllib_request.urlopen = _nada_de_internet
 # A suíte herdada do sistema da Cabana confere as telas de compras e estoque pelo menu;
 # o Studio as esconde por configuração, e o teste dele liga isso com override_settings.
 ASSUNTOS_DESLIGADOS = ()
+
+# A faixa do topo (1.50.0) não dispara a busca em segundo plano nos testes: quem testa a
+# busca chama apps.core.cotacoes.atualizar com uma internet de mentira.
+COTACOES_NA_INTERNET = False

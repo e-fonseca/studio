@@ -3201,3 +3201,46 @@ a.monitor-situacao .monitor-sub { margin-top: auto; }
   .barras-pagar li { grid-template-columns: 1fr auto; }
   .barras-pagar .pagar-trilho { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* A faixa de cotações do topo (1.50.0): o relógio, o dólar comercial em destaque e as
+   ações rolando, logo acima do menu. O rolo anda sozinho, para com o mouse em cima e fica
+   parado para quem pediu ao computador menos movimento. Nenhuma cor nova: verde sobe,
+   vermelho desce, como no resto do sistema. */
+.cotacao-faixa { border-top: 1px solid rgba(255, 255, 255, .12); font-size: .85rem; }
+.cotacao-faixa-interna {
+  max-width: var(--largura); margin: 0 auto; padding: .35rem 1.25rem;
+  display: flex; align-items: center; gap: .4rem 1rem;
+}
+.cotacao-relogio { flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cotacao-conteudo { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .4rem 1rem; }
+.cotacao-dolar {
+  margin: 0; flex: none; display: flex; align-items: baseline; gap: .45rem; white-space: nowrap;
+  padding: .1rem .7rem; border: 1px solid var(--cor-brasa); border-radius: 999px;
+}
+.cotacao-dolar-valor { font-size: 1.05rem; }
+.cotacao-alta { color: var(--cor-sucesso); }
+.cotacao-queda { color: var(--cor-erro); }
+.cotacao-neutro, .cotacao-hora, .cotacao-codigo { color: var(--cor-texto-suave); }
+.cotacao-rolo-area {
+  flex: 1 1 auto; min-width: 0; overflow: hidden;
+  /* As pontas esmaecem: a ação entra e sai da faixa em vez de aparecer cortada ao meio. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, rgba(0, 0, 0, 1) 1.5rem, rgba(0, 0, 0, 1) calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(90deg, transparent, rgba(0, 0, 0, 1) 1.5rem, rgba(0, 0, 0, 1) calc(100% - 1.5rem), transparent);
+}
+.cotacao-rolo { display: flex; width: max-content; }
+.cotacao-rolando { animation: cotacao-rola var(--cotacao-duracao, 40s) linear infinite; }
+.cotacao-rolo-area:hover .cotacao-rolando { animation-play-state: paused; }
+.cotacao-trecho {
+  margin: 0; display: flex; align-items: baseline; gap: 1.1rem; padding-right: 2.5rem; white-space: nowrap;
+}
+.cotacao-grupo { font-weight: 700; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; }
+@keyframes cotacao-rola { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .cotacao-rolando { animation: none; }
+  .cotacao-rolo-area { overflow-x: auto; }
+}
+@media (max-width: 40rem) {
+  .cotacao-faixa-interna { flex-wrap: wrap; padding: .35rem 1rem; }
+  .cotacao-conteudo { display: contents; }
+  .cotacao-rolo-area { width: 100%; }
+}

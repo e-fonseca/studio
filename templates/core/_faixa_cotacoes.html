@@ -1,0 +1,12 @@
+{% comment %}A faixa do topo (1.50.0). Pedido do Edson em 06/11/2026: "na parte de cima do menu
+colocar a data e hora em real time / (...) uma linha formato carrossel informando valor do
+dólar comercial no momento em destaque e os principais ações em alta e queda". O relógio é
+do navegador e anda a cada segundo; o dólar e as ações vêm do servidor (apps/core/cotacoes.py),
+que busca na internet em segundo plano: nenhuma tela espera a internet para abrir. Quem não
+vê número da loja (o vendedor) fica só com o relógio.{% endcomment %}
+<div class="cotacao-faixa" id="cotacao-faixa"{% if cotacoes %} data-endereco="{% url 'core:cotacoes' %}" data-entrar="{% url 'contas:entrar' %}"{% endif %}>
+  <div class="cotacao-faixa-interna">
+    <time class="cotacao-relogio" id="cotacao-relogio">{% now "D" as dia %}{{ dia|lower }}, {% now "d/m/Y · H:i:s" %}</time>
+    {% if cotacoes %}<div class="cotacao-conteudo" id="cotacao-conteudo">{% include "core/_cotacoes.html" %}</div>{% endif %}
+  </div>
+</div>

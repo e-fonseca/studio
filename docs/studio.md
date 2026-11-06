@@ -15,7 +15,7 @@ Cabana e o que ainda falta decidir.
 | Configuração | `config\cabana.env`, variáveis `CABANA_*` | `config\studio.env`, variáveis `STUDIO_*` |
 | Endereço | `:8095/sistema/` e `https :8443/sistema/` | `:8096/studio/` e `https :8444/studio/` |
 | Banco PostgreSQL | `cabana` | `studio` (usuário próprio) |
-| Backup do SET | `C:\backup-Set\Cabana\Set-Cabana` | `C:\backup-Set\Studio\Set-Studio`, sempre o arquivo mais novo (padrão no servidor desde a 2.3.0) |
+| Backup do SET | `C:\backup-Set\Cabana\Set-Cabana`, com o `Set-Cabana-FULL.zip` | `C:\backup-Set\Studio\Set-Studio`, com o `Set-Studio001.zip` das 23:00; sempre o arquivo mais novo, lido do mesmo jeito que o da Cabana (padrão no servidor desde a 2.3.0) |
 | Tarefas do Windows | `\Cabana\CabanaSistema`, `CabanaImportacao` | `\Studio\StudioSistema`, `StudioImportacao` |
 | Certificado | autoridade "Cabana do Jacaranda" | autoridade "Studio Industrial" |
 | Pacote de atualização | `C:\instalacao\pacote` | `C:\intranet\pacotes\studio` (2.2.0) |

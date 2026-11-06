@@ -7,6 +7,27 @@ A regra do número: o primeiro dígito só muda em reescrita; o segundo muda qua
 entra função nova; o terceiro, em correção. O pacote enviado ao servidor leva
 esse número, mais o commit e a data da geração, no arquivo `VERSAO`.
 
+## 2.4.0 — 06/11/2026 · O que a Cabana ganhou na 1.50.0, e o backup do SET lido como o da Cabana
+
+Pedidos do Edson de 06/11/2026, com o print da pasta do servidor: *"sempre checar ultima versão
+no github e usar como base para fazer correções e implementações"* e *"usar a mesma estrutura de
+importação da base de dados backup do set sistemas da empresa Cabana do Jacarandá"*.
+
+- **Da Cabana 1.50.0**: a faixa do topo, acima do menu, com o relógio, o dólar comercial e as
+  ações rolando ([cotacoes.md](cotacoes.md)). Nenhuma tela espera a internet, e o pedido de cada
+  minuto não conta como uso: a sessão parada continua acabando em 30 minutos.
+- **O Comercial (SDR) fica só com o relógio**, como o vendedor na Cabana. A regra é a mesma, quem
+  vê número da loja, e o SDR não vê valor de pedido nem conta.
+- **Lá fora o Studio se apresenta como `studio-sistema`** também na busca das cotações, como já
+  fazia na do tempo e no backup.
+- **O backup do SET, do jeito que está no servidor**: em `C:\backup-Set\Studio\Set-Studio`, o
+  `Set-Studio001.zip` (cerca de 100 MB, gravado às 23:00). A importação é a mesma que lê o
+  `Set-Cabana-FULL.zip` da Cabana: o arquivo mais novo com conteúdo, o banco tirado de dentro do
+  zip para `dados\copia-set\set.fdb`, a origem só lida. Um teste monta essa pasta e confere tudo
+  isso, inclusive que o zip da noite seguinte passa na frente e que o zip ainda sendo gravado
+  fica para depois. Com um backup por noite, a sincronização das 08:30 lê o das 23:00, e as das
+  12:30 e 19:30 terminam como "Sem backup novo", como na Cabana.
+
 ## 2.3.0 — 06/11/2026 · O que a Cabana ganhou na 1.49.0, e o backup do SET do Studio
 
 Pedidos do Edson de 06/11/2026: *"atualizar o pacote cabana / atualizar pacote studio"* e
@@ -107,6 +128,29 @@ versões abaixo desta são a história da Cabana, que veio junto com o código.
 - **Ponte com o agente da casa** para o Trello e o Kommo: os projetos viram cartões e os
   leads do WhatsApp entram no funil com as conversas, por uma chave própria pela VPN. O
   servidor não guarda senha do Trello nem do Kommo (docs/integracao-agente.md).
+## 1.50.0 — 06/11/2026
+
+*Da Cabana. No Studio entrou na 2.4.0, com o Comercial (SDR) também só com o relógio.*
+
+Pedido dele (06/11/2026): *"na area logada / na parte de cima do menu colocar a data e hora
+em real time / na parte de cima do menu colocar um linha formato carrossel informando valor
+do dólar comercial no momento em destaque e os principais ações em alta e queda de em real
+time"*. Ficha: `docs/cotacoes.md`.
+
+- **Faixa do topo**, logo acima do menu, em todas as telas depois de entrar: o relógio (dia,
+  data e hora, andando a cada segundo), o **dólar comercial** em destaque (preço de venda,
+  variação do dia e hora do preço) e as ações rolando, em **Em alta**, **Em queda** e **Sem
+  mudança**.
+- **De onde vem**: o dólar da AwesomeAPI e as ações da brapi.dev, de graça e sem cadastro.
+  Sem cadastro a brapi responde quatro ações (Petrobras, Vale, Itaú e Magalu), com uns 30
+  minutos de atraso: o preço ao vivo da B3 é pago. A faixa diz a hora de cada preço.
+- **Nenhuma tela espera a internet**: a tela lê o que o servidor guardou, e o servidor busca
+  em segundo plano (o dólar no máximo uma vez por minuto, as ações a cada 15 minutos, e só
+  enquanto alguém está com o sistema aberto). Sem internet, fica o último valor.
+- **O pedido de cada minuto não conta como uso**: a sessão parada continua acabando em 30
+  minutos, e a tela esquecida aberta agora vai sozinha para a entrada quando ela acaba.
+- **O vendedor fica só com o relógio**: a tela dele não mostra R$ nenhum, nem o do dólar.
+
 ## 1.49.0 — 04/11/2026
 
 *Da Cabana. No Studio entrou na 2.3.0, menos o nome do menu.*

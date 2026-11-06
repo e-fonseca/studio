@@ -1,11 +1,16 @@
 """O perfil Studio Industrial: o menu sem compras e sem estoque (pedido de 05/11/2026)."""
 
-from django.test import TestCase, override_settings
+from unittest import mock
+
+from django.core.cache import cache
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.contas.perfis import ADMINISTRACAO, COMERCIAL
-from apps.core import menu
+from apps.core import cotacoes, menu
 from apps.core.fabricas import SENHA_TESTE, usuario
+from apps.core.tests.test_cotacoes import internet_inteira
 
 
 @override_settings(ASSUNTOS_DESLIGADOS=("compras", "estoque"))
@@ -64,3 +69,40 @@ class PadraoDoStudioTest(TestCase):
         finally:
             if antes is not None:
                 os.environ["STUDIO_ASSUNTOS_DESLIGADOS"] = antes
+
+
+class FaixaDoTopoNoStudioTest(TestCase):
+    """A faixa do topo que veio da Cabana 1.50.0 (Studio 2.4.0). Na Cabana quem fica só com o
+    relógio é o vendedor; no Studio é também o Comercial (SDR), que não vê valor de pedido
+    nem conta. A regra é a mesma, quem vê número da loja (importacao.ver_painel)."""
+
+    def setUp(self):
+        cache.clear()
+        cotacoes.atualizar(abrir=internet_inteira(), agora=timezone.now())
+
+    def test_o_sdr_fica_so_com_o_relogio(self):
+        usuario("sdr3", COMERCIAL)
+        self.client.login(username="sdr3", password=SENHA_TESTE)
+        html = self.client.get(reverse("leads:funil")).content.decode()
+        self.assertIn('id="cotacao-relogio"', html)
+        self.assertNotIn("Dólar comercial", html)
+        self.assertNotIn("data-endereco", html)
+        self.assertEqual(self.client.get(reverse("core:cotacoes")).status_code, 403)
+
+    def test_a_gerencia_ve_o_dolar_e_as_acoes(self):
+        usuario("edson3", ADMINISTRACAO)
+        self.client.login(username="edson3", password=SENHA_TESTE)
+        html = self.client.get(reverse("projetos:lista")).content.decode()
+        self.assertIn("Dólar comercial", html)
+        self.assertIn("Petrobras", html)
+
+
+class NomeLaForaTest(SimpleTestCase):
+    def test_o_studio_se_apresenta_como_studio_aos_sites_das_cotacoes(self):
+        """Como já fazia no tempo e no backup: o site de fora vê studio-sistema, e não o nome
+        do sistema da Cabana, de onde o código veio."""
+        with mock.patch.object(cotacoes, "urlopen") as abrir:
+            abrir.return_value.__enter__.return_value.read.return_value = b"{}"
+            cotacoes._abrir(cotacoes.ENDERECO_DO_DOLAR)
+        pedido = abrir.call_args.args[0]
+        self.assertEqual(pedido.get_header("User-agent"), "studio-sistema")

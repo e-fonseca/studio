@@ -66,6 +66,7 @@
     de cada assunto é apps/core/menu.py, não este arquivo: assim a ordem do menu e a ordem
     das setas no pé nunca saem de sincronia. No celular as duas fileiras ficam atrás do botão
     Menu, que abre e fecha só com CSS.{% endcomment %}
+    {% include "core/_faixa_cotacoes.html" %}
     <input type="checkbox" id="abrir-menu" class="oculto-visualmente">
     <label for="abrir-menu" class="botao-menu">Menu</label>
     <div class="topo-menu">
@@ -113,6 +114,7 @@
     <script src="{% static 'js/ajuda.js' %}" defer></script>
     <script src="{% static 'js/lembretes.js' %}" defer></script>
     <script src="{% static 'js/autocompletar.js' %}" defer></script>
+    <script src="{% static 'js/cotacoes.js' %}" defer></script>
   {% endif %}
   <script>
     // Registra o operário do atalho na tela inicial. Só em https ou localhost: fora
